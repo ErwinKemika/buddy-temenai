@@ -15,6 +15,7 @@ export default {
     extend: {
       fontFamily: {
         sans: ['Poppins', 'sans-serif'],
+        orbitron: ['Orbitron', 'sans-serif'],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -53,8 +54,9 @@ export default {
         buddy: {
           cyan: "hsl(var(--buddy-cyan))",
           "cyan-glow": "hsl(var(--buddy-cyan-glow))",
-          bubble: "hsl(var(--buddy-bubble))",
-          "user-bubble": "hsl(var(--buddy-user-bubble))",
+          gold: "hsl(var(--buddy-gold))",
+          body: "hsl(var(--buddy-body))",
+          "body-light": "hsl(var(--buddy-body-light))",
         },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
@@ -74,20 +76,12 @@ export default {
       },
       keyframes: {
         "accordion-down": {
-          from: {
-            height: "0",
-          },
-          to: {
-            height: "var(--radix-accordion-content-height)",
-          },
+          from: { height: "0" },
+          to: { height: "var(--radix-accordion-content-height)" },
         },
         "accordion-up": {
-          from: {
-            height: "var(--radix-accordion-content-height)",
-          },
-          to: {
-            height: "0",
-          },
+          from: { height: "var(--radix-accordion-content-height)" },
+          to: { height: "0" },
         },
       },
       animation: {
