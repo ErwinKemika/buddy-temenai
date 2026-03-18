@@ -7,7 +7,6 @@ import BuddyControlBar from "@/components/BuddyControlBar";
 const Index = () => {
   const [isTalking, setIsTalking] = useState(false);
 
-  // Simulate Buddy talking periodically
   useEffect(() => {
     const interval = setInterval(() => {
       setIsTalking(true);
@@ -17,7 +16,7 @@ const Index = () => {
   }, []);
 
   return (
-    <div className="h-screen max-w-md mx-auto flex flex-col buddy-gradient-bg">
+    <div className="h-[100dvh] w-full flex flex-col buddy-gradient-bg overflow-hidden safe-area-inset">
       <BuddyHeader />
       <BuddyRobot isTalking={isTalking} />
       <BuddyChat />
