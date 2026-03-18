@@ -39,8 +39,8 @@ const BuddyRobot = ({ isTalking = false }: BuddyRobotProps) => {
 
 const RobotModel = ({ isTalking }: { isTalking: boolean }) => {
   const headRef = useRef<THREE.Group>(null);
-  const leftEyeRef = useRef<THREE.Mesh>(null);
-  const rightEyeRef = useRef<THREE.Mesh>(null);
+  const leftEyeRef = useRef<THREE.Group>(null);
+  const rightEyeRef = useRef<THREE.Group>(null);
   const mouthRef = useRef<THREE.Mesh>(null);
   const antennaLightRef = useRef<THREE.Mesh>(null);
 
