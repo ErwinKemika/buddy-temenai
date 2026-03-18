@@ -69,6 +69,18 @@
   }
 }
 
+.safe-area-inset {
+  padding-top: env(safe-area-inset-top);
+}
+
+.safe-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+.safe-bottom {
+  padding-bottom: max(env(safe-area-inset-bottom), 0.5rem);
+}
+
 @layer utilities {
   .buddy-gradient-bg {
     background: linear-gradient(
