@@ -110,12 +110,16 @@ const BuddyRobot = ({ isTalking = false, isListening = false }: BuddyRobotProps)
   );
 };
 
-const Eye = ({ isTalking, delay }: { isTalking: boolean; delay: number }) => {
+const Eye = ({ isTalking, isListening, delay }: { isTalking: boolean; isListening: boolean; delay: number }) => {
   return (
     <div
-      className={`w-8 h-8 rounded-full bg-gradient-to-b from-accent to-buddy-cyan-glow flex items-center justify-center transition-all duration-200 ${
-        isTalking ? "animate-talk" : "animate-blink"
-      } animate-eye-glow`}
+      className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 animate-eye-glow ${
+        isListening
+          ? "bg-gradient-to-b from-green-400 to-green-600 animate-pulse"
+          : isTalking
+            ? "bg-gradient-to-b from-accent to-buddy-cyan-glow animate-talk"
+            : "bg-gradient-to-b from-accent to-buddy-cyan-glow animate-blink"
+      }`}
       style={{ animationDelay: `${delay}s` }}
     >
       <div className="w-3 h-3 rounded-full bg-primary-foreground/90" />
