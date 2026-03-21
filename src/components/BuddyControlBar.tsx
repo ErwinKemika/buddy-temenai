@@ -1,12 +1,14 @@
-import { Mic, Send, MessageSquare } from "lucide-react";
+import { Mic, Send, MessageSquare, Volume2, VolumeX } from "lucide-react";
 import { useState } from "react";
 
 interface Props {
   onSendMessage: (text: string) => void;
   isLoading: boolean;
+  voiceEnabled: boolean;
+  onToggleVoice: () => void;
 }
 
-const BuddyControlBar = ({ onSendMessage, isLoading }: Props) => {
+const BuddyControlBar = ({ onSendMessage, isLoading, voiceEnabled, onToggleVoice }: Props) => {
   const [input, setInput] = useState("");
 
   const handleSend = () => {
@@ -20,10 +22,11 @@ const BuddyControlBar = ({ onSendMessage, isLoading }: Props) => {
     <div className="px-3 pt-2 pb-3 bg-card/40 backdrop-blur-md border-t border-border/30 safe-bottom">
       <div className="flex items-center gap-2">
         <button
-          className="p-2.5 rounded-full active:bg-muted transition-colors text-muted-foreground shrink-0"
-          aria-label="Riwayat percakapan"
+          onClick={onToggleVoice}
+          className={`p-2.5 rounded-full active:bg-muted transition-colors shrink-0 ${voiceEnabled ? 'text-primary' : 'text-muted-foreground'}`}
+          aria-label={voiceEnabled ? "Matikan suara" : "Nyalakan suara"}
         >
-          <MessageSquare size={22} />
+          {voiceEnabled ? <Volume2 size={22} /> : <VolumeX size={22} />}
         </button>
 
         <button

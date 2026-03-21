@@ -1,11 +1,58 @@
-import { useState, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useState, useCallback, useRef } from "react";
 
 export type Message = { role: "user" | "assistant"; content: string };
+
+async function playTTS(text: string): Promise<void> {
+  // Strip markdown and emoji-heavy content for cleaner speech
+  const cleanText = text
+    .replace(/[#*_~`>\[\]()!]/g, "")
+    .replace(/\n+/g, " ")
+    .trim();
+
+  if (!cleanText || cleanText.length < 2) return;
+
+  // Limit to 5000 chars
+  const truncated = cleanText.slice(0, 5000);
+
+  const response = await fetch(
+    `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/tts`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+      },
+      body: JSON.stringify({ text: truncated }),
+    }
+  );
+
+  if (!response.ok) {
+    console.error("TTS failed:", response.status);
+    return;
+  }
+
+  const audioBlob = await response.blob();
+  const audioUrl = URL.createObjectURL(audioBlob);
+  const audio = new Audio(audioUrl);
+  
+  return new Promise<void>((resolve) => {
+    audio.onended = () => {
+      URL.revokeObjectURL(audioUrl);
+      resolve();
+    };
+    audio.onerror = () => {
+      URL.revokeObjectURL(audioUrl);
+      resolve();
+    };
+    audio.play().catch(() => resolve());
+  });
+}
 
 export function useChat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [voiceEnabled, setVoiceEnabled] = useState(true);
 
   const sendMessage = useCallback(async (input: string) => {
     const userMsg: Message = { role: "user", content: input };
@@ -92,13 +139,25 @@ export function useChat() {
           } catch { /* ignore */ }
         }
       }
+
+      // Play TTS after streaming is done
+      if (voiceEnabled && assistantSoFar) {
+        setIsSpeaking(true);
+        try {
+          await playTTS(assistantSoFar);
+        } catch (e) {
+          console.error("TTS playback error:", e);
+        } finally {
+          setIsSpeaking(false);
+        }
+      }
     } catch (e) {
       console.error("Chat error:", e);
       upsertAssistant("Maaf, aku sedang gangguan. Coba lagi ya! 😅");
     } finally {
       setIsLoading(false);
     }
-  }, [messages]);
+  }, [messages, voiceEnabled]);
 
-  return { messages, isLoading, sendMessage };
+  return { messages, isLoading, isSpeaking, voiceEnabled, setVoiceEnabled, sendMessage };
 }
