@@ -1,6 +1,21 @@
 import { Mic, Send, MessageSquare } from "lucide-react";
+import { useState } from "react";
 
-const BuddyControlBar = () => {
+interface Props {
+  onSendMessage: (text: string) => void;
+  isLoading: boolean;
+}
+
+const BuddyControlBar = ({ onSendMessage, isLoading }: Props) => {
+  const [input, setInput] = useState("");
+
+  const handleSend = () => {
+    const text = input.trim();
+    if (!text || isLoading) return;
+    onSendMessage(text);
+    setInput("");
+  };
+
   return (
     <div className="px-3 pt-2 pb-3 bg-card/40 backdrop-blur-md border-t border-border/30 safe-bottom">
       <div className="flex items-center gap-2">
@@ -18,20 +33,28 @@ const BuddyControlBar = () => {
           <Mic size={22} className="text-primary-foreground" />
         </button>
 
-        <div className="flex-1 flex items-center gap-1.5 bg-muted/50 border border-border/30 rounded-full px-3.5 py-2.5 min-w-0">
+        <form
+          onSubmit={(e) => { e.preventDefault(); handleSend(); }}
+          className="flex-1 flex items-center gap-1.5 bg-muted/50 border border-border/30 rounded-full px-3.5 py-2.5 min-w-0"
+        >
           <input
             type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
             placeholder="Atau ketik di sini..."
             className="flex-1 bg-transparent text-[14px] text-foreground placeholder:text-muted-foreground outline-none min-w-0"
             enterKeyHint="send"
+            disabled={isLoading}
           />
           <button
-            className="text-primary active:text-primary/70 transition-colors shrink-0 p-1"
+            type="submit"
+            disabled={!input.trim() || isLoading}
+            className="text-primary active:text-primary/70 transition-colors shrink-0 p-1 disabled:opacity-30"
             aria-label="Kirim pesan"
           >
             <Send size={18} />
           </button>
-        </div>
+        </form>
       </div>
     </div>
   );
