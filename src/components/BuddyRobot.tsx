@@ -46,8 +46,8 @@ const BuddyRobot = ({ isTalking = false, isListening = false }: BuddyRobotProps)
             <div className="absolute inset-3 top-5 bottom-4 rounded-[1.5rem] bg-background/60 border border-border/30 flex items-center justify-center">
               {/* Eyes */}
               <div className="flex gap-8">
-                <Eye isTalking={isTalking} delay={0} />
-                <Eye isTalking={isTalking} delay={0.05} />
+                <Eye isTalking={isTalking} isListening={isListening} delay={0} />
+                <Eye isTalking={isTalking} isListening={isListening} delay={0.05} />
               </div>
             </div>
 
