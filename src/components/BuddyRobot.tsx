@@ -1,8 +1,9 @@
 interface BuddyRobotProps {
   isTalking?: boolean;
+  isListening?: boolean;
 }
 
-const BuddyRobot = ({ isTalking = false }: BuddyRobotProps) => {
+const BuddyRobot = ({ isTalking = false, isListening = false }: BuddyRobotProps) => {
   return (
     <div className="flex-1 flex items-center justify-center relative overflow-hidden">
       {/* Orbit rings */}
