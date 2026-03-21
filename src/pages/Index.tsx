@@ -1,24 +1,18 @@
-import { useState, useEffect } from "react";
 import BuddyHeader from "@/components/BuddyHeader";
 import BuddyRobot from "@/components/BuddyRobot";
 import BuddyControlBar from "@/components/BuddyControlBar";
+import BuddySpeechBubble from "@/components/BuddySpeechBubble";
+import { useChat } from "@/hooks/useChat";
 
 const Index = () => {
-  const [isTalking, setIsTalking] = useState(false);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setIsTalking(true);
-      setTimeout(() => setIsTalking(false), 2000);
-    }, 8000);
-    return () => clearInterval(interval);
-  }, []);
+  const { messages, isLoading, sendMessage } = useChat();
 
   return (
     <div className="h-[100dvh] w-full flex flex-col buddy-gradient-bg space-stars overflow-hidden safe-area-inset">
       <BuddyHeader />
-      <BuddyRobot isTalking={isTalking} />
-      <BuddyControlBar />
+      <BuddyRobot isTalking={isLoading} />
+      <BuddySpeechBubble messages={messages} isLoading={isLoading} />
+      <BuddyControlBar onSendMessage={sendMessage} isLoading={isLoading} />
     </div>
   );
 };
