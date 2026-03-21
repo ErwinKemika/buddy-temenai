@@ -1,8 +1,9 @@
 interface BuddyRobotProps {
   isTalking?: boolean;
+  isListening?: boolean;
 }
 
-const BuddyRobot = ({ isTalking = false }: BuddyRobotProps) => {
+const BuddyRobot = ({ isTalking = false, isListening = false }: BuddyRobotProps) => {
   return (
     <div className="flex-1 flex items-center justify-center relative overflow-hidden">
       {/* Orbit rings */}
@@ -45,8 +46,8 @@ const BuddyRobot = ({ isTalking = false }: BuddyRobotProps) => {
             <div className="absolute inset-3 top-5 bottom-4 rounded-[1.5rem] bg-background/60 border border-border/30 flex items-center justify-center">
               {/* Eyes */}
               <div className="flex gap-8">
-                <Eye isTalking={isTalking} delay={0} />
-                <Eye isTalking={isTalking} delay={0.05} />
+                <Eye isTalking={isTalking} isListening={isListening} delay={0} />
+                <Eye isTalking={isTalking} isListening={isListening} delay={0.05} />
               </div>
             </div>
 
@@ -109,12 +110,16 @@ const BuddyRobot = ({ isTalking = false }: BuddyRobotProps) => {
   );
 };
 
-const Eye = ({ isTalking, delay }: { isTalking: boolean; delay: number }) => {
+const Eye = ({ isTalking, isListening, delay }: { isTalking: boolean; isListening: boolean; delay: number }) => {
   return (
     <div
-      className={`w-8 h-8 rounded-full bg-gradient-to-b from-accent to-buddy-cyan-glow flex items-center justify-center transition-all duration-200 ${
-        isTalking ? "animate-talk" : "animate-blink"
-      } animate-eye-glow`}
+      className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 animate-eye-glow ${
+        isListening
+          ? "bg-gradient-to-b from-green-400 to-green-600 animate-pulse"
+          : isTalking
+            ? "bg-gradient-to-b from-accent to-buddy-cyan-glow animate-talk"
+            : "bg-gradient-to-b from-accent to-buddy-cyan-glow animate-blink"
+      }`}
       style={{ animationDelay: `${delay}s` }}
     >
       <div className="w-3 h-3 rounded-full bg-primary-foreground/90" />

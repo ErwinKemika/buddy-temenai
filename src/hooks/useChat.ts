@@ -3,7 +3,6 @@ import { useState, useCallback, useRef } from "react";
 export type Message = { role: "user" | "assistant"; content: string };
 
 async function playTTS(text: string): Promise<void> {
-  // Strip markdown and emoji-heavy content for cleaner speech
   const cleanText = text
     .replace(/[#*_~`>\[\]()!]/g, "")
     .replace(/\n+/g, " ")
@@ -11,7 +10,6 @@ async function playTTS(text: string): Promise<void> {
 
   if (!cleanText || cleanText.length < 2) return;
 
-  // Limit to 5000 chars
   const truncated = cleanText.slice(0, 5000);
 
   const response = await fetch(
@@ -34,16 +32,10 @@ async function playTTS(text: string): Promise<void> {
   const audioBlob = await response.blob();
   const audioUrl = URL.createObjectURL(audioBlob);
   const audio = new Audio(audioUrl);
-  
+
   return new Promise<void>((resolve) => {
-    audio.onended = () => {
-      URL.revokeObjectURL(audioUrl);
-      resolve();
-    };
-    audio.onerror = () => {
-      URL.revokeObjectURL(audioUrl);
-      resolve();
-    };
+    audio.onended = () => { URL.revokeObjectURL(audioUrl); resolve(); };
+    audio.onerror = () => { URL.revokeObjectURL(audioUrl); resolve(); };
     audio.play().catch(() => resolve());
   });
 }
@@ -52,7 +44,10 @@ export function useChat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isListening, setIsListening] = useState(false);
   const [voiceEnabled, setVoiceEnabled] = useState(true);
+  const [liveTranscript, setLiveTranscript] = useState("");
+  const scribeRef = useRef<{ ws: WebSocket | null; finalText: string }>({ ws: null, finalText: "" });
 
   const sendMessage = useCallback(async (input: string) => {
     const userMsg: Message = { role: "user", content: input };
@@ -140,7 +135,6 @@ export function useChat() {
         }
       }
 
-      // Play TTS after streaming is done
       if (voiceEnabled && assistantSoFar) {
         setIsSpeaking(true);
         try {
@@ -159,5 +153,142 @@ export function useChat() {
     }
   }, [messages, voiceEnabled]);
 
-  return { messages, isLoading, isSpeaking, voiceEnabled, setVoiceEnabled, sendMessage };
+  const startListening = useCallback(async () => {
+    try {
+      // Request mic permission
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+      // Get scribe token
+      const tokenResp = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/scribe-token`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({}),
+        }
+      );
+
+      if (!tokenResp.ok) {
+        throw new Error("Gagal mendapatkan token STT");
+      }
+
+      const { token } = await tokenResp.json();
+      if (!token) throw new Error("Token STT kosong");
+
+      setIsListening(true);
+      setLiveTranscript("");
+      scribeRef.current.finalText = "";
+
+      // Connect WebSocket to ElevenLabs realtime scribe
+      const ws = new WebSocket(
+        `wss://api.elevenlabs.io/v1/speech-to-text/realtime?model_id=scribe_v2_realtime&token=${token}&language_code=id`
+      );
+      scribeRef.current.ws = ws;
+
+      ws.onopen = () => {
+        console.log("STT WebSocket connected");
+
+        // Set up audio capture via AudioWorklet or ScriptProcessor
+        const audioCtx = new AudioContext({ sampleRate: 16000 });
+        const source = audioCtx.createMediaStreamSource(stream);
+        const processor = audioCtx.createScriptProcessor(4096, 1, 1);
+
+        processor.onaudioprocess = (e) => {
+          if (ws.readyState !== WebSocket.OPEN) return;
+          const inputData = e.inputBuffer.getChannelData(0);
+          // Convert float32 to int16
+          const int16 = new Int16Array(inputData.length);
+          for (let i = 0; i < inputData.length; i++) {
+            const s = Math.max(-1, Math.min(1, inputData[i]));
+            int16[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
+          }
+          // Convert to base64
+          const bytes = new Uint8Array(int16.buffer);
+          let binary = "";
+          for (let i = 0; i < bytes.length; i++) {
+            binary += String.fromCharCode(bytes[i]);
+          }
+          const base64 = btoa(binary);
+
+          ws.send(JSON.stringify({
+            audio: base64,
+          }));
+        };
+
+        source.connect(processor);
+        processor.connect(audioCtx.destination);
+
+        // Store references for cleanup
+        (ws as any)._audioCtx = audioCtx;
+        (ws as any)._stream = stream;
+        (ws as any)._processor = processor;
+        (ws as any)._source = source;
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === "transcript" && data.transcript?.text) {
+            if (data.transcript.is_final) {
+              scribeRef.current.finalText += (scribeRef.current.finalText ? " " : "") + data.transcript.text;
+              setLiveTranscript(scribeRef.current.finalText);
+            } else {
+              setLiveTranscript(scribeRef.current.finalText + (scribeRef.current.finalText ? " " : "") + data.transcript.text);
+            }
+          }
+        } catch { /* ignore */ }
+      };
+
+      ws.onerror = (err) => {
+        console.error("STT WebSocket error:", err);
+      };
+
+      ws.onclose = () => {
+        console.log("STT WebSocket closed");
+      };
+    } catch (e) {
+      console.error("Start listening error:", e);
+      setIsListening(false);
+    }
+  }, []);
+
+  const stopListening = useCallback(() => {
+    const ws = scribeRef.current.ws;
+    if (ws) {
+      // Clean up audio
+      const audioCtx = (ws as any)._audioCtx as AudioContext | undefined;
+      const stream = (ws as any)._stream as MediaStream | undefined;
+      const processor = (ws as any)._processor as ScriptProcessorNode | undefined;
+      const source = (ws as any)._source as MediaStreamAudioSourceNode | undefined;
+
+      if (processor && source) {
+        source.disconnect();
+        processor.disconnect();
+      }
+      if (audioCtx) audioCtx.close();
+      if (stream) stream.getTracks().forEach(t => t.stop());
+
+      ws.close();
+      scribeRef.current.ws = null;
+    }
+
+    setIsListening(false);
+
+    // Send the final transcript as a message
+    const finalText = scribeRef.current.finalText.trim();
+    if (finalText) {
+      setLiveTranscript("");
+      sendMessage(finalText);
+    } else {
+      setLiveTranscript("");
+    }
+  }, [sendMessage]);
+
+  return {
+    messages, isLoading, isSpeaking, isListening, liveTranscript,
+    voiceEnabled, setVoiceEnabled, sendMessage, startListening, stopListening,
+  };
 }
