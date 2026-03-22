@@ -1,9 +1,11 @@
-import { Send, Volume2, VolumeX } from "lucide-react";
+import { Send, Volume2, VolumeX, Plus } from "lucide-react";
 import { useState } from "react";
 import { BuddyState } from "@/hooks/useChat";
+import AttachmentMenu from "./AttachmentMenu";
+import VoiceRecorder from "./VoiceRecorder";
 
 interface Props {
-  onSendMessage: (text: string) => void;
+  onSendMessage: (text: string, attachment?: { file: File | Blob; type: "image" | "document" | "voice" }) => void;
   buddyState: BuddyState;
   voiceEnabled: boolean;
   onToggleVoice: () => void;
@@ -14,6 +16,8 @@ const BuddyControlBar = ({
   voiceEnabled, onToggleVoice,
 }: Props) => {
   const [input, setInput] = useState("");
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [recording, setRecording] = useState(false);
 
   const isBusy = buddyState === "thinking" || buddyState === "speaking";
 
@@ -24,8 +28,21 @@ const BuddyControlBar = ({
     setInput("");
   };
 
+  const handleFileAttach = (file: File, type: "image" | "document") => {
+    onSendMessage("", { file, type });
+  };
+
+  const handleVoiceSend = (blob: Blob) => {
+    setRecording(false);
+    onSendMessage("", { file: blob, type: "voice" });
+  };
+
+  if (recording) {
+    return <VoiceRecorder onSend={handleVoiceSend} onCancel={() => setRecording(false)} />;
+  }
+
   return (
-    <div className="px-3 pt-2 pb-3 bg-card/40 backdrop-blur-md border-t border-border/30 safe-bottom">
+    <div className="px-3 pt-2 pb-3 bg-card/40 backdrop-blur-md border-t border-border/30 safe-bottom relative">
       <div className="flex items-center gap-2">
         <button
           onClick={onToggleVoice}
@@ -34,6 +51,25 @@ const BuddyControlBar = ({
         >
           {voiceEnabled ? <Volume2 size={22} /> : <VolumeX size={22} />}
         </button>
+
+        <div className="relative">
+          <button
+            onClick={() => setMenuOpen(!menuOpen)}
+            disabled={isBusy}
+            className="p-2.5 rounded-full text-primary active:bg-muted transition-colors shrink-0 disabled:opacity-30"
+            aria-label="Lampiran"
+          >
+            <Plus size={22} />
+          </button>
+          <AttachmentMenu
+            open={menuOpen}
+            onClose={() => setMenuOpen(false)}
+            onImageSelect={(f) => handleFileAttach(f, "image")}
+            onDocumentSelect={(f) => handleFileAttach(f, "document")}
+            onCameraCapture={(f) => handleFileAttach(f, "image")}
+            onVoiceNote={() => { setMenuOpen(false); setRecording(true); }}
+          />
+        </div>
 
         <form
           onSubmit={(e) => { e.preventDefault(); handleSend(); }}

@@ -13,6 +13,12 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
+    // Use vision-capable model when images are present
+    const hasImages = messages.some((m: any) =>
+      Array.isArray(m.content) && m.content.some((c: any) => c.type === "image_url")
+    );
+    const model = hasImages ? "google/gemini-2.5-flash" : "google/gemini-3-flash-preview";
+
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -20,11 +26,11 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model,
         messages: [
           {
             role: "system",
-            content: `Kamu adalah Buddy, robot AI yang ramah dan ceria. Kamu berbicara dalam Bahasa Indonesia dengan gaya santai dan menyenangkan. Kamu suka pakai emoji sesekali. Jawabanmu singkat dan hangat, seperti teman dekat. Kamu penasaran dan suka bertanya balik. Jangan pernah keluar dari karakter - kamu selalu Buddy si robot.`
+            content: `Kamu adalah Buddy, robot AI yang ramah dan ceria. Kamu berbicara dalam Bahasa Indonesia dengan gaya santai dan menyenangkan. Kamu suka pakai emoji sesekali. Jawabanmu singkat dan hangat, seperti teman dekat. Kamu penasaran dan suka bertanya balik. Jangan pernah keluar dari karakter - kamu selalu Buddy si robot. Jika user mengirim gambar, analisis dan deskripsikan gambar tersebut dengan antusias.`
           },
           ...messages,
         ],
@@ -35,21 +41,18 @@ serve(async (req) => {
     if (!response.ok) {
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: "Buddy sedang sibuk, coba lagi nanti ya!" }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       if (response.status === 402) {
         return new Response(JSON.stringify({ error: "Kredit habis, silakan tambah di Settings." }), {
-          status: 402,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       const t = await response.text();
       console.error("AI gateway error:", response.status, t);
       return new Response(JSON.stringify({ error: "AI gateway error" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -59,8 +62,7 @@ serve(async (req) => {
   } catch (e) {
     console.error("chat error:", e);
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
