@@ -1,48 +1,12 @@
 import ReactMarkdown from "react-markdown";
 import { Message, BuddyState } from "@/hooks/useChat";
-import { useRef, useEffect, useState } from "react";
-import { FileText, Play, Pause } from "lucide-react";
+import { useRef, useEffect } from "react";
+import { FileText } from "lucide-react";
 
 interface Props {
   messages: Message[];
   buddyState: BuddyState;
 }
-
-const VoiceNotePlayer = ({ url }: { url: string }) => {
-  const [playing, setPlaying] = useState(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-
-  const toggle = () => {
-    if (!audioRef.current) {
-      audioRef.current = new Audio(url);
-      audioRef.current.onended = () => setPlaying(false);
-    }
-    if (playing) {
-      audioRef.current.pause();
-      setPlaying(false);
-    } else {
-      audioRef.current.play();
-      setPlaying(true);
-    }
-  };
-
-  return (
-    <button onClick={toggle} className="flex items-center gap-2 py-1">
-      <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary">
-        {playing ? <Pause size={14} /> : <Play size={14} />}
-      </div>
-      <div className="flex gap-0.5">
-        {Array.from({ length: 12 }).map((_, i) => (
-          <div
-            key={i}
-            className={`w-1 rounded-full bg-primary/60 ${playing ? "animate-pulse" : ""}`}
-            style={{ height: `${8 + Math.random() * 12}px`, animationDelay: `${i * 0.05}s` }}
-          />
-        ))}
-      </div>
-    </button>
-  );
-};
 
 const BuddySpeechBubble = ({ messages, buddyState }: Props) => {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -104,13 +68,8 @@ const BuddySpeechBubble = ({ messages, buddyState }: Props) => {
               </a>
             )}
 
-            {/* Voice note */}
-            {msg.attachment?.type === "voice" && (
-              <VoiceNotePlayer url={msg.attachment.url} />
-            )}
-
             {/* Text content */}
-            {msg.content && msg.content !== "[Gambar]" && msg.content !== "[Voice Note]" && msg.content !== "[Dokumen]" && (
+            {msg.content && msg.content !== "[Gambar]" && msg.content !== "[Dokumen]" && (
               <div className="prose prose-sm prose-invert max-w-none [&>p]:m-0">
                 <ReactMarkdown>{msg.content}</ReactMarkdown>
               </div>
