@@ -1,4 +1,4 @@
-import { Send, Volume2, VolumeX, Plus } from "lucide-react";
+import { Send, Volume2, VolumeX, Plus, Mic } from "lucide-react";
 import { useState } from "react";
 import { BuddyState } from "@/hooks/useChat";
 import AttachmentMenu from "./AttachmentMenu";
@@ -43,23 +43,23 @@ const BuddyControlBar = ({
 
   return (
     <div className="px-3 pt-2 pb-3 bg-card/40 backdrop-blur-md border-t border-border/30 safe-bottom relative">
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1.5">
         <button
           onClick={onToggleVoice}
-          className={`p-2.5 rounded-full active:bg-muted transition-colors shrink-0 ${voiceEnabled ? 'text-primary' : 'text-muted-foreground'}`}
+          className={`p-2 rounded-full active:bg-muted transition-colors shrink-0 ${voiceEnabled ? 'text-primary' : 'text-muted-foreground'}`}
           aria-label={voiceEnabled ? "Matikan suara" : "Nyalakan suara"}
         >
-          {voiceEnabled ? <Volume2 size={22} /> : <VolumeX size={22} />}
+          {voiceEnabled ? <Volume2 size={20} /> : <VolumeX size={20} />}
         </button>
 
         <div className="relative">
           <button
             onClick={() => setMenuOpen(!menuOpen)}
             disabled={isBusy}
-            className="p-2.5 rounded-full text-primary active:bg-muted transition-colors shrink-0 disabled:opacity-30"
+            className="p-2 rounded-full text-primary active:bg-muted transition-colors shrink-0 disabled:opacity-30"
             aria-label="Lampiran"
           >
-            <Plus size={22} />
+            <Plus size={20} />
           </button>
           <AttachmentMenu
             open={menuOpen}
@@ -67,19 +67,18 @@ const BuddyControlBar = ({
             onImageSelect={(f) => handleFileAttach(f, "image")}
             onDocumentSelect={(f) => handleFileAttach(f, "document")}
             onCameraCapture={(f) => handleFileAttach(f, "image")}
-            onVoiceNote={() => { setMenuOpen(false); setRecording(true); }}
           />
         </div>
 
         <form
           onSubmit={(e) => { e.preventDefault(); handleSend(); }}
-          className="flex-1 flex items-center gap-1.5 bg-muted/50 border border-border/30 rounded-full px-3.5 py-2.5 min-w-0"
+          className="flex-1 flex items-center gap-1.5 bg-muted/50 border border-border/30 rounded-full px-3 py-2 min-w-0"
         >
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder={isBusy ? "Buddy sedang merespons..." : "Ketik pesan di sini..."}
+            placeholder={isBusy ? "Buddy merespons..." : "Ketik pesan..."}
             className="flex-1 bg-transparent text-[14px] text-foreground placeholder:text-muted-foreground outline-none min-w-0"
             enterKeyHint="send"
             disabled={isBusy}
@@ -93,6 +92,15 @@ const BuddyControlBar = ({
             <Send size={18} />
           </button>
         </form>
+
+        <button
+          onClick={() => setRecording(true)}
+          disabled={isBusy}
+          className="p-2 rounded-full text-rose-400 active:bg-rose-500/20 transition-colors shrink-0 disabled:opacity-30"
+          aria-label="Voice note"
+        >
+          <Mic size={20} />
+        </button>
       </div>
     </div>
   );
