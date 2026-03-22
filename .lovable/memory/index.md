@@ -7,3 +7,7 @@ TTS flow: AI text reply → auto TTS playback via ElevenLabs edge function (when
 BuddyState: "idle" | "thinking" | "speaking" — no more "listening" state.
 ElevenLabs voice: Sarah (EXAVITQu4vr4xnSDxMaL), model: eleven_multilingual_v2.
 Dark/Light mode toggle available in gear menu.
+Chat features: WhatsApp-like attachments (image, document, camera, voice note).
+Storage: chat-attachments bucket (public) for uploaded files.
+Multimodal AI: images sent as base64 to Gemini for visual understanding.
+Voice notes: recorded via MediaRecorder API (webm/opus), uploaded to storage.
