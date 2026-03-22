@@ -6,7 +6,7 @@ interface BuddyRobotProps {
 
 const BuddyRobot = ({ buddyState }: BuddyRobotProps) => {
   const isTalking = buddyState === "speaking" || buddyState === "thinking";
-  const isListening = buddyState === "listening";
+  const isListening = false;
   const isSpeaking = buddyState === "speaking";
 
   return (
