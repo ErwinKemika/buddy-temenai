@@ -117,11 +117,6 @@ const BuddyRobot = ({ buddyState }: BuddyRobotProps) => {
 
       {/* Status text */}
       <div className="relative z-10 mt-4 h-6">
-        {buddyState === "listening" && (
-          <p className="text-sm text-green-400 animate-pulse font-medium font-orbitron tracking-wider">
-            🎤 Mendengarkan...
-          </p>
-        )}
         {buddyState === "thinking" && (
           <p className="text-sm text-accent animate-pulse font-medium font-orbitron tracking-wider">
             💭 Sedang berpikir...
