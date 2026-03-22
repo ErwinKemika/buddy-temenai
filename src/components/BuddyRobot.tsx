@@ -6,7 +6,7 @@ interface BuddyRobotProps {
 
 const BuddyRobot = ({ buddyState }: BuddyRobotProps) => {
   const isTalking = buddyState === "speaking" || buddyState === "thinking";
-  const isListening = buddyState === "listening";
+  const isListening = false;
   const isSpeaking = buddyState === "speaking";
 
   return (
@@ -117,11 +117,6 @@ const BuddyRobot = ({ buddyState }: BuddyRobotProps) => {
 
       {/* Status text */}
       <div className="relative z-10 mt-4 h-6">
-        {buddyState === "listening" && (
-          <p className="text-sm text-green-400 animate-pulse font-medium font-orbitron tracking-wider">
-            🎤 Mendengarkan...
-          </p>
-        )}
         {buddyState === "thinking" && (
           <p className="text-sm text-accent animate-pulse font-medium font-orbitron tracking-wider">
             💭 Sedang berpikir...
@@ -139,9 +134,7 @@ const BuddyRobot = ({ buddyState }: BuddyRobotProps) => {
 
 const Eye = ({ buddyState, delay }: { buddyState: BuddyState; delay: number }) => {
   const cls =
-    buddyState === "listening"
-      ? "bg-gradient-to-b from-green-400 to-green-600 animate-pulse"
-      : buddyState === "speaking"
+    buddyState === "speaking"
         ? "bg-gradient-to-b from-accent to-buddy-cyan-glow animate-talk"
         : buddyState === "thinking"
           ? "bg-gradient-to-b from-accent to-buddy-cyan-glow animate-think-eye"

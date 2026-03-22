@@ -6,8 +6,8 @@ import { useChat } from "@/hooks/useChat";
 
 const Index = () => {
   const {
-    messages, buddyState, liveTranscript,
-    voiceEnabled, setVoiceEnabled, sendMessage, startListening, stopListening,
+    messages, buddyState,
+    voiceEnabled, setVoiceEnabled, sendMessage,
   } = useChat();
 
   return (
@@ -18,11 +18,8 @@ const Index = () => {
       <BuddyControlBar
         onSendMessage={sendMessage}
         buddyState={buddyState}
-        liveTranscript={liveTranscript}
         voiceEnabled={voiceEnabled}
         onToggleVoice={() => setVoiceEnabled(v => !v)}
-        onStartListening={startListening}
-        onStopListening={stopListening}
       />
     </div>
   );
