@@ -33,7 +33,7 @@ const AttachmentMenu = ({
           {items.map((item) => (
             <button
               key={item.label}
-              onClick={() => { item.action(); onClose(); }}
+              onClick={() => { item.action(); }}
               className="flex flex-col items-center gap-1.5 p-2 rounded-xl active:bg-muted/50 transition-colors min-w-[56px]"
             >
               <div className={`w-10 h-10 rounded-full ${item.bg} flex items-center justify-center ${item.color}`}>
@@ -45,9 +45,9 @@ const AttachmentMenu = ({
         </div>
       </div>
 
-      <input ref={imageRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) onImageSelect(f); e.target.value = ""; }} />
-      <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) onCameraCapture(f); e.target.value = ""; }} />
-      <input ref={docRef} type="file" accept=".pdf,.doc,.docx,.txt,.csv,.xls,.xlsx" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) onDocumentSelect(f); e.target.value = ""; }} />
+      <input ref={imageRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) onImageSelect(f); e.target.value = ""; onClose(); }} />
+      <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) onCameraCapture(f); e.target.value = ""; onClose(); }} />
+      <input ref={docRef} type="file" accept=".pdf,.doc,.docx,.txt,.csv,.xls,.xlsx" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) onDocumentSelect(f); e.target.value = ""; onClose(); }} />
     </>
   );
 };
