@@ -33,7 +33,7 @@ const AttachmentMenu = ({
           {items.map((item) => (
             <button
               key={item.label}
-              onClick={() => { item.action(); onClose(); }}
+              onClick={() => { item.action(); }}
               className="flex flex-col items-center gap-1.5 p-2 rounded-xl active:bg-muted/50 transition-colors min-w-[56px]"
             >
               <div className={`w-10 h-10 rounded-full ${item.bg} flex items-center justify-center ${item.color}`}>
