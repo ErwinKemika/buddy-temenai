@@ -134,9 +134,7 @@ const BuddyRobot = ({ buddyState }: BuddyRobotProps) => {
 
 const Eye = ({ buddyState, delay }: { buddyState: BuddyState; delay: number }) => {
   const cls =
-    buddyState === "listening"
-      ? "bg-gradient-to-b from-green-400 to-green-600 animate-pulse"
-      : buddyState === "speaking"
+    buddyState === "speaking"
         ? "bg-gradient-to-b from-accent to-buddy-cyan-glow animate-talk"
         : buddyState === "thinking"
           ? "bg-gradient-to-b from-accent to-buddy-cyan-glow animate-think-eye"
