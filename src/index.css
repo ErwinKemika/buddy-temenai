@@ -140,6 +140,16 @@
     );
   }
 
+  .light .buddy-gradient-bg,
+  .buddy-gradient-bg:is(.light *) {
+    background: radial-gradient(
+      ellipse at 50% 40%,
+      hsl(220 20% 96%) 0%,
+      hsl(220 18% 92%) 70%,
+      hsl(225 15% 88%) 100%
+    );
+  }
+
   .buddy-glow {
     box-shadow: 0 0 20px 4px hsl(var(--buddy-accent) / 0.35),
                 0 0 60px 10px hsl(var(--buddy-accent) / 0.15);
