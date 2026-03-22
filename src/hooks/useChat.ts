@@ -42,6 +42,28 @@ async function fileToBase64(file: File): Promise<string> {
   });
 }
 
+async function transcribeVoice(blob: Blob): Promise<string> {
+  const formData = new FormData();
+  formData.append("audio", blob, "voice-note.webm");
+
+  const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/transcribe`, {
+    method: "POST",
+    headers: {
+      apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+      Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+    },
+    body: formData,
+  });
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.error || `Gagal mentranskrip voice note (${response.status})`);
+
+  const text = typeof data.text === "string" ? data.text.trim() : "";
+  if (!text) throw new Error("Voice note tidak terbaca, coba rekam lebih jelas ya.");
+
+  return text;
+}
+
 async function playTTS(text: string): Promise<void> {
   const cleanText = text.replace(/[#*_~`>\[\]()!]/g, "").replace(/\n+/g, " ").trim();
   if (!cleanText || cleanText.length < 2) return;
@@ -155,9 +177,20 @@ export function useChat() {
     setBuddyState("thinking");
 
     let attachmentData: Attachment | undefined;
+    let resolvedText = trimmed;
 
-    // Upload attachment if present
-    if (attachment) {
+    if (attachment?.type === "voice") {
+      try {
+        resolvedText = await transcribeVoice(attachment.file);
+      } catch (e) {
+        console.error("[Transcribe] Error:", e);
+        setMessages(prev => [...prev, { role: "assistant", content: e instanceof Error ? e.message : "Voice note gagal diproses." }]);
+        setBuddyState("idle");
+        return;
+      }
+    }
+
+    if (attachment && attachment.type !== "voice") {
       try {
         const folder = attachment.type === "image" ? "images" : attachment.type === "voice" ? "voice" : "documents";
         const fileUrl = await uploadFile(attachment.file, folder);
@@ -169,12 +202,20 @@ export function useChat() {
         };
       } catch (e) {
         console.error("[Upload] Error:", e);
+        if (attachment.file instanceof File) {
+          attachmentData = {
+            type: attachment.type,
+            url: URL.createObjectURL(attachment.file),
+            name: attachment.file.name,
+            mimeType: attachment.file.type,
+          };
+        }
       }
     }
 
     const userMsg: Message = {
       role: "user",
-      content: trimmed || (attachmentData ? `[${attachmentData.type === "image" ? "Gambar" : attachmentData.type === "voice" ? "Voice Note" : "Dokumen"}]` : ""),
+      content: resolvedText || (attachmentData ? `[${attachmentData.type === "image" ? "Gambar" : "Dokumen"}]` : ""),
       attachment: attachmentData,
     };
 
@@ -188,17 +229,15 @@ export function useChat() {
         userContent = [
           { type: "image_url", image_url: { url: `data:${attachment.file.type};base64,${base64}` } },
         ];
-        if (trimmed) userContent.push({ type: "text", text: trimmed });
+        if (resolvedText) userContent.push({ type: "text", text: resolvedText });
         else userContent.push({ type: "text", text: "Apa yang kamu lihat di gambar ini?" });
       } catch {
-        userContent = trimmed || "Aku mengirim gambar tapi gagal diproses.";
+        userContent = resolvedText || "Aku mengirim gambar tapi gagal diproses.";
       }
-    } else if (attachmentData?.type === "voice") {
-      userContent = trimmed || "Aku mengirim voice note.";
     } else if (attachmentData?.type === "document") {
-      userContent = trimmed || `Aku mengirim dokumen: ${attachmentData.name}`;
+      userContent = resolvedText || `Aku mengirim dokumen: ${attachmentData.name}`;
     } else {
-      userContent = trimmed;
+      userContent = resolvedText;
     }
 
     const chatMessages = [
