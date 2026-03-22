@@ -181,6 +181,11 @@
       radial-gradient(1px 1px at 95% 50%, hsl(0 0% 100% / 0.35), transparent);
   }
 
+  .light .space-stars,
+  .space-stars:is(.light *) {
+    background-image: none;
+  }
+
   .orbit-ring {
     border: 1px dashed hsl(var(--buddy-cyan) / 0.2);
     border-radius: 50%;
