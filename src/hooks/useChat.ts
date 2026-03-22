@@ -10,46 +10,62 @@ async function playTTS(text: string): Promise<void> {
     .replace(/\n+/g, " ")
     .trim();
 
-  if (!cleanText || cleanText.length < 2) return;
-  const truncated = cleanText.slice(0, 5000);
+  if (!cleanText || cleanText.length < 2) {
+    console.log("[TTS] Text too short, skipping");
+    return;
+  }
+  const truncated = cleanText.slice(0, 500); // keep short to save credits
 
-  console.log("[TTS] Requesting speech for:", truncated.slice(0, 80) + "...");
+  const payload = { text: truncated, voiceId: "EXAVITQu4vr4xnSDxMaL" };
+  console.log("[TTS] Request payload:", JSON.stringify(payload).slice(0, 120));
 
-  const response = await fetch(
-    `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/tts`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-      },
-      body: JSON.stringify({ text: truncated }),
-    }
-  );
+  const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/tts`;
+  console.log("[TTS] Calling:", url);
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+      Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+    },
+    body: JSON.stringify(payload),
+  });
+
+  console.log("[TTS] Response status:", response.status, "Content-Type:", response.headers.get("content-type"));
 
   if (!response.ok) {
-    console.error("[TTS] Request failed:", response.status);
-    throw new Error(`TTS failed: ${response.status}`);
+    const errBody = await response.text();
+    console.error("[TTS] Request failed:", response.status, errBody);
+    throw new Error(`TTS failed: ${response.status} - ${errBody}`);
   }
 
-  console.log("[TTS] Audio received, playing...");
   const audioBlob = await response.blob();
+  console.log("[TTS] Audio blob size:", audioBlob.size, "type:", audioBlob.type);
+
+  if (audioBlob.size < 100) {
+    console.error("[TTS] Audio blob too small, likely invalid");
+    throw new Error("TTS returned invalid audio");
+  }
+
   const audioUrl = URL.createObjectURL(audioBlob);
   const audio = new Audio(audioUrl);
 
   return new Promise<void>((resolve, reject) => {
     audio.onended = () => {
-      console.log("[TTS] Playback finished");
+      console.log("[TTS] ✅ Playback finished");
       URL.revokeObjectURL(audioUrl);
       resolve();
     };
     audio.onerror = (e) => {
-      console.error("[TTS] Playback error:", e);
+      console.error("[TTS] ❌ Playback error:", e);
       URL.revokeObjectURL(audioUrl);
       reject(new Error("Audio playback failed"));
     };
-    audio.play().catch((e) => {
-      console.error("[TTS] Play blocked:", e);
+    audio.play().then(() => {
+      console.log("[TTS] ▶️ Audio play started");
+    }).catch((e) => {
+      console.error("[TTS] ❌ Play blocked (autoplay policy?):", e);
       URL.revokeObjectURL(audioUrl);
       reject(e);
     });
