@@ -40,8 +40,10 @@ async function playTTS(text: string): Promise<void> {
     throw new Error(`TTS failed: ${response.status} - ${errBody}`);
   }
 
-  const audioBlob = await response.blob();
-  console.log("[TTS] Audio blob size:", audioBlob.size, "type:", audioBlob.type);
+  const rawBlob = await response.blob();
+  // Force correct MIME type regardless of what the response says
+  const audioBlob = new Blob([rawBlob], { type: "audio/mpeg" });
+  console.log("[TTS] Audio blob size:", audioBlob.size, "type:", audioBlob.type, "rawType:", rawBlob.type);
 
   if (audioBlob.size < 100) {
     console.error("[TTS] Audio blob too small, likely invalid");
@@ -49,23 +51,28 @@ async function playTTS(text: string): Promise<void> {
   }
 
   const audioUrl = URL.createObjectURL(audioBlob);
+  console.log("[TTS] Created audio URL:", audioUrl);
   const audio = new Audio(audioUrl);
+  audio.volume = 1.0;
 
   return new Promise<void>((resolve, reject) => {
+    audio.oncanplaythrough = () => {
+      console.log("[TTS] ✅ Audio can play through, duration:", audio.duration);
+    };
     audio.onended = () => {
       console.log("[TTS] ✅ Playback finished");
       URL.revokeObjectURL(audioUrl);
       resolve();
     };
     audio.onerror = (e) => {
-      console.error("[TTS] ❌ Playback error:", e);
+      console.error("[TTS] ❌ Playback error:", e, "code:", audio.error?.code, "msg:", audio.error?.message);
       URL.revokeObjectURL(audioUrl);
       reject(new Error("Audio playback failed"));
     };
     audio.play().then(() => {
-      console.log("[TTS] ▶️ Audio play started");
+      console.log("[TTS] ▶️ Audio play started, volume:", audio.volume, "muted:", audio.muted, "paused:", audio.paused);
     }).catch((e) => {
-      console.error("[TTS] ❌ Play blocked (autoplay policy?):", e);
+      console.error("[TTS] ❌ Play blocked (autoplay policy?):", e.name, e.message);
       URL.revokeObjectURL(audioUrl);
       reject(e);
     });
