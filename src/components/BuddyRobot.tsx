@@ -34,24 +34,24 @@ const BuddyRobot = ({ buddyState }: BuddyRobotProps) => {
       <div className={`relative z-10 ${isSpeaking ? 'animate-float-fast' : 'animate-float'}`}>
         {/* Ambient glow behind robot */}
         <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 rounded-full blur-3xl transition-colors duration-500 ${
-          isSpeaking ? 'bg-accent/20' : isListening ? 'bg-green-500/15' : 'bg-primary/10'
+          isSpeaking ? 'bg-accent/15' : isListening ? 'bg-green-500/10' : 'bg-primary/8'
         }`} />
 
         {/* Antenna */}
         <div className="flex flex-col items-center mb-0 relative z-10">
           <div className={`w-4 h-4 rounded-full transition-colors duration-300 ${
-            isSpeaking ? 'bg-accent animate-pulse' : isListening ? 'bg-green-400 animate-pulse' : 'bg-accent animate-antenna'
+            isSpeaking ? 'bg-accent animate-pulse' : isListening ? 'bg-green-400 animate-pulse' : 'bg-accent/70 animate-antenna'
           }`} />
-          <div className="w-1 h-5 bg-gradient-to-b from-accent/60 to-muted-foreground/40" />
+          <div className="w-1 h-5 bg-gradient-to-b from-accent/40 to-buddy-body-light" />
         </div>
 
         {/* Head */}
         <div className="relative animate-head-tilt">
-          <div className="w-40 h-32 rounded-[2.5rem] bg-gradient-to-b from-secondary to-card border border-border/50 relative overflow-visible shadow-2xl">
-            <div className="absolute top-0 left-0 right-0 h-1 rounded-t-[2.5rem] bg-gradient-to-r from-primary/40 via-accent/60 to-primary/40" />
+          <div className="w-40 h-32 rounded-[2.5rem] bg-gradient-to-b from-buddy-body-light to-buddy-body border border-primary/15 relative overflow-visible shadow-2xl shadow-primary/5">
+            <div className="absolute top-0 left-0 right-0 h-1 rounded-t-[2.5rem] bg-gradient-to-r from-primary/25 via-accent/35 to-primary/25" />
 
             {/* Face screen area */}
-            <div className="absolute inset-3 top-5 bottom-4 rounded-[1.5rem] bg-background/60 border border-border/30 flex items-center justify-center">
+            <div className="absolute inset-3 top-5 bottom-4 rounded-[1.5rem] bg-background/40 border border-primary/10 flex items-center justify-center">
               <div className="flex gap-8">
                 <Eye buddyState={buddyState} delay={0} />
                 <Eye buddyState={buddyState} delay={0.05} />
@@ -72,44 +72,44 @@ const BuddyRobot = ({ buddyState }: BuddyRobotProps) => {
                 </div>
               ) : (
                 <div className={`h-1 rounded-full transition-all duration-300 ${
-                  isTalking ? "w-10 bg-accent animate-pulse" : "w-5 bg-muted-foreground/30"
+                  isTalking ? "w-10 bg-accent animate-pulse" : "w-5 bg-muted-foreground/20"
                 }`} />
               )}
             </div>
 
             {/* Ear accents */}
-            <div className="absolute left-[-6px] top-1/2 -translate-y-1/2 w-3 h-8 rounded-l-full bg-gradient-to-r from-buddy-gold to-buddy-gold/70 shadow-md" />
-            <div className="absolute right-[-6px] top-1/2 -translate-y-1/2 w-3 h-8 rounded-r-full bg-gradient-to-l from-buddy-gold to-buddy-gold/70 shadow-md" />
+            <div className="absolute left-[-6px] top-1/2 -translate-y-1/2 w-3 h-8 rounded-l-full bg-gradient-to-r from-primary/40 to-primary/25 shadow-md" />
+            <div className="absolute right-[-6px] top-1/2 -translate-y-1/2 w-3 h-8 rounded-r-full bg-gradient-to-l from-primary/40 to-primary/25 shadow-md" />
           </div>
         </div>
 
         {/* Neck */}
         <div className="flex justify-center">
-          <div className="w-6 h-3 bg-gradient-to-b from-secondary to-muted-foreground/30 rounded-b-md" />
+          <div className="w-6 h-3 bg-gradient-to-b from-buddy-body-light to-buddy-body rounded-b-md" />
         </div>
 
         {/* Body */}
         <div className="relative flex justify-center">
           <div className="absolute -left-10 top-2 animate-arm-left">
-            <div className="w-3 h-12 bg-gradient-to-b from-secondary to-card rounded-full border border-border/30" />
-            <div className="w-4 h-4 rounded-full bg-buddy-gold shadow-sm mx-auto -mt-1" />
-            <div className="w-5 h-3 rounded-full bg-buddy-gold/80 mx-auto mt-0.5" />
+            <div className="w-3 h-12 bg-gradient-to-b from-buddy-body-light to-buddy-body rounded-full border border-primary/10" />
+            <div className="w-4 h-4 rounded-full bg-primary/35 shadow-sm mx-auto -mt-1" />
+            <div className="w-5 h-3 rounded-full bg-primary/25 mx-auto mt-0.5" />
           </div>
 
           <div className="absolute -right-10 top-2 animate-arm-right">
-            <div className="w-3 h-12 bg-gradient-to-b from-secondary to-card rounded-full border border-border/30" />
-            <div className="w-4 h-4 rounded-full bg-buddy-gold shadow-sm mx-auto -mt-1" />
-            <div className="w-5 h-3 rounded-full bg-buddy-gold/80 mx-auto mt-0.5" />
+            <div className="w-3 h-12 bg-gradient-to-b from-buddy-body-light to-buddy-body rounded-full border border-primary/10" />
+            <div className="w-4 h-4 rounded-full bg-primary/35 shadow-sm mx-auto -mt-1" />
+            <div className="w-5 h-3 rounded-full bg-primary/25 mx-auto mt-0.5" />
           </div>
 
-          <div className="w-28 h-20 rounded-[1.5rem] rounded-t-xl bg-gradient-to-b from-card to-secondary border border-border/40 relative shadow-xl">
-            <div className="absolute top-3 left-1/2 -translate-x-1/2 w-6 h-6 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center">
+          <div className="w-28 h-20 rounded-[1.5rem] rounded-t-xl bg-gradient-to-b from-buddy-body-light to-buddy-body border border-primary/15 relative shadow-xl shadow-primary/5">
+            <div className="absolute top-3 left-1/2 -translate-x-1/2 w-6 h-6 rounded-full bg-primary/12 border border-primary/15 flex items-center justify-center">
               <div className={`w-3 h-3 rounded-full transition-colors duration-300 ${
-                isSpeaking ? 'bg-accent animate-pulse' : isListening ? 'bg-green-400 animate-pulse' : 'bg-primary/60 animate-antenna'
+                isSpeaking ? 'bg-accent animate-pulse' : isListening ? 'bg-green-400 animate-pulse' : 'bg-primary/50 animate-antenna'
               }`} />
             </div>
             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5">
-              <div className="w-8 h-0.5 rounded-full bg-border/60" />
+              <div className="w-8 h-0.5 rounded-full bg-primary/15" />
             </div>
           </div>
         </div>
