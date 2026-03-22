@@ -192,7 +192,7 @@ export function useChat() {
 
     if (attachment && attachment.type !== "voice") {
       try {
-        const folder = attachment.type === "image" ? "images" : attachment.type === "voice" ? "voice" : "documents";
+        const folder = attachment.type === "image" ? "images" : "documents";
         const fileUrl = await uploadFile(attachment.file, folder);
         attachmentData = {
           type: attachment.type,
