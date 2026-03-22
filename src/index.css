@@ -266,3 +266,33 @@
 .animate-head-tilt {
   animation: head-tilt 6s ease-in-out infinite;
 }
+
+/* Waveform bars for speaking mouth */
+@keyframes waveform {
+  0%, 100% { height: 4px; }
+  50% { height: 12px; }
+}
+
+.animate-waveform {
+  animation: waveform 0.5s ease-in-out infinite;
+}
+
+/* Thinking eye */
+@keyframes think-eye {
+  0%, 100% { transform: scaleY(1); }
+  50% { transform: scaleY(0.6); }
+}
+
+.animate-think-eye {
+  animation: think-eye 1.2s ease-in-out infinite;
+}
+
+/* Faster float for speaking */
+@keyframes float-fast {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+
+.animate-float-fast {
+  animation: float-fast 2s ease-in-out infinite;
+}

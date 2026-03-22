@@ -1,10 +1,10 @@
 import { Mic, MicOff, Send, Volume2, VolumeX } from "lucide-react";
 import { useState } from "react";
+import { BuddyState } from "@/hooks/useChat";
 
 interface Props {
   onSendMessage: (text: string) => void;
-  isLoading: boolean;
-  isListening: boolean;
+  buddyState: BuddyState;
   liveTranscript: string;
   voiceEnabled: boolean;
   onToggleVoice: () => void;
@@ -13,14 +13,17 @@ interface Props {
 }
 
 const BuddyControlBar = ({
-  onSendMessage, isLoading, isListening, liveTranscript,
+  onSendMessage, buddyState, liveTranscript,
   voiceEnabled, onToggleVoice, onStartListening, onStopListening,
 }: Props) => {
   const [input, setInput] = useState("");
 
+  const isListening = buddyState === "listening";
+  const isBusy = buddyState === "thinking" || buddyState === "speaking";
+
   const handleSend = () => {
     const text = input.trim();
-    if (!text || isLoading) return;
+    if (!text || isBusy) return;
     onSendMessage(text);
     setInput("");
   };
@@ -37,13 +40,13 @@ const BuddyControlBar = ({
     <div className="px-3 pt-2 pb-3 bg-card/40 backdrop-blur-md border-t border-border/30 safe-bottom">
       {/* Live transcript preview */}
       {isListening && liveTranscript && (
-        <div className="mb-2 px-3 py-2 rounded-xl bg-primary/10 border border-primary/20 text-sm text-foreground/80 italic">
+        <div className="mb-2 px-3 py-2 rounded-xl bg-green-500/10 border border-green-500/20 text-sm text-foreground/80 italic">
           🎤 "{liveTranscript}"
         </div>
       )}
       {isListening && !liveTranscript && (
-        <div className="mb-2 px-3 py-2 rounded-xl bg-primary/10 border border-primary/20 text-sm text-muted-foreground italic">
-          🎤 Mendengarkan...
+        <div className="mb-2 px-3 py-2 rounded-xl bg-green-500/10 border border-green-500/20 text-sm text-muted-foreground italic animate-pulse">
+          🎤 Mendengarkan... bicara sekarang!
         </div>
       )}
 
@@ -58,7 +61,7 @@ const BuddyControlBar = ({
 
         <button
           onClick={handleMicPress}
-          disabled={isLoading}
+          disabled={isBusy}
           className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 active:scale-95 transition-all ${
             isListening
               ? "bg-destructive buddy-glow animate-pulse"
@@ -80,14 +83,14 @@ const BuddyControlBar = ({
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Atau ketik di sini..."
+            placeholder={isBusy ? "Buddy sedang merespons..." : "Atau ketik di sini..."}
             className="flex-1 bg-transparent text-[14px] text-foreground placeholder:text-muted-foreground outline-none min-w-0"
             enterKeyHint="send"
-            disabled={isLoading || isListening}
+            disabled={isBusy || isListening}
           />
           <button
             type="submit"
-            disabled={!input.trim() || isLoading || isListening}
+            disabled={!input.trim() || isBusy || isListening}
             className="text-primary active:text-primary/70 transition-colors shrink-0 p-1 disabled:opacity-30"
             aria-label="Kirim pesan"
           >

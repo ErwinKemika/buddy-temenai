@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import { CommitStrategy, useScribe } from "@elevenlabs/react";
 
 export type Message = { role: "user" | "assistant"; content: string };
+export type BuddyState = "idle" | "listening" | "thinking" | "speaking";
 
 async function playTTS(text: string): Promise<void> {
   const cleanText = text
@@ -10,8 +11,9 @@ async function playTTS(text: string): Promise<void> {
     .trim();
 
   if (!cleanText || cleanText.length < 2) return;
-
   const truncated = cleanText.slice(0, 5000);
+
+  console.log("[TTS] Requesting speech for:", truncated.slice(0, 80) + "...");
 
   const response = await fetch(
     `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/tts`,
@@ -26,36 +28,55 @@ async function playTTS(text: string): Promise<void> {
   );
 
   if (!response.ok) {
-    console.error("TTS failed:", response.status);
-    return;
+    console.error("[TTS] Request failed:", response.status);
+    throw new Error(`TTS failed: ${response.status}`);
   }
 
+  console.log("[TTS] Audio received, playing...");
   const audioBlob = await response.blob();
   const audioUrl = URL.createObjectURL(audioBlob);
   const audio = new Audio(audioUrl);
 
-  return new Promise<void>((resolve) => {
-    audio.onended = () => { URL.revokeObjectURL(audioUrl); resolve(); };
-    audio.onerror = () => { URL.revokeObjectURL(audioUrl); resolve(); };
-    audio.play().catch(() => resolve());
+  return new Promise<void>((resolve, reject) => {
+    audio.onended = () => {
+      console.log("[TTS] Playback finished");
+      URL.revokeObjectURL(audioUrl);
+      resolve();
+    };
+    audio.onerror = (e) => {
+      console.error("[TTS] Playback error:", e);
+      URL.revokeObjectURL(audioUrl);
+      reject(new Error("Audio playback failed"));
+    };
+    audio.play().catch((e) => {
+      console.error("[TTS] Play blocked:", e);
+      URL.revokeObjectURL(audioUrl);
+      reject(e);
+    });
   });
 }
 
 export function useChat() {
   const [messages, setMessages] = useState<Message[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isSpeaking, setIsSpeaking] = useState(false);
-  const [isListening, setIsListening] = useState(false);
+  const [buddyState, setBuddyState] = useState<BuddyState>("idle");
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [liveTranscript, setLiveTranscript] = useState("");
   const scribeFinalTextRef = useRef("");
   const sendMessageRef = useRef<(input: string) => Promise<void>>(async () => {});
 
+  const isLoading = buddyState === "thinking";
+  const isSpeaking = buddyState === "speaking";
+  const isListening = buddyState === "listening";
+
   const sendMessage = useCallback(async (input: string) => {
-    const userMsg: Message = { role: "user", content: input };
+    const trimmed = input.trim();
+    if (!trimmed) return;
+
+    console.log("[Chat] User:", trimmed);
+    const userMsg: Message = { role: "user", content: trimmed };
     const allMessages = [...messages, userMsg];
     setMessages(prev => [...prev, userMsg]);
-    setIsLoading(true);
+    setBuddyState("thinking");
 
     let assistantSoFar = "";
 
@@ -137,21 +158,22 @@ export function useChat() {
         }
       }
 
+      console.log("[Chat] AI response:", assistantSoFar.slice(0, 80) + "...");
+
+      // Auto TTS
       if (voiceEnabled && assistantSoFar) {
-        setIsSpeaking(true);
+        setBuddyState("speaking");
         try {
           await playTTS(assistantSoFar);
         } catch (e) {
-          console.error("TTS playback error:", e);
-        } finally {
-          setIsSpeaking(false);
+          console.error("[TTS] Error:", e);
         }
       }
     } catch (e) {
-      console.error("Chat error:", e);
+      console.error("[Chat] Error:", e);
       upsertAssistant("Maaf, aku sedang gangguan. Coba lagi ya! 😅");
     } finally {
-      setIsLoading(false);
+      setBuddyState("idle");
     }
   }, [messages, voiceEnabled]);
 
@@ -162,7 +184,8 @@ export function useChat() {
     languageCode: "id",
     commitStrategy: CommitStrategy.VAD,
     onConnect: () => {
-      setIsListening(true);
+      console.log("[Mic] Active - listening started");
+      setBuddyState("listening");
       setLiveTranscript("");
       scribeFinalTextRef.current = "";
     },
@@ -174,30 +197,29 @@ export function useChat() {
     onCommittedTranscript: (data) => {
       const committed = data.text.trim();
       if (!committed) return;
-
+      console.log("[Mic] Transcript committed:", committed);
       scribeFinalTextRef.current = [scribeFinalTextRef.current, committed].filter(Boolean).join(" ").trim();
       setLiveTranscript(scribeFinalTextRef.current);
     },
     onDisconnect: () => {
-      setIsListening(false);
+      console.log("[Mic] Inactive - disconnected");
     },
     onError: (error) => {
-      console.error("STT error:", error);
-      setIsListening(false);
+      console.error("[Mic] STT error:", error);
+      setBuddyState("idle");
     },
   });
 
   useEffect(() => {
     return () => {
-      if (scribe.isConnected) {
-        scribe.disconnect();
-      }
+      if (scribe.isConnected) scribe.disconnect();
     };
   }, [scribe]);
 
   const startListening = useCallback(async () => {
     try {
       if (scribe.isConnected) return;
+      console.log("[Mic] Requesting token...");
 
       const tokenResp = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/scribe-token`,
@@ -211,13 +233,11 @@ export function useChat() {
         }
       );
 
-      if (!tokenResp.ok) {
-        throw new Error("Gagal mendapatkan token STT");
-      }
-
+      if (!tokenResp.ok) throw new Error("Gagal mendapatkan token STT");
       const { token } = await tokenResp.json();
       if (!token) throw new Error("Token STT kosong");
 
+      console.log("[Mic] Token received, connecting...");
       await scribe.connect({
         token,
         microphone: {
@@ -227,30 +247,29 @@ export function useChat() {
         },
       });
     } catch (e) {
-      console.error("Start listening error:", e);
-      setIsListening(false);
+      console.error("[Mic] Start error:", e);
+      setBuddyState("idle");
     }
   }, [scribe]);
 
   const stopListening = useCallback(() => {
-    if (scribe.isConnected) {
-      scribe.disconnect();
-    }
-
-    setIsListening(false);
+    if (scribe.isConnected) scribe.disconnect();
 
     const finalText = scribeFinalTextRef.current.trim();
     if (finalText) {
+      console.log("[Mic] Final transcript:", finalText);
       scribeFinalTextRef.current = "";
       setLiveTranscript("");
       void sendMessageRef.current(finalText);
     } else {
+      console.log("[Mic] No transcript captured");
       setLiveTranscript("");
+      setBuddyState("idle");
     }
   }, [scribe]);
 
   return {
-    messages, isLoading, isSpeaking, isListening, liveTranscript,
+    messages, buddyState, isLoading, isSpeaking, isListening, liveTranscript,
     voiceEnabled, setVoiceEnabled, sendMessage, startListening, stopListening,
   };
 }
