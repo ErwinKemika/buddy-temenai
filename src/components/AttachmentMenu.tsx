@@ -45,9 +45,9 @@ const AttachmentMenu = ({
         </div>
       </div>
 
-      <input ref={imageRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) onImageSelect(f); e.target.value = ""; }} />
-      <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) onCameraCapture(f); e.target.value = ""; }} />
-      <input ref={docRef} type="file" accept=".pdf,.doc,.docx,.txt,.csv,.xls,.xlsx" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) onDocumentSelect(f); e.target.value = ""; }} />
+      <input ref={imageRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) onImageSelect(f); e.target.value = ""; onClose(); }} />
+      <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) onCameraCapture(f); e.target.value = ""; onClose(); }} />
+      <input ref={docRef} type="file" accept=".pdf,.doc,.docx,.txt,.csv,.xls,.xlsx" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) onDocumentSelect(f); e.target.value = ""; onClose(); }} />
     </>
   );
 };
