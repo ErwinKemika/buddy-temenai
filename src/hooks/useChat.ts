@@ -1,16 +1,50 @@
 import { useState, useCallback } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
-export type Message = { role: "user" | "assistant"; content: string };
+export type Attachment = {
+  type: "image" | "document" | "voice";
+  url: string;
+  name: string;
+  mimeType: string;
+};
+
+export type Message = {
+  role: "user" | "assistant";
+  content: string;
+  attachment?: Attachment;
+};
+
 export type BuddyState = "idle" | "thinking" | "speaking";
 
-async function playTTS(text: string): Promise<void> {
-  const cleanText = text
-    .replace(/[#*_~`>\[\]()!]/g, "")
-    .replace(/\n+/g, " ")
-    .trim();
+async function uploadFile(file: File | Blob, folder: string): Promise<string> {
+  const ext = file instanceof File ? file.name.split(".").pop() : "webm";
+  const fileName = `${folder}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
 
+  const { error } = await supabase.storage
+    .from("chat-attachments")
+    .upload(fileName, file, { contentType: file instanceof File ? file.type : "audio/webm" });
+
+  if (error) throw error;
+
+  const { data } = supabase.storage.from("chat-attachments").getPublicUrl(fileName);
+  return data.publicUrl;
+}
+
+async function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      resolve(result.split(",")[1]);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function playTTS(text: string): Promise<void> {
+  const cleanText = text.replace(/[#*_~`>\[\]()!]/g, "").replace(/\n+/g, " ").trim();
   if (!cleanText || cleanText.length < 2) return;
-  const truncated = cleanText.slice(0, 500);
 
   const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/tts`;
   const response = await fetch(url, {
@@ -20,13 +54,10 @@ async function playTTS(text: string): Promise<void> {
       apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
       Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
     },
-    body: JSON.stringify({ text: truncated, voiceId: "EXAVITQu4vr4xnSDxMaL" }),
+    body: JSON.stringify({ text: cleanText.slice(0, 500), voiceId: "EXAVITQu4vr4xnSDxMaL" }),
   });
 
-  if (!response.ok) {
-    const errBody = await response.text();
-    throw new Error(`TTS failed: ${response.status} - ${errBody}`);
-  }
+  if (!response.ok) throw new Error(`TTS failed: ${response.status}`);
 
   const rawBlob = await response.blob();
   const audioBlob = new Blob([rawBlob], { type: "audio/mpeg" });
@@ -48,17 +79,134 @@ export function useChat() {
   const [buddyState, setBuddyState] = useState<BuddyState>("idle");
   const [voiceEnabled, setVoiceEnabled] = useState(true);
 
-  const sendMessage = useCallback(async (input: string) => {
-    const trimmed = input.trim();
-    if (!trimmed) return;
+  const streamChat = useCallback(async (
+    chatMessages: Array<{ role: string; content: any }>,
+    upsertAssistant: (chunk: string) => void,
+  ) => {
+    const resp = await fetch(
+      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({ messages: chatMessages }),
+      }
+    );
 
-    const userMsg: Message = { role: "user", content: trimmed };
-    const allMessages = [...messages, userMsg];
-    setMessages(prev => [...prev, userMsg]);
+    if (!resp.ok || !resp.body) {
+      const errData = await resp.json().catch(() => ({}));
+      throw new Error(errData.error || "Gagal menghubungi Buddy");
+    }
+
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let textBuffer = "";
+    let streamDone = false;
+
+    while (!streamDone) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      textBuffer += decoder.decode(value, { stream: true });
+
+      let idx: number;
+      while ((idx = textBuffer.indexOf("\n")) !== -1) {
+        let line = textBuffer.slice(0, idx);
+        textBuffer = textBuffer.slice(idx + 1);
+        if (line.endsWith("\r")) line = line.slice(0, -1);
+        if (line.startsWith(":") || line.trim() === "") continue;
+        if (!line.startsWith("data: ")) continue;
+        const jsonStr = line.slice(6).trim();
+        if (jsonStr === "[DONE]") { streamDone = true; break; }
+        try {
+          const parsed = JSON.parse(jsonStr);
+          const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+          if (content) upsertAssistant(content);
+        } catch {
+          textBuffer = line + "\n" + textBuffer;
+          break;
+        }
+      }
+    }
+
+    // flush
+    if (textBuffer.trim()) {
+      for (let raw of textBuffer.split("\n")) {
+        if (!raw) continue;
+        if (raw.endsWith("\r")) raw = raw.slice(0, -1);
+        if (raw.startsWith(":") || raw.trim() === "") continue;
+        if (!raw.startsWith("data: ")) continue;
+        const jsonStr = raw.slice(6).trim();
+        if (jsonStr === "[DONE]") continue;
+        try {
+          const parsed = JSON.parse(jsonStr);
+          const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+          if (content) upsertAssistant(content);
+        } catch { /* ignore */ }
+      }
+    }
+  }, []);
+
+  const sendMessage = useCallback(async (input: string, attachment?: { file: File | Blob; type: "image" | "document" | "voice" }) => {
+    const trimmed = input.trim();
+    if (!trimmed && !attachment) return;
+
     setBuddyState("thinking");
 
-    let assistantSoFar = "";
+    let attachmentData: Attachment | undefined;
 
+    // Upload attachment if present
+    if (attachment) {
+      try {
+        const folder = attachment.type === "image" ? "images" : attachment.type === "voice" ? "voice" : "documents";
+        const fileUrl = await uploadFile(attachment.file, folder);
+        attachmentData = {
+          type: attachment.type,
+          url: fileUrl,
+          name: attachment.file instanceof File ? attachment.file.name : "voice-note.webm",
+          mimeType: attachment.file instanceof File ? attachment.file.type : "audio/webm",
+        };
+      } catch (e) {
+        console.error("[Upload] Error:", e);
+      }
+    }
+
+    const userMsg: Message = {
+      role: "user",
+      content: trimmed || (attachmentData ? `[${attachmentData.type === "image" ? "Gambar" : attachmentData.type === "voice" ? "Voice Note" : "Dokumen"}]` : ""),
+      attachment: attachmentData,
+    };
+
+    setMessages(prev => [...prev, userMsg]);
+
+    // Build multimodal content for AI
+    let userContent: any;
+    if (attachmentData?.type === "image" && attachment?.file instanceof File) {
+      try {
+        const base64 = await fileToBase64(attachment.file);
+        userContent = [
+          { type: "image_url", image_url: { url: `data:${attachment.file.type};base64,${base64}` } },
+        ];
+        if (trimmed) userContent.push({ type: "text", text: trimmed });
+        else userContent.push({ type: "text", text: "Apa yang kamu lihat di gambar ini?" });
+      } catch {
+        userContent = trimmed || "Aku mengirim gambar tapi gagal diproses.";
+      }
+    } else if (attachmentData?.type === "voice") {
+      userContent = trimmed || "Aku mengirim voice note.";
+    } else if (attachmentData?.type === "document") {
+      userContent = trimmed || `Aku mengirim dokumen: ${attachmentData.name}`;
+    } else {
+      userContent = trimmed;
+    }
+
+    const chatMessages = [
+      ...messages.map(m => ({ role: m.role, content: m.content })),
+      { role: "user", content: userContent },
+    ];
+
+    let assistantSoFar = "";
     const upsertAssistant = (chunk: string) => {
       assistantSoFar += chunk;
       setMessages(prev => {
@@ -71,71 +219,7 @@ export function useChat() {
     };
 
     try {
-      const resp = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
-          body: JSON.stringify({ messages: allMessages }),
-        }
-      );
-
-      if (!resp.ok || !resp.body) {
-        const errData = await resp.json().catch(() => ({}));
-        throw new Error(errData.error || "Gagal menghubungi Buddy");
-      }
-
-      const reader = resp.body.getReader();
-      const decoder = new TextDecoder();
-      let textBuffer = "";
-      let streamDone = false;
-
-      while (!streamDone) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        textBuffer += decoder.decode(value, { stream: true });
-
-        let newlineIndex: number;
-        while ((newlineIndex = textBuffer.indexOf("\n")) !== -1) {
-          let line = textBuffer.slice(0, newlineIndex);
-          textBuffer = textBuffer.slice(newlineIndex + 1);
-
-          if (line.endsWith("\r")) line = line.slice(0, -1);
-          if (line.startsWith(":") || line.trim() === "") continue;
-          if (!line.startsWith("data: ")) continue;
-
-          const jsonStr = line.slice(6).trim();
-          if (jsonStr === "[DONE]") { streamDone = true; break; }
-
-          try {
-            const parsed = JSON.parse(jsonStr);
-            const content = parsed.choices?.[0]?.delta?.content as string | undefined;
-            if (content) upsertAssistant(content);
-          } catch {
-            textBuffer = line + "\n" + textBuffer;
-            break;
-          }
-        }
-      }
-
-      if (textBuffer.trim()) {
-        for (let raw of textBuffer.split("\n")) {
-          if (!raw) continue;
-          if (raw.endsWith("\r")) raw = raw.slice(0, -1);
-          if (raw.startsWith(":") || raw.trim() === "") continue;
-          if (!raw.startsWith("data: ")) continue;
-          const jsonStr = raw.slice(6).trim();
-          if (jsonStr === "[DONE]") continue;
-          try {
-            const parsed = JSON.parse(jsonStr);
-            const content = parsed.choices?.[0]?.delta?.content as string | undefined;
-            if (content) upsertAssistant(content);
-          } catch { /* ignore */ }
-        }
-      }
+      await streamChat(chatMessages, upsertAssistant);
 
       if (voiceEnabled && assistantSoFar) {
         setBuddyState("speaking");
@@ -147,9 +231,7 @@ export function useChat() {
     } finally {
       setBuddyState("idle");
     }
-  }, [messages, voiceEnabled]);
+  }, [messages, voiceEnabled, streamChat]);
 
-  return {
-    messages, buddyState, voiceEnabled, setVoiceEnabled, sendMessage,
-  };
+  return { messages, buddyState, voiceEnabled, setVoiceEnabled, sendMessage };
 }
