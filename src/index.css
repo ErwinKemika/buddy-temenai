@@ -54,6 +54,53 @@
     --sidebar-border: 220 20% 18%;
     --sidebar-ring: 250 80% 65%;
   }
+
+  .light {
+    --background: 220 20% 96%;
+    --foreground: 220 25% 12%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 220 25% 12%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 25% 12%;
+
+    --primary: 250 70% 55%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 220 20% 92%;
+    --secondary-foreground: 220 25% 30%;
+
+    --muted: 220 15% 90%;
+    --muted-foreground: 220 15% 45%;
+
+    --accent: 200 80% 45%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 55%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 15% 85%;
+    --input: 220 15% 85%;
+    --ring: 250 70% 55%;
+
+    --buddy-accent: 250 70% 55%;
+    --buddy-accent-glow: 230 75% 60%;
+    --buddy-cyan: 200 80% 45%;
+    --buddy-cyan-glow: 200 80% 55%;
+    --buddy-gold: 220 40% 45%;
+    --buddy-body: 225 20% 80%;
+    --buddy-body-light: 225 18% 88%;
+
+    --sidebar-background: 220 20% 94%;
+    --sidebar-foreground: 220 25% 12%;
+    --sidebar-primary: 250 70% 55%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 20% 90%;
+    --sidebar-accent-foreground: 220 25% 12%;
+    --sidebar-border: 220 15% 85%;
+    --sidebar-ring: 250 70% 55%;
+  }
 }
 
 @layer base {
@@ -93,6 +140,16 @@
     );
   }
 
+  .light .buddy-gradient-bg,
+  .buddy-gradient-bg:is(.light *) {
+    background: radial-gradient(
+      ellipse at 50% 40%,
+      hsl(220 20% 96%) 0%,
+      hsl(220 18% 92%) 70%,
+      hsl(225 15% 88%) 100%
+    );
+  }
+
   .buddy-glow {
     box-shadow: 0 0 20px 4px hsl(var(--buddy-accent) / 0.35),
                 0 0 60px 10px hsl(var(--buddy-accent) / 0.15);
@@ -122,6 +179,11 @@
       radial-gradient(1.5px 1.5px at 75% 60%, hsl(0 0% 100% / 0.4), transparent),
       radial-gradient(1px 1px at 20% 85%, hsl(0 0% 100% / 0.3), transparent),
       radial-gradient(1px 1px at 95% 50%, hsl(0 0% 100% / 0.35), transparent);
+  }
+
+  .light .space-stars,
+  .space-stars:is(.light *) {
+    background-image: none;
   }
 
   .orbit-ring {
