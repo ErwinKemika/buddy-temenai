@@ -1,14 +1,15 @@
 import ReactMarkdown from "react-markdown";
-import { Message } from "@/hooks/useChat";
+import { Message, BuddyState } from "@/hooks/useChat";
 import { useRef, useEffect } from "react";
 
 interface Props {
   messages: Message[];
-  isLoading: boolean;
+  buddyState: BuddyState;
 }
 
-const BuddySpeechBubble = ({ messages, isLoading }: Props) => {
+const BuddySpeechBubble = ({ messages, buddyState }: Props) => {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const isLoading = buddyState === "thinking";
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });

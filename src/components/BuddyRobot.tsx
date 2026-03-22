@@ -1,11 +1,16 @@
+import { BuddyState } from "@/hooks/useChat";
+
 interface BuddyRobotProps {
-  isTalking?: boolean;
-  isListening?: boolean;
+  buddyState: BuddyState;
 }
 
-const BuddyRobot = ({ isTalking = false, isListening = false }: BuddyRobotProps) => {
+const BuddyRobot = ({ buddyState }: BuddyRobotProps) => {
+  const isTalking = buddyState === "speaking" || buddyState === "thinking";
+  const isListening = buddyState === "listening";
+  const isSpeaking = buddyState === "speaking";
+
   return (
-    <div className="flex-1 flex items-center justify-center relative overflow-hidden">
+    <div className="flex-1 flex flex-col items-center justify-center relative overflow-hidden">
       {/* Orbit rings */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
         <div className="orbit-ring w-[280px] h-[280px] animate-orbit opacity-40" />
@@ -26,43 +31,53 @@ const BuddyRobot = ({ isTalking = false, isListening = false }: BuddyRobotProps)
       </div>
 
       {/* Robot */}
-      <div className="animate-float relative z-10">
+      <div className={`relative z-10 ${isSpeaking ? 'animate-float-fast' : 'animate-float'}`}>
         {/* Ambient glow behind robot */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 rounded-full bg-primary/10 blur-3xl" />
+        <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 rounded-full blur-3xl transition-colors duration-500 ${
+          isSpeaking ? 'bg-accent/20' : isListening ? 'bg-green-500/15' : 'bg-primary/10'
+        }`} />
 
         {/* Antenna */}
         <div className="flex flex-col items-center mb-0 relative z-10">
-          <div className="w-4 h-4 rounded-full bg-accent animate-antenna" />
+          <div className={`w-4 h-4 rounded-full transition-colors duration-300 ${
+            isSpeaking ? 'bg-accent animate-pulse' : isListening ? 'bg-green-400 animate-pulse' : 'bg-accent animate-antenna'
+          }`} />
           <div className="w-1 h-5 bg-gradient-to-b from-accent/60 to-muted-foreground/40" />
         </div>
 
         {/* Head */}
         <div className="relative animate-head-tilt">
           <div className="w-40 h-32 rounded-[2.5rem] bg-gradient-to-b from-secondary to-card border border-border/50 relative overflow-visible shadow-2xl">
-            {/* Top accent */}
             <div className="absolute top-0 left-0 right-0 h-1 rounded-t-[2.5rem] bg-gradient-to-r from-primary/40 via-accent/60 to-primary/40" />
 
             {/* Face screen area */}
             <div className="absolute inset-3 top-5 bottom-4 rounded-[1.5rem] bg-background/60 border border-border/30 flex items-center justify-center">
-              {/* Eyes */}
               <div className="flex gap-8">
-                <Eye isTalking={isTalking} isListening={isListening} delay={0} />
-                <Eye isTalking={isTalking} isListening={isListening} delay={0.05} />
+                <Eye buddyState={buddyState} delay={0} />
+                <Eye buddyState={buddyState} delay={0.05} />
               </div>
             </div>
 
-            {/* Mouth - below eyes */}
+            {/* Mouth */}
             <div className="absolute bottom-3 left-1/2 -translate-x-1/2">
-              <div
-                className={`h-1 rounded-full transition-all duration-300 ${
-                  isTalking
-                    ? "w-10 bg-accent animate-pulse"
-                    : "w-5 bg-muted-foreground/30"
-                }`}
-              />
+              {isSpeaking ? (
+                <div className="flex items-end gap-[2px] h-3">
+                  {[0, 1, 2, 3, 4].map((i) => (
+                    <div
+                      key={i}
+                      className="w-[3px] bg-accent rounded-full animate-waveform"
+                      style={{ animationDelay: `${i * 0.1}s` }}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className={`h-1 rounded-full transition-all duration-300 ${
+                  isTalking ? "w-10 bg-accent animate-pulse" : "w-5 bg-muted-foreground/30"
+                }`} />
+              )}
             </div>
 
-            {/* Ear accents - golden */}
+            {/* Ear accents */}
             <div className="absolute left-[-6px] top-1/2 -translate-y-1/2 w-3 h-8 rounded-l-full bg-gradient-to-r from-buddy-gold to-buddy-gold/70 shadow-md" />
             <div className="absolute right-[-6px] top-1/2 -translate-y-1/2 w-3 h-8 rounded-r-full bg-gradient-to-l from-buddy-gold to-buddy-gold/70 shadow-md" />
           </div>
@@ -75,51 +90,66 @@ const BuddyRobot = ({ isTalking = false, isListening = false }: BuddyRobotProps)
 
         {/* Body */}
         <div className="relative flex justify-center">
-          {/* Left arm */}
           <div className="absolute -left-10 top-2 animate-arm-left">
             <div className="w-3 h-12 bg-gradient-to-b from-secondary to-card rounded-full border border-border/30" />
-            {/* Joint */}
             <div className="w-4 h-4 rounded-full bg-buddy-gold shadow-sm mx-auto -mt-1" />
-            {/* Hand */}
             <div className="w-5 h-3 rounded-full bg-buddy-gold/80 mx-auto mt-0.5" />
           </div>
 
-          {/* Right arm */}
           <div className="absolute -right-10 top-2 animate-arm-right">
             <div className="w-3 h-12 bg-gradient-to-b from-secondary to-card rounded-full border border-border/30" />
-            {/* Joint */}
             <div className="w-4 h-4 rounded-full bg-buddy-gold shadow-sm mx-auto -mt-1" />
-            {/* Hand */}
             <div className="w-5 h-3 rounded-full bg-buddy-gold/80 mx-auto mt-0.5" />
           </div>
 
-          {/* Torso */}
           <div className="w-28 h-20 rounded-[1.5rem] rounded-t-xl bg-gradient-to-b from-card to-secondary border border-border/40 relative shadow-xl">
-            {/* Chest light */}
             <div className="absolute top-3 left-1/2 -translate-x-1/2 w-6 h-6 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center">
-              <div className={`w-3 h-3 rounded-full bg-primary/60 ${isTalking ? 'animate-pulse' : 'animate-antenna'}`} />
+              <div className={`w-3 h-3 rounded-full transition-colors duration-300 ${
+                isSpeaking ? 'bg-accent animate-pulse' : isListening ? 'bg-green-400 animate-pulse' : 'bg-primary/60 animate-antenna'
+              }`} />
             </div>
-            {/* Body lines */}
             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5">
               <div className="w-8 h-0.5 rounded-full bg-border/60" />
             </div>
           </div>
         </div>
       </div>
+
+      {/* Status text */}
+      <div className="relative z-10 mt-4 h-6">
+        {buddyState === "listening" && (
+          <p className="text-sm text-green-400 animate-pulse font-medium font-orbitron tracking-wider">
+            🎤 Mendengarkan...
+          </p>
+        )}
+        {buddyState === "thinking" && (
+          <p className="text-sm text-accent animate-pulse font-medium font-orbitron tracking-wider">
+            💭 Sedang berpikir...
+          </p>
+        )}
+        {buddyState === "speaking" && (
+          <p className="text-sm text-accent animate-pulse font-medium font-orbitron tracking-wider">
+            🔊 Buddy sedang bicara...
+          </p>
+        )}
+      </div>
     </div>
   );
 };
 
-const Eye = ({ isTalking, isListening, delay }: { isTalking: boolean; isListening: boolean; delay: number }) => {
+const Eye = ({ buddyState, delay }: { buddyState: BuddyState; delay: number }) => {
+  const cls =
+    buddyState === "listening"
+      ? "bg-gradient-to-b from-green-400 to-green-600 animate-pulse"
+      : buddyState === "speaking"
+        ? "bg-gradient-to-b from-accent to-buddy-cyan-glow animate-talk"
+        : buddyState === "thinking"
+          ? "bg-gradient-to-b from-accent to-buddy-cyan-glow animate-think-eye"
+          : "bg-gradient-to-b from-accent to-buddy-cyan-glow animate-blink";
+
   return (
     <div
-      className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 animate-eye-glow ${
-        isListening
-          ? "bg-gradient-to-b from-green-400 to-green-600 animate-pulse"
-          : isTalking
-            ? "bg-gradient-to-b from-accent to-buddy-cyan-glow animate-talk"
-            : "bg-gradient-to-b from-accent to-buddy-cyan-glow animate-blink"
-      }`}
+      className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 animate-eye-glow ${cls}`}
       style={{ animationDelay: `${delay}s` }}
     >
       <div className="w-3 h-3 rounded-full bg-primary-foreground/90" />
