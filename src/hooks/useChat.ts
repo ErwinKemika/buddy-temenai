@@ -1,4 +1,5 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
+import { CommitStrategy, useScribe } from "@elevenlabs/react";
 
 export type Message = { role: "user" | "assistant"; content: string };
 
@@ -47,7 +48,8 @@ export function useChat() {
   const [isListening, setIsListening] = useState(false);
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [liveTranscript, setLiveTranscript] = useState("");
-  const scribeRef = useRef<{ ws: WebSocket | null; finalText: string }>({ ws: null, finalText: "" });
+  const scribeFinalTextRef = useRef("");
+  const sendMessageRef = useRef<(input: string) => Promise<void>>(async () => {});
 
   const sendMessage = useCallback(async (input: string) => {
     const userMsg: Message = { role: "user", content: input };
@@ -153,12 +155,50 @@ export function useChat() {
     }
   }, [messages, voiceEnabled]);
 
+  sendMessageRef.current = sendMessage;
+
+  const scribe = useScribe({
+    modelId: "scribe_v2_realtime",
+    languageCode: "id",
+    commitStrategy: CommitStrategy.VAD,
+    onConnect: () => {
+      setIsListening(true);
+      setLiveTranscript("");
+      scribeFinalTextRef.current = "";
+    },
+    onPartialTranscript: (data) => {
+      const finalText = scribeFinalTextRef.current;
+      const nextText = [finalText, data.text.trim()].filter(Boolean).join(" ").trim();
+      setLiveTranscript(nextText);
+    },
+    onCommittedTranscript: (data) => {
+      const committed = data.text.trim();
+      if (!committed) return;
+
+      scribeFinalTextRef.current = [scribeFinalTextRef.current, committed].filter(Boolean).join(" ").trim();
+      setLiveTranscript(scribeFinalTextRef.current);
+    },
+    onDisconnect: () => {
+      setIsListening(false);
+    },
+    onError: (error) => {
+      console.error("STT error:", error);
+      setIsListening(false);
+    },
+  });
+
+  useEffect(() => {
+    return () => {
+      if (scribe.isConnected) {
+        scribe.disconnect();
+      }
+    };
+  }, [scribe]);
+
   const startListening = useCallback(async () => {
     try {
-      // Request mic permission
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      if (scribe.isConnected) return;
 
-      // Get scribe token
       const tokenResp = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/scribe-token`,
         {
@@ -178,114 +218,36 @@ export function useChat() {
       const { token } = await tokenResp.json();
       if (!token) throw new Error("Token STT kosong");
 
-      setIsListening(true);
-      setLiveTranscript("");
-      scribeRef.current.finalText = "";
-
-      // Connect WebSocket to ElevenLabs realtime scribe
-      const ws = new WebSocket(
-        `wss://api.elevenlabs.io/v1/speech-to-text/realtime?model_id=scribe_v2_realtime&token=${token}&language_code=id`
-      );
-      scribeRef.current.ws = ws;
-
-      ws.onopen = () => {
-        console.log("STT WebSocket connected");
-
-        // Set up audio capture via AudioWorklet or ScriptProcessor
-        const audioCtx = new AudioContext({ sampleRate: 16000 });
-        const source = audioCtx.createMediaStreamSource(stream);
-        const processor = audioCtx.createScriptProcessor(4096, 1, 1);
-
-        processor.onaudioprocess = (e) => {
-          if (ws.readyState !== WebSocket.OPEN) return;
-          const inputData = e.inputBuffer.getChannelData(0);
-          // Convert float32 to int16
-          const int16 = new Int16Array(inputData.length);
-          for (let i = 0; i < inputData.length; i++) {
-            const s = Math.max(-1, Math.min(1, inputData[i]));
-            int16[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
-          }
-          // Convert to base64
-          const bytes = new Uint8Array(int16.buffer);
-          let binary = "";
-          for (let i = 0; i < bytes.length; i++) {
-            binary += String.fromCharCode(bytes[i]);
-          }
-          const base64 = btoa(binary);
-
-          ws.send(JSON.stringify({
-            audio: base64,
-          }));
-        };
-
-        source.connect(processor);
-        processor.connect(audioCtx.destination);
-
-        // Store references for cleanup
-        (ws as any)._audioCtx = audioCtx;
-        (ws as any)._stream = stream;
-        (ws as any)._processor = processor;
-        (ws as any)._source = source;
-      };
-
-      ws.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          if (data.type === "transcript" && data.transcript?.text) {
-            if (data.transcript.is_final) {
-              scribeRef.current.finalText += (scribeRef.current.finalText ? " " : "") + data.transcript.text;
-              setLiveTranscript(scribeRef.current.finalText);
-            } else {
-              setLiveTranscript(scribeRef.current.finalText + (scribeRef.current.finalText ? " " : "") + data.transcript.text);
-            }
-          }
-        } catch { /* ignore */ }
-      };
-
-      ws.onerror = (err) => {
-        console.error("STT WebSocket error:", err);
-      };
-
-      ws.onclose = () => {
-        console.log("STT WebSocket closed");
-      };
+      await scribe.connect({
+        token,
+        microphone: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
+      });
     } catch (e) {
       console.error("Start listening error:", e);
       setIsListening(false);
     }
-  }, []);
+  }, [scribe]);
 
   const stopListening = useCallback(() => {
-    const ws = scribeRef.current.ws;
-    if (ws) {
-      // Clean up audio
-      const audioCtx = (ws as any)._audioCtx as AudioContext | undefined;
-      const stream = (ws as any)._stream as MediaStream | undefined;
-      const processor = (ws as any)._processor as ScriptProcessorNode | undefined;
-      const source = (ws as any)._source as MediaStreamAudioSourceNode | undefined;
-
-      if (processor && source) {
-        source.disconnect();
-        processor.disconnect();
-      }
-      if (audioCtx) audioCtx.close();
-      if (stream) stream.getTracks().forEach(t => t.stop());
-
-      ws.close();
-      scribeRef.current.ws = null;
+    if (scribe.isConnected) {
+      scribe.disconnect();
     }
 
     setIsListening(false);
 
-    // Send the final transcript as a message
-    const finalText = scribeRef.current.finalText.trim();
+    const finalText = scribeFinalTextRef.current.trim();
     if (finalText) {
+      scribeFinalTextRef.current = "";
       setLiveTranscript("");
-      sendMessage(finalText);
+      void sendMessageRef.current(finalText);
     } else {
       setLiveTranscript("");
     }
-  }, [sendMessage]);
+  }, [scribe]);
 
   return {
     messages, isLoading, isSpeaking, isListening, liveTranscript,
