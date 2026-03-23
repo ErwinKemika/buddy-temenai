@@ -76,7 +76,7 @@ async function playTTS(text: string): Promise<void> {
       apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
       Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
     },
-    body: JSON.stringify({ text: cleanText.slice(0, 500), voiceId: "EXAVITQu4vr4xnSDxMaL" }),
+    body: JSON.stringify({ text: cleanText.slice(0, 500), voiceId: "SCDJ1Fy4al0KS1awS6H9" }),
   });
 
   if (!response.ok) throw new Error(`TTS failed: ${response.status}`);

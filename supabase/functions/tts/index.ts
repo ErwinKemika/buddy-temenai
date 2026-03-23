@@ -34,8 +34,9 @@ serve(async (req) => {
       });
     }
 
-    const selectedVoice = voiceId || "EXAVITQu4vr4xnSDxMaL";
+    const selectedVoice = voiceId || "SCDJ1Fy4al0KS1awS6H9";
     const ttsUrl = `https://api.elevenlabs.io/v1/text-to-speech/${selectedVoice}?output_format=mp3_44100_128`;
+    console.log("[TTS] Using voice_id:", selectedVoice);
     console.log("[TTS] Calling ElevenLabs:", ttsUrl);
 
     const response = await fetch(ttsUrl, {
