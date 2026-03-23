@@ -76,6 +76,7 @@ const Index = () => {
         reminders={reminders}
         onDelete={deleteReminder}
       />
+      <BottomNav />
     </div>
   );
 };
