@@ -14,13 +14,16 @@ const STORAGE_KEY = "buddy-reminders";
 function loadReminders(): Reminder[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
+    const parsed = raw ? JSON.parse(raw) : [];
+    console.log("[Reminder Load] Loaded reminders:", parsed);
+    return parsed;
   } catch {
     return [];
   }
 }
 
 function saveReminders(reminders: Reminder[]) {
+  console.log("[Reminder Save] Persisting reminder list:", reminders);
   localStorage.setItem(STORAGE_KEY, JSON.stringify(reminders));
 }
 
@@ -42,13 +45,23 @@ export function useReminders(onTrigger: (message: string) => void) {
       console.log(`[Reminder Check] Current time: ${nowDate.toLocaleString()}`);
 
       setReminders(prev => {
+        console.log(`[Reminder Check] Total reminders: ${prev.length}`);
+        console.log("[Reminder Check] Full reminder list:", prev);
+
+        if (prev.length === 0) {
+          console.log("[Reminder Check] No reminders saved");
+          return prev;
+        }
+
         let changed = false;
         const triggers: Array<() => void> = [];
         const updated = prev.map(r => {
           const target = new Date(r.dateTime).getTime();
           const copy = { ...r };
 
-          console.log(`[Reminder] "${r.title}" target: ${new Date(target).toLocaleString()}, fired: ${r.fired}, earlyFired: ${r.earlyFired}, diff: ${Math.round((target - now) / 1000)}s`);
+          console.log(
+            `[Reminder Check] title="${r.title}" target="${new Date(target).toLocaleString()}" iso="${r.dateTime}" fired=${r.fired} earlyFired=${r.earlyFired} diff=${Math.round((target - now) / 1000)}s`
+          );
 
           // Early reminder
           if (r.earlyMinutes > 0 && !r.earlyFired) {
@@ -70,7 +83,7 @@ export function useReminders(onTrigger: (message: string) => void) {
             console.log(`[Reminder TRIGGERED] "${r.title}": ${msg}`);
             triggers.push(() => onTriggerRef.current(msg));
           } else if (r.fired) {
-            console.log(`[Reminder] "${r.title}" already fired, skipping.`);
+            console.log(`[Reminder Check] "${r.title}" already fired, skipping.`);
           }
 
           return copy;
@@ -101,9 +114,14 @@ export function useReminders(onTrigger: (message: string) => void) {
       earlyFired: false,
       fired: false,
     };
-    console.log(`[Reminder Added]`, JSON.stringify(newReminder, null, 2));
-    console.log(`[Reminder Added] Target local: ${new Date(dateTime).toLocaleString()}`);
-    setReminders(prev => [...prev, newReminder]);
+    console.log(`[Reminder Save] Raw input -> title="${title}" dateTime="${dateTime}" earlyMinutes=${earlyMinutes}`);
+    console.log(`[Reminder Save] Parsed target local: ${new Date(dateTime).toLocaleString()}`);
+    setReminders(prev => {
+      const updated = [...prev, newReminder];
+      console.log("[Reminder Save] Saved reminder:", newReminder);
+      console.log("[Reminder Save] Updated reminder list:", updated);
+      return updated;
+    });
   }, []);
 
   const deleteReminder = useCallback((id: string) => {
