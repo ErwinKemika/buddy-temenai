@@ -101,6 +101,8 @@ export function useReminders(onTrigger: (message: string) => void) {
       earlyFired: false,
       fired: false,
     };
+    console.log(`[Reminder Added]`, JSON.stringify(newReminder, null, 2));
+    console.log(`[Reminder Added] Target local: ${new Date(dateTime).toLocaleString()}`);
     setReminders(prev => [...prev, newReminder]);
   }, []);
 
