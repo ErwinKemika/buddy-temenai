@@ -26,7 +26,16 @@ const AddReminderDialog = ({ open, onClose, onAdd }: Props) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !date || !time) return;
-    const dateTime = new Date(`${date}T${time}`).toISOString();
+    
+    const [year, month, day] = date.split("-").map(Number);
+    const [hours, minutes] = time.split(":").map(Number);
+    const localDate = new Date(year, month - 1, day, hours, minutes, 0);
+    const dateTime = localDate.toISOString();
+    
+    console.log(`[Reminder Save] raw: date="${date}" time="${time}"`);
+    console.log(`[Reminder Save] local: ${localDate.toLocaleString()}`);
+    console.log(`[Reminder Save] ISO: ${dateTime}`);
+    
     onAdd(title.trim(), dateTime, earlyMinutes);
     setTitle("");
     setDate("");

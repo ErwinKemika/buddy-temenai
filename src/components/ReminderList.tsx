@@ -47,6 +47,7 @@ const ReminderList = ({ open, onClose, reminders, onDelete }: Props) => {
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-foreground truncate">{r.title}</p>
                   <p className="text-xs text-muted-foreground">{formatDateTime(r.dateTime)}</p>
+                  <p className="text-[10px] text-muted-foreground/60 font-mono">{r.dateTime}</p>
                   {r.earlyMinutes > 0 && (
                     <p className="text-[10px] text-accent">{r.earlyMinutes} menit sebelum</p>
                   )}
