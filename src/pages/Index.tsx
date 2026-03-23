@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import BuddyHeader from "@/components/BuddyHeader";
 import BuddyRobot from "@/components/BuddyRobot";
 import BuddyControlBar from "@/components/BuddyControlBar";
+import BottomNav from "@/components/BottomNav";
 import BuddySpeechBubble from "@/components/BuddySpeechBubble";
 import AddReminderDialog from "@/components/AddReminderDialog";
 import ReminderList from "@/components/ReminderList";
