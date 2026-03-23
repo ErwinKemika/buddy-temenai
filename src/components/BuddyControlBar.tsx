@@ -1,4 +1,4 @@
-import { Send, Volume2, VolumeX, Plus, Mic, Bell } from "lucide-react";
+import { Send, Volume2, VolumeX, Plus, Mic, AlarmClock } from "lucide-react";
 import { useState } from "react";
 import { BuddyState } from "@/hooks/useChat";
 import AttachmentMenu from "./AttachmentMenu";
@@ -101,7 +101,7 @@ const BuddyControlBar = ({
             className="p-2 rounded-full text-primary active:bg-primary/20 transition-colors shrink-0 disabled:opacity-30"
             aria-label="Tambah pengingat"
           >
-            <Bell size={20} />
+            <AlarmClock size={20} />
           </button>
         )}
 
