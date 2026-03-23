@@ -7,12 +7,19 @@ import { useChat } from "@/hooks/useChat";
 const Index = () => {
   const {
     messages, buddyState,
-    voiceEnabled, setVoiceEnabled, sendMessage,
+    voiceEnabled, setVoiceEnabled,
+    autoPlayVoice, setAutoPlayVoice,
+    sendMessage,
   } = useChat();
 
   return (
     <div className="h-[100dvh] w-full flex flex-col buddy-gradient-bg space-stars overflow-hidden safe-area-inset">
-      <BuddyHeader />
+      <BuddyHeader
+        voiceEnabled={voiceEnabled}
+        onToggleVoice={() => setVoiceEnabled(v => !v)}
+        autoPlayVoice={autoPlayVoice}
+        onToggleAutoPlay={() => setAutoPlayVoice(v => !v)}
+      />
       <BuddyRobot buddyState={buddyState} />
       <BuddySpeechBubble messages={messages} buddyState={buddyState} />
       <BuddyControlBar
