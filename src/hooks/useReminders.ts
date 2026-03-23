@@ -34,16 +34,21 @@ export function useReminders(onTrigger: (message: string) => void) {
     saveReminders(reminders);
   }, [reminders]);
 
-  // Check every 15 seconds
+  // Check every 5 seconds
   useEffect(() => {
-    const interval = setInterval(() => {
+    const check = () => {
       const now = Date.now();
+      const nowDate = new Date(now);
+      console.log(`[Reminder Check] Current time: ${nowDate.toLocaleString()}`);
 
       setReminders(prev => {
         let changed = false;
+        const triggers: Array<() => void> = [];
         const updated = prev.map(r => {
           const target = new Date(r.dateTime).getTime();
           const copy = { ...r };
+
+          console.log(`[Reminder] "${r.title}" target: ${new Date(target).toLocaleString()}, fired: ${r.fired}, earlyFired: ${r.earlyFired}, diff: ${Math.round((target - now) / 1000)}s`);
 
           // Early reminder
           if (r.earlyMinutes > 0 && !r.earlyFired) {
@@ -51,7 +56,9 @@ export function useReminders(onTrigger: (message: string) => void) {
             if (now >= earlyTime && now < target) {
               copy.earlyFired = true;
               changed = true;
-              onTriggerRef.current(`Halo, ${r.earlyMinutes} menit lagi kamu ada ${r.title}.`);
+              const msg = `Halo, ${r.earlyMinutes} menit lagi kamu ada ${r.title}.`;
+              console.log(`[Reminder EARLY TRIGGERED] "${r.title}": ${msg}`);
+              triggers.push(() => onTriggerRef.current(msg));
             }
           }
 
@@ -59,15 +66,28 @@ export function useReminders(onTrigger: (message: string) => void) {
           if (!r.fired && now >= target) {
             copy.fired = true;
             changed = true;
-            onTriggerRef.current(`Halo, sekarang waktunya ${r.title}. Semangat ya! 💪`);
+            const msg = `Halo, sekarang waktunya ${r.title}. Semangat ya! 💪`;
+            console.log(`[Reminder TRIGGERED] "${r.title}": ${msg}`);
+            triggers.push(() => onTriggerRef.current(msg));
+          } else if (r.fired) {
+            console.log(`[Reminder] "${r.title}" already fired, skipping.`);
           }
 
           return copy;
         });
 
+        // Fire triggers outside setState to avoid issues
+        if (triggers.length > 0) {
+          setTimeout(() => triggers.forEach(fn => fn()), 0);
+        }
+
         return changed ? updated : prev;
       });
-    }, 15_000);
+    };
+
+    // Run immediately on mount
+    check();
+    const interval = setInterval(check, 5_000);
 
     return () => clearInterval(interval);
   }, []);
