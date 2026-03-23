@@ -96,10 +96,45 @@ async function playTTS(text: string): Promise<void> {
   });
 }
 
+/**
+ * Determine if a response should be spoken aloud.
+ * Only short, friendly messages (greetings, reminders, 1-2 sentences).
+ */
+function shouldSpeak(text: string): boolean {
+  const clean = text.replace(/[#*_~`>\[\]()!]/g, "").trim();
+
+  // Too long → don't speak
+  if (clean.length > 200) return false;
+
+  // Count sentences (rough: split by . ! ? and filter empties)
+  const sentences = clean.split(/[.!?]+/).filter(s => s.trim().length > 3);
+  if (sentences.length > 2) return false;
+
+  // Has code blocks or lists → don't speak
+  if (/```/.test(text) || /^\s*[-*]\s/m.test(text) || /^\s*\d+\.\s/m.test(text)) return false;
+
+  return true;
+}
+
+/**
+ * Extract speakable portion: first 1-2 sentences, max ~150 chars.
+ */
+function extractSpeakableText(text: string): string {
+  const clean = text.replace(/[#*_~`>\[\]()!]/g, "").replace(/\n+/g, " ").trim();
+  const sentences = clean.match(/[^.!?]+[.!?]*/g) || [clean];
+  let result = "";
+  for (const s of sentences.slice(0, 2)) {
+    if ((result + s).length > 150) break;
+    result += s;
+  }
+  return result.trim() || clean.slice(0, 100);
+}
+
 export function useChat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [buddyState, setBuddyState] = useState<BuddyState>("idle");
   const [voiceEnabled, setVoiceEnabled] = useState(true);
+  const [autoPlayVoice, setAutoPlayVoice] = useState(true);
 
   const streamChat = useCallback(async (
     chatMessages: Array<{ role: string; content: any }>,
@@ -260,9 +295,11 @@ export function useChat() {
     try {
       await streamChat(chatMessages, upsertAssistant);
 
-      if (voiceEnabled && assistantSoFar) {
+      // Smart voice: only speak if voice is enabled, autoplay is on, and content is short/friendly
+      if (voiceEnabled && autoPlayVoice && assistantSoFar && shouldSpeak(assistantSoFar)) {
         setBuddyState("speaking");
-        try { await playTTS(assistantSoFar); } catch (e) { console.error("[TTS] Error:", e); }
+        const speakText = extractSpeakableText(assistantSoFar);
+        try { await playTTS(speakText); } catch (e) { console.error("[TTS] Error:", e); }
       }
     } catch (e) {
       console.error("[Chat] Error:", e);
@@ -270,7 +307,7 @@ export function useChat() {
     } finally {
       setBuddyState("idle");
     }
-  }, [messages, voiceEnabled, streamChat]);
+  }, [messages, voiceEnabled, autoPlayVoice, streamChat]);
 
-  return { messages, buddyState, voiceEnabled, setVoiceEnabled, sendMessage };
+  return { messages, buddyState, voiceEnabled, setVoiceEnabled, autoPlayVoice, setAutoPlayVoice, sendMessage };
 }

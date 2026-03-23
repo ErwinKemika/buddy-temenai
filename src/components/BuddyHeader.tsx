@@ -1,13 +1,21 @@
-import { Settings, Moon, Sun } from "lucide-react";
+import { Settings, Moon, Sun, Volume2, VolumeX, Play, Pause } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-const BuddyHeader = () => {
+interface Props {
+  voiceEnabled: boolean;
+  onToggleVoice: () => void;
+  autoPlayVoice: boolean;
+  onToggleAutoPlay: () => void;
+}
+
+const BuddyHeader = ({ voiceEnabled, onToggleVoice, autoPlayVoice, onToggleAutoPlay }: Props) => {
   const { theme, toggleTheme } = useTheme();
 
   return (
@@ -30,19 +38,23 @@ const BuddyHeader = () => {
             <Settings size={22} className="text-muted-foreground" />
           </button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="min-w-[160px]">
+        <DropdownMenuContent align="end" className="min-w-[180px]">
           <DropdownMenuItem onClick={toggleTheme} className="gap-2 cursor-pointer">
-            {theme === "dark" ? (
-              <>
-                <Sun size={16} />
-                <span>Mode Terang</span>
-              </>
-            ) : (
-              <>
-                <Moon size={16} />
-                <span>Mode Gelap</span>
-              </>
-            )}
+            {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+            <span>{theme === "dark" ? "Mode Terang" : "Mode Gelap"}</span>
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={onToggleVoice} className="gap-2 cursor-pointer">
+            {voiceEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
+            <span>Suara {voiceEnabled ? "ON" : "OFF"}</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={onToggleAutoPlay}
+            disabled={!voiceEnabled}
+            className="gap-2 cursor-pointer"
+          >
+            {autoPlayVoice ? <Pause size={16} /> : <Play size={16} />}
+            <span>Auto-play {autoPlayVoice ? "ON" : "OFF"}</span>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
