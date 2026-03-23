@@ -14,7 +14,7 @@ interface Props {
 
 const BuddyControlBar = ({
   onSendMessage, buddyState,
-  voiceEnabled, onToggleVoice,
+  voiceEnabled, onToggleVoice, onAddReminder,
 }: Props) => {
   const [input, setInput] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
