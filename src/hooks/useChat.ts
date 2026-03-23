@@ -305,9 +305,18 @@ export function useChat() {
       console.error("[Chat] Error:", e);
       upsertAssistant("Maaf, aku sedang gangguan. Coba lagi ya! 😅");
     } finally {
-      setBuddyState("idle");
+    setBuddyState("idle");
     }
   }, [messages, voiceEnabled, autoPlayVoice, streamChat]);
 
-  return { messages, buddyState, voiceEnabled, setVoiceEnabled, autoPlayVoice, setAutoPlayVoice, sendMessage };
+  const injectReminderMessage = useCallback(async (text: string, speak: boolean) => {
+    setMessages(prev => [...prev, { role: "assistant", content: text }]);
+    if (speak) {
+      setBuddyState("speaking");
+      try { await playTTS(text); } catch (e) { console.error("[TTS Reminder]", e); }
+      setBuddyState("idle");
+    }
+  }, []);
+
+  return { messages, buddyState, voiceEnabled, setVoiceEnabled, autoPlayVoice, setAutoPlayVoice, sendMessage, injectReminderMessage };
 }

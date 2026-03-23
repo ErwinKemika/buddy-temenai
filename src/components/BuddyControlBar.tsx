@@ -9,6 +9,7 @@ interface Props {
   buddyState: BuddyState;
   voiceEnabled: boolean;
   onToggleVoice: () => void;
+  onAddReminder?: () => void;
 }
 
 const BuddyControlBar = ({
