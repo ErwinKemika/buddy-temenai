@@ -1,4 +1,4 @@
-import { Send, Volume2, VolumeX, Plus, Mic } from "lucide-react";
+import { Send, Volume2, VolumeX, Plus, Mic, Bell } from "lucide-react";
 import { useState } from "react";
 import { BuddyState } from "@/hooks/useChat";
 import AttachmentMenu from "./AttachmentMenu";
@@ -9,11 +9,12 @@ interface Props {
   buddyState: BuddyState;
   voiceEnabled: boolean;
   onToggleVoice: () => void;
+  onAddReminder?: () => void;
 }
 
 const BuddyControlBar = ({
   onSendMessage, buddyState,
-  voiceEnabled, onToggleVoice,
+  voiceEnabled, onToggleVoice, onAddReminder,
 }: Props) => {
   const [input, setInput] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
@@ -93,10 +94,21 @@ const BuddyControlBar = ({
           </button>
         </form>
 
+        {onAddReminder && (
+          <button
+            onClick={onAddReminder}
+            disabled={isBusy}
+            className="p-2 rounded-full text-primary active:bg-primary/20 transition-colors shrink-0 disabled:opacity-30"
+            aria-label="Tambah pengingat"
+          >
+            <Bell size={20} />
+          </button>
+        )}
+
         <button
           onClick={() => setRecording(true)}
           disabled={isBusy}
-          className="p-2 rounded-full text-rose-400 active:bg-rose-500/20 transition-colors shrink-0 disabled:opacity-30"
+          className="p-2 rounded-full text-destructive active:bg-destructive/20 transition-colors shrink-0 disabled:opacity-30"
           aria-label="Voice note"
         >
           <Mic size={20} />
