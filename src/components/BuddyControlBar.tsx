@@ -9,12 +9,11 @@ interface Props {
   buddyState: BuddyState;
   voiceEnabled: boolean;
   onToggleVoice: () => void;
-  onAddReminder?: () => void;
 }
 
 const BuddyControlBar = ({
   onSendMessage, buddyState,
-  voiceEnabled, onToggleVoice, onAddReminder,
+  voiceEnabled, onToggleVoice,
 }: Props) => {
   const [input, setInput] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
