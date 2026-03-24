@@ -520,12 +520,14 @@ const FocusPage = () => {
 
 const FocusEye = ({ state, delay }: { state: TimerState; delay: number }) => {
   const cls = state === "running"
-    ? "bg-gradient-to-b from-accent to-buddy-cyan-glow"
-    : state === "finished"
-      ? "bg-gradient-to-b from-green-400 to-accent animate-pulse"
-      : "bg-gradient-to-b from-accent to-buddy-cyan-glow animate-blink";
+    ? "bg-gradient-to-b from-green-400 to-green-500"
+    : state === "paused"
+      ? "bg-gradient-to-b from-red-400 to-red-500 animate-pulse"
+      : state === "finished"
+        ? "bg-gradient-to-b from-accent to-buddy-cyan-glow animate-pulse"
+        : "bg-gradient-to-b from-accent to-buddy-cyan-glow animate-blink";
   return (
-    <div className={`w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200 ${cls}`}
+    <div className={`w-9 h-9 rounded-full flex items-center justify-center transition-all duration-500 ${cls}`}
       style={{ animationDelay: `${delay}s` }}>
       <div className="w-3.5 h-3.5 rounded-full bg-primary-foreground/90" />
     </div>
