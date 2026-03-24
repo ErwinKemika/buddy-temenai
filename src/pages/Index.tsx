@@ -120,12 +120,7 @@ const Index = () => {
   return (
     <div className="h-[100dvh] w-full flex flex-col buddy-gradient-bg space-stars overflow-hidden safe-area-inset">
       <BuddyHeader />
-      <div
-        className="transition-opacity duration-700 ease-in-out"
-        style={{ opacity: hasConversation ? 0.15 : 1 }}
-      >
-        <BuddyRobot buddyState={buddyState} />
-      </div>
+      <BuddyRobot buddyState={buddyState} opacity={hasConversation ? 0.15 : 1} />
       <BuddySpeechBubble messages={messages} buddyState={buddyState} />
       <BuddyControlBar
         onSendMessage={handleSendMessage}
