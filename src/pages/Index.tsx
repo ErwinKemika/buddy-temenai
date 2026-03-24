@@ -115,10 +115,17 @@ const Index = () => {
     void sendMessage(input, attachment);
   }, [sendMessage]);
 
+  const hasMessages = messages.length > 0;
+
   return (
     <div className="h-[100dvh] w-full flex flex-col buddy-gradient-bg space-stars overflow-hidden safe-area-inset">
       <BuddyHeader />
-      <BuddyRobot buddyState={buddyState} />
+      <div
+        className="transition-opacity duration-1000 ease-in-out"
+        style={{ opacity: hasMessages ? 0.18 : 1 }}
+      >
+        <BuddyRobot buddyState={buddyState} />
+      </div>
       <BuddySpeechBubble messages={messages} buddyState={buddyState} />
       <BuddyControlBar
         onSendMessage={handleSendMessage}
