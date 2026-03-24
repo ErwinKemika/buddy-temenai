@@ -336,7 +336,7 @@ const FocusPage = () => {
         </div>
 
         {/* Controls */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 mb-5">
           {timerState === "idle" && (
             <button onClick={startTimer}
               className="flex items-center gap-2 bg-primary text-primary-foreground px-8 py-3.5 rounded-full text-sm font-semibold active:scale-95 transition-all shadow-lg shadow-primary/25">
@@ -378,6 +378,42 @@ const FocusPage = () => {
             </button>
           )}
         </div>
+
+        {/* Task list - visible breakdown */}
+        {focusTasks.length > 0 && (
+          <div className="w-full max-w-xs">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2 text-center">
+              {focusTasks.length} tugas fokus
+            </p>
+            <div className="bg-card/60 backdrop-blur-sm border border-border/40 rounded-2xl overflow-hidden max-h-[160px] overflow-y-auto">
+              {focusTasks.map((task, idx) => (
+                <button
+                  key={task.id}
+                  onClick={() => setActiveIdx(idx)}
+                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 text-left transition-colors ${
+                    idx === activeIdx ? "bg-primary/10" : "active:bg-secondary/60"
+                  } ${idx > 0 ? "border-t border-border/20" : ""}`}
+                >
+                  <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${PRIORITY_DOT[task.priority]}`} />
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-xs font-medium truncate ${idx === activeIdx ? "text-foreground" : "text-muted-foreground"}`}>{task.title}</p>
+                    {task.startTime && <p className="text-[10px] text-muted-foreground/60">{task.startTime}{task.endTime ? ` – ${task.endTime}` : ""}</p>}
+                  </div>
+                  {idx === activeIdx && <div className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" />}
+                  {timerState === "finished" && idx === activeIdx && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); markTaskDone(); }}
+                      className="flex items-center gap-1 text-[10px] text-accent active:scale-95 transition-all flex-shrink-0"
+                    >
+                      <CheckCircle2 size={12} />
+                      Done
+                    </button>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       <BottomNav />
