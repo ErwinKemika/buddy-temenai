@@ -31,7 +31,12 @@ const BuddySpeechBubble = ({ messages, buddyState }: Props) => {
   }
 
   return (
-    <div ref={scrollRef} className="px-4 pb-2 overflow-y-auto max-h-[35vh] flex flex-col gap-2">
+    <div className="relative px-4 pb-2 max-h-[35vh]">
+      {/* Top fade gradient overlay */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-16 z-10"
+        style={{ background: "linear-gradient(to bottom, hsl(var(--background)) 0%, transparent 100%)" }}
+      />
+      <div ref={scrollRef} className="overflow-y-auto max-h-[35vh] flex flex-col gap-2">
       {lastMessages.map((msg, i) => (
         <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
           <div
