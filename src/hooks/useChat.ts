@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { format, addDays, startOfWeek, endOfWeek, isToday, isTomorrow, isPast, parseISO } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
@@ -191,28 +191,11 @@ function extractSpeakableText(text: string): string {
   return result.trim() || clean.slice(0, 100);
 }
 
-const CHAT_STORAGE_KEY = "buddy-chat-messages";
-
-function loadPersistedMessages(): Message[] {
-  try {
-    const raw = localStorage.getItem(CHAT_STORAGE_KEY);
-    if (!raw) return [];
-    return JSON.parse(raw) as Message[];
-  } catch { return []; }
-}
-
 export function useChat() {
-  const [messages, setMessages] = useState<Message[]>(loadPersistedMessages);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [buddyState, setBuddyState] = useState<BuddyState>("idle");
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [autoPlayVoice, setAutoPlayVoice] = useState(true);
-
-  // Persist messages to localStorage whenever they change
-  useEffect(() => {
-    // Keep only last 50 messages to avoid storage bloat
-    const toSave = messages.slice(-50);
-    localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(toSave));
-  }, [messages]);
 
   const streamChat = useCallback(async (
     chatMessages: Array<{ role: string; content: any }>,

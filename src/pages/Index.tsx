@@ -116,16 +116,10 @@ const Index = () => {
   }, [sendMessage]);
 
   return (
-    <div className="h-[100dvh] w-full flex flex-col buddy-gradient-bg space-stars overflow-hidden safe-area-inset relative">
+    <div className="h-[100dvh] w-full flex flex-col buddy-gradient-bg space-stars overflow-hidden safe-area-inset">
       <BuddyHeader />
-      {/* Buddy fixed behind chat, pushed down slightly */}
-      <div className="absolute inset-x-0 top-[72px] bottom-0 flex items-start justify-center pt-8 z-0 pointer-events-none">
-        <BuddyRobot buddyState={buddyState} />
-      </div>
-      {/* Chat + controls layered above Buddy */}
-      <div className="flex-1 flex flex-col justify-end relative z-10">
-        <BuddySpeechBubble messages={messages} buddyState={buddyState} />
-      </div>
+      <BuddyRobot buddyState={buddyState} />
+      <BuddySpeechBubble messages={messages} buddyState={buddyState} />
       <BuddyControlBar
         onSendMessage={handleSendMessage}
         buddyState={buddyState}
