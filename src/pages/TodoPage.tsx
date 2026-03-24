@@ -363,6 +363,14 @@ const TodoPage = () => {
       {/* Mini Buddy header */}
       <header className="relative px-4 pt-[env(safe-area-inset-top,12px)] pb-2 bg-card/40 backdrop-blur-md border-b border-border/30 overflow-hidden">
         <div className="flex items-center gap-3 pt-2">
+          {/* Voice toggle */}
+          <button
+            onClick={toggleVoice}
+            className="absolute top-[env(safe-area-inset-top,12px)] right-3 mt-2 p-1.5 rounded-full bg-card/60 backdrop-blur-sm border border-border/30 z-10 transition-colors"
+            aria-label={voiceEnabled ? "Matikan suara Buddy" : "Nyalakan suara Buddy"}
+          >
+            {voiceEnabled ? <Volume2 size={14} className="text-accent" /> : <VolumeX size={14} className="text-muted-foreground" />}
+          </button>
           {/* Mini Buddy Robot */}
           <div className="relative shrink-0 animate-buddy-header-float">
             {/* Glow */}
