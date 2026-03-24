@@ -634,7 +634,7 @@ const TodoPage = () => {
               </button>
               <button onClick={addTask} disabled={!newTask.trim()}
                 className="flex-1 py-2 rounded-lg text-xs bg-primary text-primary-foreground active:bg-primary/80 disabled:opacity-30">
-                Simpan
+                {editingTaskId ? "Update" : "Simpan"}
               </button>
             </div>
           </div>
