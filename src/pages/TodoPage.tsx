@@ -323,12 +323,9 @@ const TodoPage = () => {
     }
   };
 
-  const startTask = (id: string) => {
-    setTasks(prev =>
-      prev.map(t =>
-        t.id === id ? { ...t, isRunning: true, status: "in_progress" as Status, startedAt: t.startedAt || new Date().toISOString() } : t
-      )
-    );
+  const startTask = (_id: string) => {
+    // Task execution moved to Focus page
+  
     updateBuddyMsg("Gas! Semangat kerjain! 🔥");
   };
 
