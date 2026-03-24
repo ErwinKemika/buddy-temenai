@@ -118,8 +118,20 @@ const Index = () => {
   return (
     <div className="h-[100dvh] w-full flex flex-col buddy-gradient-bg space-stars overflow-hidden safe-area-inset">
       <BuddyHeader />
-      <BuddyRobot buddyState={buddyState} />
-      <BuddySpeechBubble messages={messages} buddyState={buddyState} />
+
+      {/* Fixed Buddy Section */}
+      <div className="shrink-0">
+        <BuddyRobot buddyState={buddyState} />
+      </div>
+
+      {/* Gradient divider */}
+      <div className="shrink-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+
+      {/* Scrollable Chat Section */}
+      <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+        <BuddySpeechBubble messages={messages} buddyState={buddyState} />
+      </div>
+
       <BuddyControlBar
         onSendMessage={handleSendMessage}
         buddyState={buddyState}
