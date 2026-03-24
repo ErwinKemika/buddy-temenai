@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import { Plus, Trash2, Calendar as CalendarIcon, Clock, ChevronLeft, ChevronRight, Play, Square, CheckCircle2, Filter, X, Pencil, Volume2, VolumeX, Target } from "lucide-react";
+import { Plus, Trash2, Calendar as CalendarIcon, Clock, ChevronLeft, ChevronRight, CheckCircle2, Filter, X, Pencil, Volume2, VolumeX, Target } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, isToday, addMonths, subMonths, isBefore, startOfDay } from "date-fns";
 import { id as localeId } from "date-fns/locale";
@@ -323,12 +323,9 @@ const TodoPage = () => {
     }
   };
 
-  const startTask = (id: string) => {
-    setTasks(prev =>
-      prev.map(t =>
-        t.id === id ? { ...t, isRunning: true, status: "in_progress" as Status, startedAt: t.startedAt || new Date().toISOString() } : t
-      )
-    );
+  const startTask = (_id: string) => {
+    // Task execution moved to Focus page
+  
     updateBuddyMsg("Gas! Semangat kerjain! 🔥");
   };
 
@@ -624,19 +621,9 @@ const TodoPage = () => {
                   </div>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
-                  {!task.done && !task.isRunning && (
-                    <button onClick={() => startTask(task.id)} className="p-1.5 text-accent active:text-accent/80 transition-colors">
-                      <Play size={14} fill="currentColor" />
-                    </button>
-                  )}
                   {!task.done && (
                     <button onClick={() => navigate(`/focus?taskId=${task.id}`)} className="p-1.5 text-primary active:text-primary/80 transition-colors" title="Fokus">
                       <Target size={14} />
-                    </button>
-                  )}
-                  {task.isRunning && (
-                    <button onClick={() => stopTask(task.id)} className="p-1.5 text-destructive active:text-destructive/80 transition-colors">
-                      <Square size={14} fill="currentColor" />
                     </button>
                   )}
                   {task.done && (
