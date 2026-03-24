@@ -96,7 +96,6 @@ const TodoPage = () => {
     setBuddyMsg(response);
     setTimeout(() => setBuddyMsg("Ada lagi yang mau dikerjain?"), 3000);
   }, []);
-  };
 
   const toggleTask = (id: string) => {
     setTasks(prev =>
