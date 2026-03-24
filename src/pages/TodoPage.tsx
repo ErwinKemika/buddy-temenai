@@ -326,7 +326,7 @@ const TodoPage = () => {
 
   const deleteTask = (id: string) => {
     setTasks(prev => prev.filter(t => t.id !== id));
-    setBuddyMsg("Udah aku hapus ya.");
+    updateBuddyMsg("Udah aku hapus ya", getBuddyLine(tasks.filter(t => t.id !== id)));
   };
 
   const getElapsed = (task: Task) => {
