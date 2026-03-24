@@ -36,6 +36,7 @@ const Index = () => {
     voiceEnabled, setVoiceEnabled,
     autoPlayVoice, setAutoPlayVoice,
     sendMessage, injectReminderMessage,
+    togglePin, startReply, cancelReply, replyingTo,
   } = useChat();
 
   const remindedRef = useRef(loadRemindedSet());
