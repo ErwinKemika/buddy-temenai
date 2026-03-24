@@ -373,12 +373,22 @@ const TodoPage = () => {
             </div>
           </div>
 
-          {/* Speech Bubble */}
-          <div className="relative flex-1 animate-fade-in">
-            <div className="relative bg-card/60 backdrop-blur-sm border border-primary/20 rounded-2xl rounded-bl-md px-3 py-2 shadow-lg shadow-primary/5">
+          {/* Speech Bubble — Buddy speaking line */}
+          <div className="relative flex-1">
+            <div className={`relative bg-card/60 backdrop-blur-sm border border-primary/20 rounded-2xl rounded-bl-md px-3.5 py-2.5 shadow-lg shadow-primary/5 transition-all duration-300 ${buddyMsgVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-1'}`}>
               {/* Bubble arrow */}
-              <div className="absolute left-[-6px] top-3.5 w-0 h-0 border-t-[5px] border-t-transparent border-b-[5px] border-b-transparent border-r-[6px] border-r-primary/20" />
-              <p className="text-sm text-foreground/90 leading-snug">{buddyMsg}</p>
+              <div className="absolute left-[-6px] top-4 w-0 h-0 border-t-[5px] border-t-transparent border-b-[5px] border-b-transparent border-r-[6px] border-r-primary/20" />
+              {/* Speaking indicator dots */}
+              <div className="flex items-start gap-2">
+                <p className="text-sm text-foreground/90 leading-snug flex-1 font-medium">{buddyMsg}</p>
+                {buddySpeaking && (
+                  <span className="flex gap-0.5 items-center pt-1 shrink-0">
+                    <span className="w-1 h-1 rounded-full bg-accent animate-pulse" />
+                    <span className="w-1 h-1 rounded-full bg-accent animate-pulse" style={{ animationDelay: '0.15s' }} />
+                    <span className="w-1 h-1 rounded-full bg-accent animate-pulse" style={{ animationDelay: '0.3s' }} />
+                  </span>
+                )}
+              </div>
             </div>
           </div>
         </div>
