@@ -139,6 +139,7 @@ const FocusPage = () => {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const nearEndFired = useRef(false);
   const autoStarted = useRef(false);
+  const activeTaskIdRef = useRef<string | null>(null);
 
   const focusTasks = useMemo(() => getFocusTasks(allTasks), [allTasks]);
   const activeTask = focusTasks[activeIdx] || null;
