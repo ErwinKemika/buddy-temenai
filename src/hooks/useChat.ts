@@ -200,6 +200,7 @@ export function useChat() {
   const streamChat = useCallback(async (
     chatMessages: Array<{ role: string; content: any }>,
     upsertAssistant: (chunk: string) => void,
+    todoContext?: string,
   ) => {
     const resp = await fetch(
       `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`,
