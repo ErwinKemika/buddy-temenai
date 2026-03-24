@@ -1,5 +1,66 @@
 import { useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { format, addDays, startOfWeek, endOfWeek, isToday, isTomorrow, isPast, parseISO } from "date-fns";
+import { id as idLocale } from "date-fns/locale";
+
+interface TodoItem {
+  id: string;
+  title: string;
+  date: string;
+  startTime?: string;
+  endTime?: string;
+  status: string;
+  priority: string;
+  category: string;
+  recurrence: string;
+  completed: boolean;
+}
+
+function buildTodoContext(): string {
+  try {
+    const raw = localStorage.getItem("buddy-todos");
+    if (!raw) return "";
+    const todos: TodoItem[] = JSON.parse(raw);
+    if (!todos.length) return "";
+
+    const today = new Date();
+    const todayStr = format(today, "yyyy-MM-dd");
+    const tomorrowStr = format(addDays(today, 1), "yyyy-MM-dd");
+    const weekStart = format(startOfWeek(today, { weekStartsOn: 1 }), "yyyy-MM-dd");
+    const weekEnd = format(endOfWeek(today, { weekStartsOn: 1 }), "yyyy-MM-dd");
+
+    const enriched = todos.map(t => {
+      let deadlineState = "upcoming";
+      if (t.date === todayStr) deadlineState = "today";
+      else if (t.date < todayStr && !t.completed) deadlineState = "overdue";
+      
+      // Handle recurring tasks visibility
+      const isVisible = t.recurrence === "Harian" ? true 
+        : t.recurrence === "Mingguan" ? true 
+        : true;
+
+      return { ...t, deadlineState, isVisible };
+    }).filter(t => t.isVisible);
+
+    const lines = enriched.map(t => {
+      const parts = [`- "${t.title}"`];
+      parts.push(`tanggal: ${t.date}`);
+      if (t.startTime) parts.push(`mulai: ${t.startTime}`);
+      if (t.endTime) parts.push(`selesai: ${t.endTime}`);
+      parts.push(`status: ${t.status}`);
+      parts.push(`prioritas: ${t.priority}`);
+      parts.push(`kategori: ${t.category}`);
+      parts.push(`pengulangan: ${t.recurrence}`);
+      parts.push(`state: ${t.deadlineState}`);
+      if (t.completed) parts.push(`(selesai)`);
+      return parts.join(", ");
+    });
+
+    return `\n\nDATA TO-DO LIST USER (tanggal hari ini: ${format(today, "EEEE, d MMMM yyyy", { locale: idLocale })}, besok: ${tomorrowStr}):\n${lines.join("\n")}`;
+  } catch {
+    return "";
+  }
+}
 
 export type Attachment = {
   type: "image" | "document" | "voice";
