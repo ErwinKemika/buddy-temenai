@@ -70,12 +70,9 @@ export type Attachment = {
 };
 
 export type Message = {
-  id: string;
   role: "user" | "assistant";
   content: string;
   attachment?: Attachment;
-  pinned?: boolean;
-  replyTo?: { id: string; content: string; role: "user" | "assistant" };
 };
 
 export type BuddyState = "idle" | "thinking" | "speaking";
@@ -194,29 +191,11 @@ function extractSpeakableText(text: string): string {
   return result.trim() || clean.slice(0, 100);
 }
 
-let msgCounter = 0;
-function genMsgId() {
-  return `msg-${Date.now()}-${++msgCounter}`;
-}
-
 export function useChat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [buddyState, setBuddyState] = useState<BuddyState>("idle");
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [autoPlayVoice, setAutoPlayVoice] = useState(true);
-  const [replyingTo, setReplyingTo] = useState<Message | null>(null);
-
-  const togglePin = useCallback((msgId: string) => {
-    setMessages(prev => prev.map(m => m.id === msgId ? { ...m, pinned: !m.pinned } : m));
-  }, []);
-
-  const startReply = useCallback((msg: Message) => {
-    setReplyingTo(msg);
-  }, []);
-
-  const cancelReply = useCallback(() => {
-    setReplyingTo(null);
-  }, []);
 
   const streamChat = useCallback(async (
     chatMessages: Array<{ role: string; content: any }>,
@@ -302,7 +281,7 @@ export function useChat() {
         resolvedText = await transcribeVoice(attachment.file);
       } catch (e) {
         console.error("[Transcribe] Error:", e);
-        setMessages(prev => [...prev, { id: genMsgId(), role: "assistant", content: e instanceof Error ? e.message : "Voice note gagal diproses." }]);
+        setMessages(prev => [...prev, { role: "assistant", content: e instanceof Error ? e.message : "Voice note gagal diproses." }]);
         setBuddyState("idle");
         return;
       }
@@ -332,14 +311,10 @@ export function useChat() {
     }
 
     const userMsg: Message = {
-      id: genMsgId(),
       role: "user",
       content: resolvedText || (attachmentData ? `[${attachmentData.type === "image" ? "Gambar" : "Dokumen"}]` : ""),
       attachment: attachmentData,
-      replyTo: replyingTo ? { id: replyingTo.id, content: replyingTo.content, role: replyingTo.role } : undefined,
     };
-
-    setReplyingTo(null);
 
     setMessages(prev => [...prev, userMsg]);
 
@@ -371,15 +346,14 @@ export function useChat() {
     ];
 
     let assistantSoFar = "";
-    const assistantMsgId = genMsgId();
     const upsertAssistant = (chunk: string) => {
       assistantSoFar += chunk;
       setMessages(prev => {
         const last = prev[prev.length - 1];
-        if (last?.role === "assistant" && last.id === assistantMsgId) {
+        if (last?.role === "assistant") {
           return prev.map((m, i) => i === prev.length - 1 ? { ...m, content: assistantSoFar } : m);
         }
-        return [...prev, { id: assistantMsgId, role: "assistant" as const, content: assistantSoFar }];
+        return [...prev, { role: "assistant", content: assistantSoFar }];
       });
     };
 
@@ -398,10 +372,10 @@ export function useChat() {
     } finally {
     setBuddyState("idle");
     }
-  }, [messages, voiceEnabled, autoPlayVoice, streamChat, replyingTo]);
+  }, [messages, voiceEnabled, autoPlayVoice, streamChat]);
 
   const injectReminderMessage = useCallback(async (text: string, speak: boolean) => {
-    setMessages(prev => [...prev, { id: genMsgId(), role: "assistant", content: text }]);
+    setMessages(prev => [...prev, { role: "assistant", content: text }]);
     if (speak) {
       setBuddyState("speaking");
       try { await playTTS(text); } catch (e) { console.error("[TTS Reminder]", e); }
@@ -409,9 +383,5 @@ export function useChat() {
     }
   }, []);
 
-  return {
-    messages, buddyState, voiceEnabled, setVoiceEnabled, autoPlayVoice, setAutoPlayVoice,
-    sendMessage, injectReminderMessage,
-    togglePin, startReply, cancelReply, replyingTo,
-  };
+  return { messages, buddyState, voiceEnabled, setVoiceEnabled, autoPlayVoice, setAutoPlayVoice, sendMessage, injectReminderMessage };
 }
