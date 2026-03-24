@@ -1,6 +1,6 @@
-import { Send, Volume2, VolumeX, Plus, Mic } from "lucide-react";
+import { Send, Volume2, VolumeX, Plus, Mic, X, Reply } from "lucide-react";
 import { useState } from "react";
-import { BuddyState } from "@/hooks/useChat";
+import { BuddyState, Message } from "@/hooks/useChat";
 import AttachmentMenu from "./AttachmentMenu";
 import VoiceRecorder from "./VoiceRecorder";
 
@@ -9,6 +9,8 @@ interface Props {
   buddyState: BuddyState;
   voiceEnabled: boolean;
   onToggleVoice: () => void;
+  replyingTo?: Message | null;
+  onCancelReply?: () => void;
 }
 
 const BuddyControlBar = ({
