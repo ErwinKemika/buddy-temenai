@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
-import { Play, Square, Pause, RotateCcw, ChevronUp, ChevronDown, CheckCircle2 } from "lucide-react";
-import { format, isSameDay, startOfDay, isBefore } from "date-fns";
+import { Play, Square, Pause, RotateCcw, CheckCircle2 } from "lucide-react";
+import { startOfDay, isBefore } from "date-fns";
 import BottomNav from "@/components/BottomNav";
 import { BuddyState } from "@/hooks/useChat";
 
@@ -86,7 +86,7 @@ function saveTasks(tasks: Task[]) {
   localStorage.setItem(TODO_STORAGE_KEY, JSON.stringify(tasks));
 }
 
-/** Get focus-worthy tasks: today + high priority + not done */
+/** Get focus-worthy tasks: high priority, overdue, work category, or in_progress only */
 function getFocusTasks(allTasks: Task[]): Task[] {
   const today = startOfDay(new Date());
 
@@ -94,22 +94,18 @@ function getFocusTasks(allTasks: Task[]): Task[] {
     .filter(t => {
       if (t.status === "done" || t.done) return false;
       const taskDate = t.date ? startOfDay(new Date(t.date)) : null;
-      const isToday = taskDate && isSameDay(taskDate, today);
       const isOverdue = taskDate && isBefore(taskDate, today);
       const isHighPriority = t.priority === "high";
       const isWork = t.category === "work";
       const isInProgress = t.status === "in_progress";
 
-      return isToday || isOverdue || isHighPriority || isWork || isInProgress;
+      return isHighPriority || isOverdue || isWork || isInProgress;
     })
     .sort((a, b) => {
-      // In-progress first
       if (a.status === "in_progress" && b.status !== "in_progress") return -1;
       if (b.status === "in_progress" && a.status !== "in_progress") return 1;
-      // Then by priority
       const pw = (PRIORITY_WEIGHT[b.priority] || 0) - (PRIORITY_WEIGHT[a.priority] || 0);
       if (pw !== 0) return pw;
-      // Then by time
       if (a.startTime && b.startTime) return a.startTime.localeCompare(b.startTime);
       if (a.startTime) return -1;
       if (b.startTime) return 1;
@@ -130,7 +126,6 @@ const FocusPage = () => {
   const [buddyState, setBuddyState] = useState<BuddyState>("idle");
   const [allTasks, setAllTasks] = useState<Task[]>(() => loadTasks());
   const [activeIdx, setActiveIdx] = useState(0);
-  const [showTaskList, setShowTaskList] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const nearEndFired = useRef(false);
 
@@ -170,7 +165,7 @@ const FocusPage = () => {
     const startFrom = timerState === "paused" ? secondsLeft : FOCUS_DURATION;
     setSecondsLeft(startFrom);
     setTimerState("running");
-    setShowTaskList(false);
+    // clear state
 
     // Set active task to in_progress
     if (activeTask && activeTask.status !== "in_progress") {
@@ -316,95 +311,24 @@ const FocusPage = () => {
         </div>
 
         {/* Buddy speech */}
-        <div className="mt-3 mb-4 max-w-[280px] text-center">
+        <div className="mt-2 mb-3 max-w-[280px] text-center">
           <p className="text-sm text-foreground/70 font-medium transition-all duration-500 animate-fade-in" key={buddyMsg}>
             {buddyMsg}
           </p>
         </div>
 
-        {/* Active task card */}
-        {focusTasks.length > 0 && timerState === "idle" && (
-          <div className="w-full max-w-xs mb-4">
-            {/* Current task */}
-            <div className="bg-card/60 backdrop-blur-sm border border-border/40 rounded-2xl p-3.5 flex items-center gap-3">
-              <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${PRIORITY_DOT[activeTask?.priority || "medium"]}`} />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-foreground truncate">
-                  {activeTask?.title || "Tidak ada tugas"}
-                </p>
-                {activeTask?.startTime && (
-                  <p className="text-xs text-muted-foreground mt-0.5">{activeTask.startTime}{activeTask.endTime ? ` – ${activeTask.endTime}` : ""}</p>
-                )}
-              </div>
-              <div className="flex items-center gap-1">
-                {focusTasks.length > 1 && (
-                  <button
-                    onClick={() => setShowTaskList(v => !v)}
-                    className="w-7 h-7 flex items-center justify-center rounded-full bg-secondary/60 text-muted-foreground active:scale-90 transition-all"
-                  >
-                    {showTaskList ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Task switcher */}
-            {showTaskList && (
-              <div className="mt-2 bg-card/80 backdrop-blur-sm border border-border/40 rounded-2xl overflow-hidden max-h-[180px] overflow-y-auto animate-fade-in">
-                {focusTasks.map((task, idx) => (
-                  <button
-                    key={task.id}
-                    onClick={() => { setActiveIdx(idx); setShowTaskList(false); }}
-                    className={`w-full flex items-center gap-3 px-3.5 py-2.5 text-left transition-colors ${
-                      idx === activeIdx ? "bg-primary/10" : "hover:bg-secondary/40 active:bg-secondary/60"
-                    } ${idx > 0 ? "border-t border-border/20" : ""}`}
-                  >
-                    <div className={`w-2 h-2 rounded-full flex-shrink-0 ${PRIORITY_DOT[task.priority]}`} />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-foreground truncate">{task.title}</p>
-                      {task.startTime && <p className="text-[10px] text-muted-foreground">{task.startTime}</p>}
-                    </div>
-                    {idx === activeIdx && <div className="w-1.5 h-1.5 rounded-full bg-primary" />}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            <p className="text-[10px] text-muted-foreground text-center mt-1.5">
-              {focusTasks.length} tugas fokus hari ini
-            </p>
-          </div>
-        )}
-
-        {/* Active task during timer */}
-        {activeTask && timerState !== "idle" && (
-          <div className="mb-4 flex items-center gap-2 max-w-xs">
-            <div className={`w-2 h-2 rounded-full flex-shrink-0 ${PRIORITY_DOT[activeTask.priority]}`} />
-            <p className="text-xs text-muted-foreground truncate flex-1">{activeTask.title}</p>
-            {timerState === "finished" && (
-              <button
-                onClick={markTaskDone}
-                className="flex items-center gap-1 text-xs text-green-400 active:scale-95 transition-all"
-              >
-                <CheckCircle2 size={14} />
-                Selesai
-              </button>
-            )}
-          </div>
-        )}
-
         {/* Timer */}
-        <div className="relative mb-8">
-          <div className="w-52 h-52 relative">
+        <div className="relative mb-4">
+          <div className="w-44 h-44 relative">
             <svg className="w-full h-full -rotate-90" viewBox="0 0 200 200">
               <circle cx="100" cy="100" r="88" fill="none" strokeWidth="6" className="stroke-secondary" />
               <circle cx="100" cy="100" r="88" fill="none" strokeWidth="6" strokeLinecap="round"
-                className={`transition-all duration-1000 ${isFinished ? "stroke-green-400" : "stroke-primary"}`}
+                className={`transition-all duration-1000 ${isFinished ? "stroke-accent" : "stroke-primary"}`}
                 style={{ strokeDasharray: 2 * Math.PI * 88, strokeDashoffset: 2 * Math.PI * 88 * (1 - progress / 100) }}
               />
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-5xl font-bold font-orbitron text-foreground tracking-wider">
+              <span className="text-4xl font-bold font-orbitron text-foreground tracking-wider">
                 {String(mins).padStart(2, "0")}:{String(secs).padStart(2, "0")}
               </span>
             </div>
@@ -412,7 +336,7 @@ const FocusPage = () => {
         </div>
 
         {/* Controls */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 mb-5">
           {timerState === "idle" && (
             <button onClick={startTimer}
               className="flex items-center gap-2 bg-primary text-primary-foreground px-8 py-3.5 rounded-full text-sm font-semibold active:scale-95 transition-all shadow-lg shadow-primary/25">
@@ -454,6 +378,42 @@ const FocusPage = () => {
             </button>
           )}
         </div>
+
+        {/* Task list - visible breakdown */}
+        {focusTasks.length > 0 && (
+          <div className="w-full max-w-xs">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2 text-center">
+              {focusTasks.length} tugas fokus
+            </p>
+            <div className="bg-card/60 backdrop-blur-sm border border-border/40 rounded-2xl overflow-hidden max-h-[160px] overflow-y-auto">
+              {focusTasks.map((task, idx) => (
+                <button
+                  key={task.id}
+                  onClick={() => setActiveIdx(idx)}
+                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 text-left transition-colors ${
+                    idx === activeIdx ? "bg-primary/10" : "active:bg-secondary/60"
+                  } ${idx > 0 ? "border-t border-border/20" : ""}`}
+                >
+                  <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${PRIORITY_DOT[task.priority]}`} />
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-xs font-medium truncate ${idx === activeIdx ? "text-foreground" : "text-muted-foreground"}`}>{task.title}</p>
+                    {task.startTime && <p className="text-[10px] text-muted-foreground/60">{task.startTime}{task.endTime ? ` – ${task.endTime}` : ""}</p>}
+                  </div>
+                  {idx === activeIdx && <div className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" />}
+                  {timerState === "finished" && idx === activeIdx && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); markTaskDone(); }}
+                      className="flex items-center gap-1 text-[10px] text-accent active:scale-95 transition-all flex-shrink-0"
+                    >
+                      <CheckCircle2 size={12} />
+                      Done
+                    </button>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       <BottomNav />
