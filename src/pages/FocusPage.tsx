@@ -165,7 +165,7 @@ const FocusPage = () => {
     const startFrom = timerState === "paused" ? secondsLeft : FOCUS_DURATION;
     setSecondsLeft(startFrom);
     setTimerState("running");
-    setShowTaskList(false);
+    // clear state
 
     // Set active task to in_progress
     if (activeTask && activeTask.status !== "in_progress") {
