@@ -109,6 +109,7 @@ const TodoPage = () => {
   const [filterPriority, setFilterPriority] = useState<Priority | "all">("all");
   const [filterStatus, setFilterStatus] = useState<Status | "all">("all");
   const [filterCategory, setFilterCategory] = useState<Category | "all">("all");
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [buddyMsg, setBuddyMsg] = useState("Mau ngapain hari ini? 📝");
 
   useEffect(() => {
