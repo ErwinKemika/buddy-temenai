@@ -508,6 +508,11 @@ const TodoPage = () => {
                   {task.done && (
                     <CheckCircle2 size={14} className="text-green-500" />
                   )}
+                  {!task.done && (
+                    <button onClick={() => startEditing(task)} className="p-1.5 text-muted-foreground active:text-accent transition-colors">
+                      <Pencil size={14} />
+                    </button>
+                  )}
                   <button onClick={() => deleteTask(task.id)} className="p-1.5 text-muted-foreground active:text-destructive transition-colors">
                     <Trash2 size={14} />
                   </button>
