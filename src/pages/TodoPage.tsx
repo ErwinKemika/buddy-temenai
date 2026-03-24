@@ -364,75 +364,29 @@ const TodoPage = () => {
         })}
       </div>
 
-      {/* Add task area */}
+      {/* Buddy chat log */}
+      {buddyChatLog.length > 0 && (
+        <div className="px-4 pb-1 max-h-28 overflow-y-auto space-y-1.5">
+          {buddyChatLog.slice(-4).map((msg, i) => (
+            <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+              <div className={`max-w-[80%] px-3 py-1.5 rounded-xl text-xs whitespace-pre-line ${
+                msg.role === "user"
+                  ? "bg-primary/20 text-foreground"
+                  : "bg-card/60 text-foreground/90 border border-border/30"
+              }`}>
+                {msg.text}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Smart input area */}
       <div className="px-3 pt-2 pb-2 bg-card/40 backdrop-blur-md border-t border-border/30">
-        {showAddForm ? (
-          <div className="space-y-2">
-            <input
-              type="text"
-              value={newTask}
-              onChange={e => setNewTask(e.target.value)}
-              placeholder="Judul tugas..."
-              className="w-full bg-muted/50 border border-border/30 rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none"
-              autoFocus
-            />
-            <div className="flex gap-2">
-              <div className="flex-1">
-                <label className="text-[10px] text-muted-foreground mb-0.5 block">Tanggal</label>
-                <input
-                  type="date"
-                  value={addDate}
-                  onChange={e => setAddDate(e.target.value)}
-                  className="w-full bg-muted/50 border border-border/30 rounded-lg px-2 py-1.5 text-xs text-foreground outline-none"
-                />
-              </div>
-              <div className="flex-1">
-                <label className="text-[10px] text-muted-foreground mb-0.5 block">Mulai</label>
-                <input
-                  type="time"
-                  value={addStartTime}
-                  onChange={e => setAddStartTime(e.target.value)}
-                  className="w-full bg-muted/50 border border-border/30 rounded-lg px-2 py-1.5 text-xs text-foreground outline-none"
-                />
-              </div>
-              <div className="flex-1">
-                <label className="text-[10px] text-muted-foreground mb-0.5 block">Selesai</label>
-                <input
-                  type="time"
-                  value={addEndTime}
-                  onChange={e => setAddEndTime(e.target.value)}
-                  className="w-full bg-muted/50 border border-border/30 rounded-lg px-2 py-1.5 text-xs text-foreground outline-none"
-                />
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setShowAddForm(false)}
-                className="flex-1 py-2 rounded-lg text-xs text-muted-foreground bg-muted/30 active:bg-muted/50"
-              >
-                Batal
-              </button>
-              <button
-                onClick={addTask}
-                disabled={!newTask.trim()}
-                className="flex-1 py-2 rounded-lg text-xs bg-primary text-primary-foreground active:bg-primary/80 disabled:opacity-30"
-              >
-                Simpan
-              </button>
-            </div>
-          </div>
-        ) : (
-          <button
-            onClick={() => {
-              setAddDate(viewMode === "today" ? todayStr : format(selectedDate, "yyyy-MM-dd"));
-              setShowAddForm(true);
-            }}
-            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-full bg-primary text-primary-foreground active:bg-primary/80 transition-colors"
-          >
-            <Plus size={18} />
-            <span className="text-sm font-medium">Tambah Tugas</span>
-          </button>
-        )}
+        <TodoSmartInput
+          onSubmit={handleSmartInput}
+          placeholder="Ketik tugas... cth: Meeting besok jam 3"
+        />
       </div>
 
       <BottomNav />
