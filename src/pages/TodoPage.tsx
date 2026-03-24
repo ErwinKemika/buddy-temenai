@@ -1,31 +1,94 @@
 import { useState, useEffect, useMemo } from "react";
-import { Plus, Trash2, Calendar as CalendarIcon, Clock, ChevronLeft, ChevronRight, Play, Square, CheckCircle2 } from "lucide-react";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, isToday, addMonths, subMonths } from "date-fns";
+import { Plus, Trash2, Calendar as CalendarIcon, Clock, ChevronLeft, ChevronRight, Play, Square, CheckCircle2, Filter, X } from "lucide-react";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, isToday, addMonths, subMonths, isBefore, startOfDay } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import BottomNav from "@/components/BottomNav";
+
+type Priority = "high" | "medium" | "low";
+type Status = "todo" | "in_progress" | "done";
+type Category = "work" | "personal" | "health" | "learning";
+type Recurrence = "once" | "daily" | "weekly";
+type Effort = "quick" | "medium" | "deep";
 
 interface Task {
   id: string;
   title: string;
   done: boolean;
-  date: string; // YYYY-MM-DD
-  startTime?: string; // HH:mm
-  endTime?: string; // HH:mm
-  startedAt?: string; // ISO
-  completedAt?: string; // ISO
+  date: string;
+  startTime?: string;
+  endTime?: string;
+  startedAt?: string;
+  completedAt?: string;
   isRunning?: boolean;
+  priority: Priority;
+  status: Status;
+  category?: Category;
+  recurrence: Recurrence;
+  effort?: Effort;
 }
 
 type ViewMode = "month" | "today";
 
 const STORAGE_KEY = "buddy-todos";
 
+const PRIORITY_COLORS: Record<Priority, string> = {
+  high: "bg-red-500",
+  medium: "bg-yellow-500",
+  low: "bg-blue-400",
+};
+
+const PRIORITY_LABELS: Record<Priority, string> = {
+  high: "Tinggi",
+  medium: "Sedang",
+  low: "Rendah",
+};
+
+const CATEGORY_COLORS: Record<Category, string> = {
+  work: "bg-violet-500/20 text-violet-300 border-violet-500/30",
+  personal: "bg-cyan-500/20 text-cyan-300 border-cyan-500/30",
+  health: "bg-green-500/20 text-green-300 border-green-500/30",
+  learning: "bg-amber-500/20 text-amber-300 border-amber-500/30",
+};
+
+const CATEGORY_LABELS: Record<Category, string> = {
+  work: "Kerja",
+  personal: "Pribadi",
+  health: "Kesehatan",
+  learning: "Belajar",
+};
+
+const RECURRENCE_LABELS: Record<Recurrence, string> = {
+  once: "Sekali",
+  daily: "Harian",
+  weekly: "Mingguan",
+};
+
+const EFFORT_LABELS: Record<Effort, string> = {
+  quick: "Cepat",
+  medium: "Sedang",
+  deep: "Deep Work",
+};
+
 const loadTasks = (): Task[] => {
   try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+    const raw = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+    return raw.map((t: any) => ({
+      ...t,
+      priority: t.priority || "medium",
+      status: t.status || (t.done ? "done" : "todo"),
+      recurrence: t.recurrence || "once",
+    }));
   } catch {
     return [];
   }
+};
+
+const getDeadlineState = (dateStr: string): { label: string; className: string } | null => {
+  const today = startOfDay(new Date());
+  const taskDate = startOfDay(new Date(dateStr));
+  if (isSameDay(today, taskDate)) return { label: "Hari Ini", className: "text-accent" };
+  if (isBefore(taskDate, today)) return { label: "Terlambat", className: "text-red-400" };
+  return { label: "Mendatang", className: "text-muted-foreground" };
 };
 
 const TodoPage = () => {
@@ -38,16 +101,23 @@ const TodoPage = () => {
   const [addDate, setAddDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const [addStartTime, setAddStartTime] = useState("");
   const [addEndTime, setAddEndTime] = useState("");
+  const [addPriority, setAddPriority] = useState<Priority>("medium");
+  const [addCategory, setAddCategory] = useState<Category | "">("");
+  const [addRecurrence, setAddRecurrence] = useState<Recurrence>("once");
+  const [addEffort, setAddEffort] = useState<Effort | "">("");
+  const [showFilters, setShowFilters] = useState(false);
+  const [filterPriority, setFilterPriority] = useState<Priority | "all">("all");
+  const [filterStatus, setFilterStatus] = useState<Status | "all">("all");
+  const [filterCategory, setFilterCategory] = useState<Category | "all">("all");
   const [buddyMsg, setBuddyMsg] = useState("Mau ngapain hari ini? 📝");
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
   }, [tasks]);
 
-  // Timer update for running tasks
   useEffect(() => {
     const interval = setInterval(() => {
-      setTasks(prev => [...prev]); // force re-render for elapsed time
+      setTasks(prev => [...prev]);
     }, 1000);
     return () => clearInterval(interval);
   }, []);
@@ -61,13 +131,32 @@ const TodoPage = () => {
   }, [calMonth]);
 
   const filteredTasks = useMemo(() => {
+    let list = tasks;
     if (viewMode === "today") {
-      return tasks.filter(t => t.date === todayStr);
+      list = list.filter(t => t.date === todayStr);
+    } else {
+      list = list.filter(t => t.date === format(selectedDate, "yyyy-MM-dd"));
     }
-    return tasks.filter(t => t.date === format(selectedDate, "yyyy-MM-dd"));
-  }, [tasks, viewMode, selectedDate, todayStr]);
+    if (filterPriority !== "all") list = list.filter(t => t.priority === filterPriority);
+    if (filterStatus !== "all") list = list.filter(t => t.status === filterStatus);
+    if (filterCategory !== "all") list = list.filter(t => t.category === filterCategory);
+    return list;
+  }, [tasks, viewMode, selectedDate, todayStr, filterPriority, filterStatus, filterCategory]);
 
   const tasksOnDate = (dateStr: string) => tasks.filter(t => t.date === dateStr);
+
+  const hasActiveFilters = filterPriority !== "all" || filterStatus !== "all" || filterCategory !== "all";
+
+  const resetForm = () => {
+    setNewTask("");
+    setAddStartTime("");
+    setAddEndTime("");
+    setAddPriority("medium");
+    setAddCategory("");
+    setAddRecurrence("once");
+    setAddEffort("");
+    setShowAddForm(false);
+  };
 
   const addTask = () => {
     const title = newTask.trim();
@@ -79,12 +168,14 @@ const TodoPage = () => {
       date: addDate,
       startTime: addStartTime || undefined,
       endTime: addEndTime || undefined,
+      priority: addPriority,
+      status: "todo",
+      category: addCategory || undefined,
+      recurrence: addRecurrence,
+      effort: addEffort || undefined,
     };
     setTasks(prev => [...prev, task]);
-    setNewTask("");
-    setAddStartTime("");
-    setAddEndTime("");
-    setShowAddForm(false);
+    resetForm();
     setBuddyMsg("Oke, aku catat ya! 💪");
     setTimeout(() => setBuddyMsg("Ada lagi yang mau dikerjain?"), 3000);
   };
@@ -97,6 +188,7 @@ const TodoPage = () => {
         return {
           ...t,
           done: nowDone,
+          status: nowDone ? "done" as Status : "todo" as Status,
           completedAt: nowDone ? new Date().toISOString() : undefined,
           isRunning: nowDone ? false : t.isRunning,
         };
@@ -112,7 +204,7 @@ const TodoPage = () => {
   const startTask = (id: string) => {
     setTasks(prev =>
       prev.map(t =>
-        t.id === id ? { ...t, isRunning: true, startedAt: t.startedAt || new Date().toISOString() } : t
+        t.id === id ? { ...t, isRunning: true, status: "in_progress" as Status, startedAt: t.startedAt || new Date().toISOString() } : t
       )
     );
     setBuddyMsg("Gas! Semangat kerjain! 🔥");
@@ -144,7 +236,7 @@ const TodoPage = () => {
     return `${s}d`;
   };
 
-  const startDayOfWeek = startOfMonth(calMonth).getDay(); // 0=Sun
+  const startDayOfWeek = startOfMonth(calMonth).getDay();
 
   return (
     <div className="h-[100dvh] w-full flex flex-col buddy-gradient-bg space-stars overflow-hidden safe-area-inset">
@@ -156,14 +248,12 @@ const TodoPage = () => {
         <p className="text-sm text-foreground/80 flex-1">{buddyMsg}</p>
       </header>
 
-      {/* View mode tabs */}
-      <div className="flex gap-1 px-4 pt-3 pb-1">
+      {/* View mode tabs + filter toggle */}
+      <div className="flex items-center gap-1 px-4 pt-3 pb-1">
         <button
           onClick={() => setViewMode("today")}
           className={`flex-1 py-2 rounded-lg text-xs font-medium transition-colors ${
-            viewMode === "today"
-              ? "bg-primary text-primary-foreground"
-              : "bg-card/50 text-muted-foreground"
+            viewMode === "today" ? "bg-primary text-primary-foreground" : "bg-card/50 text-muted-foreground"
           }`}
         >
           Hari Ini
@@ -171,20 +261,79 @@ const TodoPage = () => {
         <button
           onClick={() => setViewMode("month")}
           className={`flex-1 py-2 rounded-lg text-xs font-medium transition-colors ${
-            viewMode === "month"
-              ? "bg-primary text-primary-foreground"
-              : "bg-card/50 text-muted-foreground"
+            viewMode === "month" ? "bg-primary text-primary-foreground" : "bg-card/50 text-muted-foreground"
           }`}
         >
           Kalender
         </button>
+        <button
+          onClick={() => setShowFilters(!showFilters)}
+          className={`p-2 rounded-lg transition-colors ${hasActiveFilters ? "bg-accent/20 text-accent" : "bg-card/50 text-muted-foreground"}`}
+        >
+          <Filter size={14} />
+        </button>
       </div>
+
+      {/* Filter bar */}
+      {showFilters && (
+        <div className="px-4 py-2 space-y-1.5">
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+            <span className="text-[10px] text-muted-foreground shrink-0">Prioritas:</span>
+            {(["all", "high", "medium", "low"] as const).map(p => (
+              <button
+                key={p}
+                onClick={() => setFilterPriority(p)}
+                className={`px-2 py-0.5 rounded-full text-[10px] shrink-0 transition-colors ${
+                  filterPriority === p ? "bg-primary text-primary-foreground" : "bg-card/50 text-muted-foreground"
+                }`}
+              >
+                {p === "all" ? "Semua" : PRIORITY_LABELS[p]}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+            <span className="text-[10px] text-muted-foreground shrink-0">Status:</span>
+            {(["all", "todo", "in_progress", "done"] as const).map(s => (
+              <button
+                key={s}
+                onClick={() => setFilterStatus(s)}
+                className={`px-2 py-0.5 rounded-full text-[10px] shrink-0 transition-colors ${
+                  filterStatus === s ? "bg-primary text-primary-foreground" : "bg-card/50 text-muted-foreground"
+                }`}
+              >
+                {s === "all" ? "Semua" : s === "todo" ? "To Do" : s === "in_progress" ? "Proses" : "Selesai"}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+            <span className="text-[10px] text-muted-foreground shrink-0">Kategori:</span>
+            {(["all", "work", "personal", "health", "learning"] as const).map(c => (
+              <button
+                key={c}
+                onClick={() => setFilterCategory(c)}
+                className={`px-2 py-0.5 rounded-full text-[10px] shrink-0 transition-colors ${
+                  filterCategory === c ? "bg-primary text-primary-foreground" : "bg-card/50 text-muted-foreground"
+                }`}
+              >
+                {c === "all" ? "Semua" : CATEGORY_LABELS[c]}
+              </button>
+            ))}
+          </div>
+          {hasActiveFilters && (
+            <button
+              onClick={() => { setFilterPriority("all"); setFilterStatus("all"); setFilterCategory("all"); }}
+              className="flex items-center gap-1 text-[10px] text-accent"
+            >
+              <X size={10} /> Reset filter
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Month Calendar */}
       {viewMode === "month" && (
         <div className="px-4 py-2">
           <div className="bg-card/50 backdrop-blur-sm border border-border/30 rounded-xl p-3">
-            {/* Month nav */}
             <div className="flex items-center justify-between mb-2">
               <button onClick={() => setCalMonth(subMonths(calMonth, 1))} className="p-1 text-muted-foreground active:text-foreground">
                 <ChevronLeft size={18} />
@@ -196,13 +345,11 @@ const TodoPage = () => {
                 <ChevronRight size={18} />
               </button>
             </div>
-            {/* Day headers */}
             <div className="grid grid-cols-7 gap-0.5 mb-1">
               {["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"].map(d => (
                 <div key={d} className="text-center text-[10px] text-muted-foreground font-medium py-1">{d}</div>
               ))}
             </div>
-            {/* Days grid */}
             <div className="grid grid-cols-7 gap-0.5">
               {Array.from({ length: startDayOfWeek }).map((_, i) => (
                 <div key={`empty-${i}`} />
@@ -217,10 +364,8 @@ const TodoPage = () => {
                     key={dayStr}
                     onClick={() => setSelectedDate(day)}
                     className={`relative flex flex-col items-center py-1.5 rounded-lg text-xs transition-colors ${
-                      isSelected
-                        ? "bg-primary text-primary-foreground"
-                        : isTodayDate
-                        ? "bg-primary/20 text-primary"
+                      isSelected ? "bg-primary text-primary-foreground"
+                        : isTodayDate ? "bg-primary/20 text-primary"
                         : "text-foreground/70 active:bg-card"
                     }`}
                   >
@@ -231,7 +376,7 @@ const TodoPage = () => {
                           <div
                             key={i}
                             className={`w-1 h-1 rounded-full ${
-                              t.done ? "bg-green-400" : isSelected ? "bg-primary-foreground/70" : "bg-accent"
+                              t.done ? "bg-green-400" : isSelected ? "bg-primary-foreground/70" : PRIORITY_COLORS[t.priority]
                             }`}
                           />
                         ))}
@@ -242,7 +387,6 @@ const TodoPage = () => {
               })}
             </div>
           </div>
-          {/* Selected date label */}
           <p className="text-xs text-muted-foreground mt-2 px-1">
             {format(selectedDate, "EEEE, d MMMM yyyy", { locale: localeId })}
           </p>
@@ -258,34 +402,49 @@ const TodoPage = () => {
         )}
         {filteredTasks.map(task => {
           const elapsed = getElapsed(task);
+          const deadline = getDeadlineState(task.date);
           return (
             <div
               key={task.id}
-              className={`bg-card/50 backdrop-blur-sm border rounded-xl px-3 py-3 ${
-                task.isRunning ? "border-accent/50" : "border-border/30"
+              className={`bg-card/50 backdrop-blur-sm border rounded-xl px-3 py-3 transition-opacity ${
+                task.isRunning ? "border-accent/50" : task.done ? "border-border/20 opacity-70" : "border-border/30"
               }`}
             >
               <div className="flex items-center gap-3">
-                <button
-                  onClick={() => toggleTask(task.id)}
-                  className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-colors shrink-0 ${
-                    task.done
-                      ? "bg-green-500 border-green-500 text-primary-foreground"
-                      : "border-muted-foreground"
-                  }`}
-                >
-                  {task.done && <span className="text-xs">✓</span>}
-                </button>
+                {/* Priority dot + checkbox */}
+                <div className="flex flex-col items-center gap-1 shrink-0">
+                  <div className={`w-2 h-2 rounded-full ${PRIORITY_COLORS[task.priority]}`} />
+                  <button
+                    onClick={() => toggleTask(task.id)}
+                    className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-colors ${
+                      task.done ? "bg-green-500 border-green-500 text-primary-foreground" : "border-muted-foreground"
+                    }`}
+                  >
+                    {task.done && <span className="text-xs">✓</span>}
+                  </button>
+                </div>
                 <div className="flex-1 min-w-0">
                   <span className={`text-sm block ${task.done ? "line-through text-muted-foreground" : "text-foreground"}`}>
                     {task.title}
                   </span>
-                  <div className="flex items-center gap-2 mt-0.5">
+                  {/* Meta row: time, category tag, deadline */}
+                  <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                     {task.startTime && (
                       <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
                         <Clock size={10} />
                         {task.startTime}{task.endTime ? ` - ${task.endTime}` : ""}
                       </span>
+                    )}
+                    {task.category && (
+                      <span className={`text-[9px] px-1.5 py-0.5 rounded-full border ${CATEGORY_COLORS[task.category]}`}>
+                        {CATEGORY_LABELS[task.category]}
+                      </span>
+                    )}
+                    {deadline && !task.done && (
+                      <span className={`text-[10px] ${deadline.className}`}>{deadline.label}</span>
+                    )}
+                    {task.recurrence !== "once" && (
+                      <span className="text-[10px] text-muted-foreground">🔁 {RECURRENCE_LABELS[task.recurrence]}</span>
                     )}
                     {elapsed && (
                       <span className={`text-[10px] font-mono ${task.isRunning ? "text-accent" : "text-muted-foreground"}`}>
@@ -345,47 +504,90 @@ const TodoPage = () => {
               className="w-full bg-muted/50 border border-border/30 rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none"
               autoFocus
             />
+            {/* Date & Time row */}
             <div className="flex gap-2">
               <div className="flex-1">
                 <label className="text-[10px] text-muted-foreground mb-0.5 block">Tanggal</label>
-                <input
-                  type="date"
-                  value={addDate}
-                  onChange={e => setAddDate(e.target.value)}
-                  className="w-full bg-muted/50 border border-border/30 rounded-lg px-2 py-1.5 text-xs text-foreground outline-none"
-                />
+                <input type="date" value={addDate} onChange={e => setAddDate(e.target.value)}
+                  className="w-full bg-muted/50 border border-border/30 rounded-lg px-2 py-1.5 text-xs text-foreground outline-none" />
               </div>
               <div className="flex-1">
                 <label className="text-[10px] text-muted-foreground mb-0.5 block">Mulai</label>
-                <input
-                  type="time"
-                  value={addStartTime}
-                  onChange={e => setAddStartTime(e.target.value)}
-                  className="w-full bg-muted/50 border border-border/30 rounded-lg px-2 py-1.5 text-xs text-foreground outline-none"
-                />
+                <input type="time" value={addStartTime} onChange={e => setAddStartTime(e.target.value)}
+                  className="w-full bg-muted/50 border border-border/30 rounded-lg px-2 py-1.5 text-xs text-foreground outline-none" />
               </div>
               <div className="flex-1">
                 <label className="text-[10px] text-muted-foreground mb-0.5 block">Selesai</label>
-                <input
-                  type="time"
-                  value={addEndTime}
-                  onChange={e => setAddEndTime(e.target.value)}
-                  className="w-full bg-muted/50 border border-border/30 rounded-lg px-2 py-1.5 text-xs text-foreground outline-none"
-                />
+                <input type="time" value={addEndTime} onChange={e => setAddEndTime(e.target.value)}
+                  className="w-full bg-muted/50 border border-border/30 rounded-lg px-2 py-1.5 text-xs text-foreground outline-none" />
               </div>
             </div>
+            {/* Priority & Category row */}
             <div className="flex gap-2">
-              <button
-                onClick={() => setShowAddForm(false)}
-                className="flex-1 py-2 rounded-lg text-xs text-muted-foreground bg-muted/30 active:bg-muted/50"
-              >
+              <div className="flex-1">
+                <label className="text-[10px] text-muted-foreground mb-0.5 block">Prioritas</label>
+                <div className="flex gap-1">
+                  {(["high", "medium", "low"] as const).map(p => (
+                    <button key={p} onClick={() => setAddPriority(p)}
+                      className={`flex-1 py-1 rounded-lg text-[10px] transition-colors ${
+                        addPriority === p ? "bg-primary text-primary-foreground" : "bg-muted/50 text-muted-foreground"
+                      }`}>
+                      {PRIORITY_LABELS[p]}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+            {/* Category */}
+            <div>
+              <label className="text-[10px] text-muted-foreground mb-0.5 block">Kategori</label>
+              <div className="flex gap-1">
+                {(["work", "personal", "health", "learning"] as const).map(c => (
+                  <button key={c} onClick={() => setAddCategory(addCategory === c ? "" : c)}
+                    className={`flex-1 py-1 rounded-lg text-[10px] transition-colors ${
+                      addCategory === c ? "bg-primary text-primary-foreground" : "bg-muted/50 text-muted-foreground"
+                    }`}>
+                    {CATEGORY_LABELS[c]}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {/* Recurrence */}
+            <div>
+              <label className="text-[10px] text-muted-foreground mb-0.5 block">Pengulangan</label>
+              <div className="flex gap-1">
+                {(["once", "daily", "weekly"] as const).map(r => (
+                  <button key={r} onClick={() => setAddRecurrence(r)}
+                    className={`flex-1 py-1 rounded-lg text-[10px] transition-colors ${
+                      addRecurrence === r ? "bg-primary text-primary-foreground" : "bg-muted/50 text-muted-foreground"
+                    }`}>
+                    {RECURRENCE_LABELS[r]}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {/* Effort (optional, collapsible-like) */}
+            <div>
+              <label className="text-[10px] text-muted-foreground mb-0.5 block">Effort (opsional)</label>
+              <div className="flex gap-1">
+                {(["quick", "medium", "deep"] as const).map(e => (
+                  <button key={e} onClick={() => setAddEffort(addEffort === e ? "" : e)}
+                    className={`flex-1 py-1 rounded-lg text-[10px] transition-colors ${
+                      addEffort === e ? "bg-primary text-primary-foreground" : "bg-muted/50 text-muted-foreground"
+                    }`}>
+                    {EFFORT_LABELS[e]}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {/* Actions */}
+            <div className="flex gap-2">
+              <button onClick={resetForm}
+                className="flex-1 py-2 rounded-lg text-xs text-muted-foreground bg-muted/30 active:bg-muted/50">
                 Batal
               </button>
-              <button
-                onClick={addTask}
-                disabled={!newTask.trim()}
-                className="flex-1 py-2 rounded-lg text-xs bg-primary text-primary-foreground active:bg-primary/80 disabled:opacity-30"
-              >
+              <button onClick={addTask} disabled={!newTask.trim()}
+                className="flex-1 py-2 rounded-lg text-xs bg-primary text-primary-foreground active:bg-primary/80 disabled:opacity-30">
                 Simpan
               </button>
             </div>
