@@ -513,15 +513,6 @@ const FocusPage = () => {
                       💻 Kerjakan sekarang
                     </button>
                   )}
-                  {timerState === "finished" && idx === activeIdx && (
-                    <button
-                      onClick={(e) => { e.stopPropagation(); markTaskDone(); }}
-                      className="flex items-center gap-1 text-[10px] text-accent active:scale-95 transition-all flex-shrink-0"
-                    >
-                      <CheckCircle2 size={12} />
-                      Done
-                    </button>
-                  )}
                   {timerState === "running" && idx === activeIdx && (
                     <button
                       onClick={(e) => { e.stopPropagation(); pauseTimer(); }}
