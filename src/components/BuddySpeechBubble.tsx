@@ -31,7 +31,7 @@ const BuddySpeechBubble = ({ messages, buddyState }: Props) => {
   }
 
   return (
-    <div ref={scrollRef} className="px-4 pb-2 overflow-y-auto max-h-[35vh] flex flex-col gap-2">
+    <div ref={scrollRef} className="px-4 pb-2 overflow-y-auto flex-1 flex flex-col gap-2">
       {lastMessages.map((msg, i) => (
         <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
           <div
