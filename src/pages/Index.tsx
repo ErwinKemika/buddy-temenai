@@ -1,5 +1,6 @@
 import { useEffect, useRef, useCallback } from "react";
 import BuddyHeader from "@/components/BuddyHeader";
+import BuddyRobot from "@/components/BuddyRobot";
 import BuddyControlBar from "@/components/BuddyControlBar";
 import BottomNav from "@/components/BottomNav";
 import BuddySpeechBubble from "@/components/BuddySpeechBubble";
@@ -34,7 +35,7 @@ const Index = () => {
     messages, buddyState,
     voiceEnabled, setVoiceEnabled,
     autoPlayVoice, setAutoPlayVoice,
-    sendMessage, injectReminderMessage, togglePin,
+    sendMessage, injectReminderMessage,
   } = useChat();
 
   const remindedRef = useRef(loadRemindedSet());
@@ -56,6 +57,7 @@ const Index = () => {
       for (const task of tasks) {
         if (task.done || task.status === "done") continue;
 
+        // Check if task is relevant for today
         const isForToday =
           task.date === todayStr ||
           task.recurrence === "daily" && task.date <= todayStr ||
@@ -63,32 +65,42 @@ const Index = () => {
 
         if (!isForToday) continue;
 
+        // Remind at start time
         if (task.startTime) {
           const [h, m] = task.startTime.split(":").map(Number);
           const taskMinutes = h * 60 + m;
           const diff = taskMinutes - currentMinutes;
 
+          // 5 min before reminder
           const earlyKey = `early-${task.id}-${todayStr}`;
           if (diff > 0 && diff <= 5 && !reminded.has(earlyKey)) {
             reminded.add(earlyKey);
             saveRemindedSet(reminded);
-            void injectReminderMessage(`Halo, ${diff} menit lagi kamu ada tugas: ${task.title}. Siap-siap ya! ⏰`, voiceEnabled);
+            const msg = `Halo, ${diff} menit lagi kamu ada tugas: ${task.title}. Siap-siap ya! ⏰`;
+            console.log(`[Todo Reminder] EARLY: ${msg}`);
+            void injectReminderMessage(msg, voiceEnabled);
           }
 
+          // Exact time reminder
           const exactKey = `exact-${task.id}-${todayStr}`;
           if (diff <= 0 && diff > -2 && !reminded.has(exactKey)) {
             reminded.add(exactKey);
             saveRemindedSet(reminded);
-            void injectReminderMessage(`Halo, sekarang waktunya ${task.title}. Semangat ya! 💪`, voiceEnabled);
+            const msg = `Halo, sekarang waktunya ${task.title}. Semangat ya! 💪`;
+            console.log(`[Todo Reminder] NOW: ${msg}`);
+            void injectReminderMessage(msg, voiceEnabled);
           }
         }
 
+        // Overdue task reminder (no startTime, or past due)
         const overdueKey = `overdue-${task.id}-${todayStr}`;
         if (!task.startTime && isBefore(startOfDay(new Date(task.date)), startOfDay(now)) && !isSameDay(new Date(task.date), now)) {
           if (!reminded.has(overdueKey)) {
             reminded.add(overdueKey);
             saveRemindedSet(reminded);
-            void injectReminderMessage(`Eh, kamu punya tugas yang belum selesai: ${task.title}. Yuk dikerjain! 📝`, voiceEnabled);
+            const msg = `Eh, kamu punya tugas yang belum selesai: ${task.title}. Yuk dikerjain! 📝`;
+            console.log(`[Todo Reminder] OVERDUE: ${msg}`);
+            void injectReminderMessage(msg, voiceEnabled);
           }
         }
       }
@@ -104,9 +116,10 @@ const Index = () => {
   }, [sendMessage]);
 
   return (
-    <div className="h-[100dvh] w-full flex flex-col bg-background overflow-hidden">
+    <div className="h-[100dvh] w-full flex flex-col buddy-gradient-bg space-stars overflow-hidden safe-area-inset">
       <BuddyHeader />
-      <BuddySpeechBubble messages={messages} buddyState={buddyState} onTogglePin={togglePin} />
+      <BuddyRobot buddyState={buddyState} />
+      <BuddySpeechBubble messages={messages} buddyState={buddyState} />
       <BuddyControlBar
         onSendMessage={handleSendMessage}
         buddyState={buddyState}

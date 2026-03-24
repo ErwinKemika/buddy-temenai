@@ -14,45 +14,7 @@ export type Database = {
   }
   public: {
     Tables: {
-      messages: {
-        Row: {
-          attachment_mime: string | null
-          attachment_name: string | null
-          attachment_type: string | null
-          attachment_url: string | null
-          content: string
-          created_at: string
-          id: string
-          pinned: boolean
-          role: string
-          user_id: string
-        }
-        Insert: {
-          attachment_mime?: string | null
-          attachment_name?: string | null
-          attachment_type?: string | null
-          attachment_url?: string | null
-          content?: string
-          created_at?: string
-          id?: string
-          pinned?: boolean
-          role: string
-          user_id: string
-        }
-        Update: {
-          attachment_mime?: string | null
-          attachment_name?: string | null
-          attachment_type?: string | null
-          attachment_url?: string | null
-          content?: string
-          created_at?: string
-          id?: string
-          pinned?: boolean
-          role?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Views: {
       [_ in never]: never
