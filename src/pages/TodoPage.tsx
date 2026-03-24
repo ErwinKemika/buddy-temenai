@@ -92,6 +92,34 @@ const TodoPage = () => {
     setTimeout(() => setBuddyMsg("Ada lagi yang mau dikerjain?"), 3000);
   };
 
+  const handleSmartInput = useCallback((text: string) => {
+    const parsed = parseTodoInput(text);
+    console.log("[TodoSmartInput] Raw:", text, "→ Parsed:", parsed);
+
+    const task: Task = {
+      id: Date.now().toString(),
+      title: parsed.title,
+      done: false,
+      date: parsed.date,
+      startTime: parsed.startTime,
+      endTime: parsed.endTime,
+    };
+    setTasks(prev => [...prev, task]);
+
+    const response = getRandomBuddyResponse();
+    const timeInfo = parsed.startTime ? ` (${parsed.startTime}${parsed.endTime ? " - " + parsed.endTime : ""})` : "";
+    const dateLabel = parsed.date === format(new Date(), "yyyy-MM-dd") ? "hari ini" : format(new Date(parsed.date + "T00:00:00"), "d MMM", { locale: localeId });
+
+    setBuddyChatLog(prev => [
+      ...prev,
+      { role: "user", text },
+      { role: "buddy", text: `${response}\n📋 "${parsed.title}" — ${dateLabel}${timeInfo}` },
+    ]);
+    setBuddyMsg(response);
+    setTimeout(() => setBuddyMsg("Ada lagi yang mau dikerjain?"), 3000);
+  }, []);
+  };
+
   const toggleTask = (id: string) => {
     setTasks(prev =>
       prev.map(t => {
