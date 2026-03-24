@@ -1,6 +1,6 @@
-import { Send, Volume2, VolumeX, Plus, Mic } from "lucide-react";
+import { Send, Volume2, VolumeX, Plus, Mic, X, Reply } from "lucide-react";
 import { useState } from "react";
-import { BuddyState } from "@/hooks/useChat";
+import { BuddyState, Message } from "@/hooks/useChat";
 import AttachmentMenu from "./AttachmentMenu";
 import VoiceRecorder from "./VoiceRecorder";
 
@@ -9,11 +9,14 @@ interface Props {
   buddyState: BuddyState;
   voiceEnabled: boolean;
   onToggleVoice: () => void;
+  replyingTo?: Message | null;
+  onCancelReply?: () => void;
 }
 
 const BuddyControlBar = ({
   onSendMessage, buddyState,
   voiceEnabled, onToggleVoice,
+  replyingTo, onCancelReply,
 }: Props) => {
   const [input, setInput] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
@@ -43,6 +46,23 @@ const BuddyControlBar = ({
 
   return (
     <div className="px-3 pt-2 pb-3 bg-card/40 backdrop-blur-md border-t border-border/30 safe-bottom relative">
+      {/* Reply preview */}
+      {replyingTo && (
+        <div className="flex items-center gap-2 mb-2 px-2 py-2 bg-primary/10 border border-primary/20 rounded-xl">
+          <Reply size={14} className="text-primary shrink-0" />
+          <div className="flex-1 min-w-0">
+            <span className="text-[10px] font-semibold text-primary">
+              Membalas {replyingTo.role === "assistant" ? "Buddy" : "Kamu"}
+            </span>
+            <p className="text-[12px] text-muted-foreground line-clamp-1">
+              {replyingTo.content.slice(0, 80)}
+            </p>
+          </div>
+          <button onClick={onCancelReply} className="p-1 text-muted-foreground hover:text-foreground">
+            <X size={14} />
+          </button>
+        </div>
+      )}
       <div className="flex items-center gap-1.5">
         <button
           onClick={onToggleVoice}
