@@ -1,10 +1,10 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
-import { Play, Square, Pause, RotateCcw, CheckCircle2 } from "lucide-react";
+import { Pause, Square, RotateCcw, CheckCircle2 } from "lucide-react";
 import { startOfDay, isBefore } from "date-fns";
+import { useSearchParams } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
 import { BuddyState } from "@/hooks/useChat";
 
-const FOCUS_DURATION = 25 * 60;
 const TODO_STORAGE_KEY = "buddy-todos";
 
 interface Task {
@@ -28,9 +28,9 @@ const PRIORITY_WEIGHT = { high: 3, medium: 2, low: 1 };
 
 const PHRASES = {
   idle: [
-    "Siap fokus? Ayo mulai! 🎯",
+    "Siap fokus? Pilih tugas dulu ya 🎯",
     "Mau ngerjain apa hari ini?",
-    "Yuk, waktunya produktif 💪",
+    "Pilih tugas dari to-do list ya 💪",
   ],
   started: [
     "Oke, kita fokus bareng ya 🔥",
@@ -86,10 +86,19 @@ function saveTasks(tasks: Task[]) {
   localStorage.setItem(TODO_STORAGE_KEY, JSON.stringify(tasks));
 }
 
+/** Calculate duration in seconds from task startTime/endTime, fallback to 25min */
+function getTaskDuration(task: Task | null): number {
+  if (!task?.startTime || !task?.endTime) return 25 * 60;
+  const [sh, sm] = task.startTime.split(":").map(Number);
+  const [eh, em] = task.endTime.split(":").map(Number);
+  const diff = (eh * 60 + em) - (sh * 60 + sm);
+  if (diff > 0) return diff * 60;
+  return 25 * 60;
+}
+
 /** Get focus-worthy tasks: high priority, overdue, work category, or in_progress only */
 function getFocusTasks(allTasks: Task[]): Task[] {
   const today = startOfDay(new Date());
-
   return allTasks
     .filter(t => {
       if (t.status === "done" || t.done) return false;
@@ -98,7 +107,6 @@ function getFocusTasks(allTasks: Task[]): Task[] {
       const isHighPriority = t.priority === "high";
       const isWork = t.category === "work";
       const isInProgress = t.status === "in_progress";
-
       return isHighPriority || isOverdue || isWork || isInProgress;
     })
     .sort((a, b) => {
@@ -120,17 +128,45 @@ const PRIORITY_DOT: Record<string, string> = {
 };
 
 const FocusPage = () => {
+  const [searchParams] = useSearchParams();
+  const taskIdFromUrl = searchParams.get("taskId");
+
   const [timerState, setTimerState] = useState<TimerState>("idle");
-  const [secondsLeft, setSecondsLeft] = useState(FOCUS_DURATION);
   const [buddyMsg, setBuddyMsg] = useState(() => pickRandom(PHRASES.idle));
   const [buddyState, setBuddyState] = useState<BuddyState>("idle");
   const [allTasks, setAllTasks] = useState<Task[]>(() => loadTasks());
   const [activeIdx, setActiveIdx] = useState(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const nearEndFired = useRef(false);
+  const autoStarted = useRef(false);
 
   const focusTasks = useMemo(() => getFocusTasks(allTasks), [allTasks]);
   const activeTask = focusTasks[activeIdx] || null;
+
+  const duration = useMemo(() => getTaskDuration(activeTask), [activeTask]);
+  const [secondsLeft, setSecondsLeft] = useState(duration);
+
+  // Update secondsLeft when active task changes (only when idle)
+  useEffect(() => {
+    if (timerState === "idle") {
+      setSecondsLeft(duration);
+    }
+  }, [duration, timerState]);
+
+  // If navigated from TodoPage with a taskId, select that task and auto-start
+  useEffect(() => {
+    if (taskIdFromUrl && !autoStarted.current) {
+      const idx = focusTasks.findIndex(t => t.id === taskIdFromUrl);
+      if (idx >= 0) {
+        setActiveIdx(idx);
+        autoStarted.current = true;
+        // Auto-start after a brief delay
+        setTimeout(() => {
+          startTimerForTask(idx);
+        }, 500);
+      }
+    }
+  }, [taskIdFromUrl, focusTasks]);
 
   // Reload tasks from storage on mount and when window refocuses
   useEffect(() => {
@@ -154,30 +190,34 @@ const FocusPage = () => {
     setBuddyMsg(pickRandom(PHRASES.taskDone));
     setBuddyState("speaking");
     setTimeout(() => setBuddyState("idle"), 2000);
-    // Move to next task
     const newFocus = getFocusTasks(updated);
     setActiveIdx(prev => Math.min(prev, Math.max(0, newFocus.length - 1)));
-  }, [activeTask, allTasks]);
+    setTimerState("idle");
+    clearTimer();
+  }, [activeTask, allTasks, clearTimer]);
 
-  const startTimer = () => {
+  const startTimerForTask = (idx?: number) => {
+    const taskIdx = idx ?? activeIdx;
+    const task = focusTasks[taskIdx] || null;
+    const taskDuration = getTaskDuration(task);
+
     clearTimer();
     nearEndFired.current = false;
-    const startFrom = timerState === "paused" ? secondsLeft : FOCUS_DURATION;
+    const startFrom = timerState === "paused" && idx === undefined ? secondsLeft : taskDuration;
     setSecondsLeft(startFrom);
     setTimerState("running");
-    // clear state
 
     // Set active task to in_progress
-    if (activeTask && activeTask.status !== "in_progress") {
+    if (task && task.status !== "in_progress") {
       const updated = allTasks.map(t =>
-        t.id === activeTask.id ? { ...t, status: "in_progress" as const, isRunning: true, startedAt: t.startedAt || new Date().toISOString() } : t
+        t.id === task.id ? { ...t, status: "in_progress" as const, isRunning: true, startedAt: t.startedAt || new Date().toISOString() } : t
       );
       setAllTasks(updated);
       saveTasks(updated);
     }
 
-    setBuddyMsg(activeTask
-      ? `Oke, kita fokus ke "${activeTask.title}" ya 🔥`
+    setBuddyMsg(task
+      ? `Oke, kita fokus ke "${task.title}" ya 🔥`
       : pickRandom(PHRASES.started)
     );
     setBuddyState("speaking");
@@ -213,7 +253,7 @@ const FocusPage = () => {
   const resetTimer = () => {
     clearTimer();
     setTimerState("idle");
-    setSecondsLeft(FOCUS_DURATION);
+    setSecondsLeft(duration);
     setBuddyMsg(pickRandom(PHRASES.idle));
     setBuddyState("idle");
     nearEndFired.current = false;
@@ -229,9 +269,20 @@ const FocusPage = () => {
 
   const mins = Math.floor(secondsLeft / 60);
   const secs = secondsLeft % 60;
-  const progress = ((FOCUS_DURATION - secondsLeft) / FOCUS_DURATION) * 100;
+  const progress = ((duration - secondsLeft) / duration) * 100;
   const isActive = timerState === "running";
   const isFinished = timerState === "finished";
+
+  // Format duration for display
+  const formatDuration = (totalSecs: number) => {
+    const m = Math.floor(totalSecs / 60);
+    if (m >= 60) {
+      const h = Math.floor(m / 60);
+      const rm = m % 60;
+      return rm > 0 ? `${h}j ${rm}m` : `${h}j`;
+    }
+    return `${m}m`;
+  };
 
   return (
     <div className="h-[100dvh] w-full flex flex-col bg-background overflow-hidden relative">
@@ -250,7 +301,7 @@ const FocusPage = () => {
 
       {/* Main content */}
       <div className="flex-1 flex flex-col items-center justify-center relative z-10 px-6">
-        {/* Buddy Robot */}
+        {/* Buddy Robot with Hands */}
         <div className={`relative mb-2 ${isActive ? "animate-float" : ""}`}>
           <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full blur-3xl transition-all duration-1000 ${
             isActive ? "w-56 h-56 bg-primary/15" : isFinished ? "w-56 h-56 bg-accent/20" : "w-48 h-48 bg-primary/8"
@@ -260,12 +311,14 @@ const FocusPage = () => {
           </div>
 
           <div className="relative z-10">
+            {/* Antenna */}
             <div className="flex flex-col items-center mb-0">
               <div className={`w-5 h-5 rounded-full transition-colors duration-300 ${
                 isActive ? "bg-accent animate-pulse" : isFinished ? "bg-green-400 animate-pulse" : "bg-accent/70 animate-antenna"
               }`} />
               <div className="w-1.5 h-6 bg-gradient-to-b from-accent/40 to-buddy-body-light" />
             </div>
+            {/* Head */}
             <div className="relative animate-head-tilt">
               <div className="w-48 h-36 rounded-[2.5rem] bg-gradient-to-b from-buddy-body-light to-buddy-body border border-primary/15 relative shadow-2xl shadow-primary/10">
                 <div className="absolute top-0 left-0 right-0 h-1.5 rounded-t-[2.5rem] bg-gradient-to-r from-primary/25 via-accent/35 to-primary/25" />
@@ -288,14 +341,36 @@ const FocusPage = () => {
                     <div className={`h-1 rounded-full transition-all duration-300 ${isActive ? "w-8 bg-accent/40" : "w-5 bg-muted-foreground/20"}`} />
                   )}
                 </div>
+                {/* Ears */}
                 <div className="absolute left-[-6px] top-1/2 -translate-y-1/2 w-3 h-9 rounded-l-full bg-gradient-to-r from-primary/40 to-primary/25" />
                 <div className="absolute right-[-6px] top-1/2 -translate-y-1/2 w-3 h-9 rounded-r-full bg-gradient-to-l from-primary/40 to-primary/25" />
               </div>
             </div>
+            {/* Neck */}
             <div className="flex justify-center">
               <div className="w-7 h-3 bg-gradient-to-b from-buddy-body-light to-buddy-body rounded-b-md" />
             </div>
+            {/* Body with Arms/Hands */}
             <div className="relative flex justify-center">
+              {/* Left Arm - reaching down to hold timer */}
+              <div className={`absolute -left-8 top-2 transition-transform duration-700 ${isActive ? "rotate-[5deg]" : ""}`}>
+                {/* Upper arm */}
+                <div className="w-3 h-12 bg-gradient-to-b from-buddy-body-light to-buddy-body rounded-full border border-primary/15" />
+                {/* Hand */}
+                <div className={`w-5 h-5 rounded-full bg-gradient-to-b from-buddy-body-light to-buddy-body border border-primary/15 -ml-1 -mt-0.5 flex items-center justify-center transition-all duration-500 ${isActive ? "shadow-md shadow-accent/20" : ""}`}>
+                  <div className="w-2.5 h-2.5 rounded-full bg-primary/20" />
+                </div>
+              </div>
+              {/* Right Arm - reaching down to hold timer */}
+              <div className={`absolute -right-8 top-2 transition-transform duration-700 ${isActive ? "-rotate-[5deg]" : ""}`}>
+                {/* Upper arm */}
+                <div className="w-3 h-12 bg-gradient-to-b from-buddy-body-light to-buddy-body rounded-full border border-primary/15" />
+                {/* Hand */}
+                <div className={`w-5 h-5 rounded-full bg-gradient-to-b from-buddy-body-light to-buddy-body border border-primary/15 -ml-0 -mt-0.5 flex items-center justify-center transition-all duration-500 ${isActive ? "shadow-md shadow-accent/20" : ""}`}>
+                  <div className="w-2.5 h-2.5 rounded-full bg-primary/20" />
+                </div>
+              </div>
+              {/* Body */}
               <div className="w-32 h-22 rounded-[1.5rem] rounded-t-xl bg-gradient-to-b from-buddy-body-light to-buddy-body border border-primary/15 relative shadow-xl shadow-primary/5">
                 <div className="absolute top-3 left-1/2 -translate-x-1/2 w-7 h-7 rounded-full bg-primary/12 border border-primary/15 flex items-center justify-center overflow-hidden">
                   <div className={`absolute bottom-0 left-0 right-0 transition-all duration-1000 rounded-full ${
@@ -317,89 +392,94 @@ const FocusPage = () => {
           </p>
         </div>
 
-        {/* Timer */}
-        <div className="relative mb-4">
-          <div className="w-44 h-44 relative">
+        {/* Timer - smaller size */}
+        <div className="relative mb-3">
+          <div className="w-28 h-28 relative">
             <svg className="w-full h-full -rotate-90" viewBox="0 0 200 200">
-              <circle cx="100" cy="100" r="88" fill="none" strokeWidth="6" className="stroke-secondary" />
-              <circle cx="100" cy="100" r="88" fill="none" strokeWidth="6" strokeLinecap="round"
+              <circle cx="100" cy="100" r="88" fill="none" strokeWidth="8" className="stroke-secondary" />
+              <circle cx="100" cy="100" r="88" fill="none" strokeWidth="8" strokeLinecap="round"
                 className={`transition-all duration-1000 ${isFinished ? "stroke-accent" : "stroke-primary"}`}
                 style={{ strokeDasharray: 2 * Math.PI * 88, strokeDashoffset: 2 * Math.PI * 88 * (1 - progress / 100) }}
               />
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-4xl font-bold font-orbitron text-foreground tracking-wider">
+              <span className="text-xl font-bold font-orbitron text-foreground tracking-wider">
                 {String(mins).padStart(2, "0")}:{String(secs).padStart(2, "0")}
               </span>
             </div>
           </div>
         </div>
 
-        {/* Controls */}
-        <div className="flex items-center gap-4 mb-5">
-          {timerState === "idle" && (
-            <button onClick={startTimer}
-              className="flex items-center gap-2 bg-primary text-primary-foreground px-8 py-3.5 rounded-full text-sm font-semibold active:scale-95 transition-all shadow-lg shadow-primary/25">
-              <Play size={20} />
-              Mulai Fokus
-            </button>
-          )}
+        {/* Controls - only show pause/stop/reset, no start button */}
+        <div className="flex items-center gap-4 mb-4">
           {timerState === "running" && (
             <>
               <button onClick={pauseTimer}
-                className="flex items-center justify-center w-12 h-12 rounded-full bg-secondary text-secondary-foreground active:scale-95 transition-all">
-                <Pause size={20} />
+                className="flex items-center justify-center w-11 h-11 rounded-full bg-secondary text-secondary-foreground active:scale-95 transition-all">
+                <Pause size={18} />
               </button>
               <button onClick={resetTimer}
-                className="flex items-center gap-2 bg-destructive text-destructive-foreground px-6 py-3 rounded-full text-sm font-semibold active:scale-95 transition-all">
-                <Square size={18} />
+                className="flex items-center gap-2 bg-destructive text-destructive-foreground px-5 py-2.5 rounded-full text-xs font-semibold active:scale-95 transition-all">
+                <Square size={16} />
                 Berhenti
               </button>
             </>
           )}
           {timerState === "paused" && (
             <>
-              <button onClick={startTimer}
-                className="flex items-center gap-2 bg-primary text-primary-foreground px-6 py-3 rounded-full text-sm font-semibold active:scale-95 transition-all shadow-lg shadow-primary/25">
-                <Play size={18} />
+              <button onClick={() => startTimerForTask()}
+                className="flex items-center gap-2 bg-primary text-primary-foreground px-5 py-2.5 rounded-full text-xs font-semibold active:scale-95 transition-all shadow-lg shadow-primary/25">
                 Lanjut
               </button>
               <button onClick={resetTimer}
-                className="flex items-center justify-center w-12 h-12 rounded-full bg-secondary text-secondary-foreground active:scale-95 transition-all">
-                <RotateCcw size={18} />
+                className="flex items-center justify-center w-11 h-11 rounded-full bg-secondary text-secondary-foreground active:scale-95 transition-all">
+                <RotateCcw size={16} />
               </button>
             </>
           )}
           {timerState === "finished" && (
             <button onClick={resetTimer}
-              className="flex items-center gap-2 bg-primary text-primary-foreground px-8 py-3.5 rounded-full text-sm font-semibold active:scale-95 transition-all shadow-lg shadow-primary/25">
-              <RotateCcw size={18} />
-              Mulai Lagi
+              className="flex items-center gap-2 bg-primary text-primary-foreground px-6 py-2.5 rounded-full text-xs font-semibold active:scale-95 transition-all shadow-lg shadow-primary/25">
+              <RotateCcw size={16} />
+              Reset
             </button>
           )}
         </div>
 
-        {/* Task list - visible breakdown */}
+        {/* Task list with focus buttons */}
         {focusTasks.length > 0 && (
           <div className="w-full max-w-xs">
             <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2 text-center">
               {focusTasks.length} tugas fokus
             </p>
-            <div className="bg-card/60 backdrop-blur-sm border border-border/40 rounded-2xl overflow-hidden max-h-[160px] overflow-y-auto">
+            <div className="bg-card/60 backdrop-blur-sm border border-border/40 rounded-2xl overflow-hidden max-h-[180px] overflow-y-auto">
               {focusTasks.map((task, idx) => (
-                <button
+                <div
                   key={task.id}
-                  onClick={() => setActiveIdx(idx)}
-                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 text-left transition-colors ${
-                    idx === activeIdx ? "bg-primary/10" : "active:bg-secondary/60"
+                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 transition-colors ${
+                    idx === activeIdx && timerState !== "idle" ? "bg-primary/10" : ""
                   } ${idx > 0 ? "border-t border-border/20" : ""}`}
                 >
                   <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${PRIORITY_DOT[task.priority]}`} />
                   <div className="flex-1 min-w-0">
-                    <p className={`text-xs font-medium truncate ${idx === activeIdx ? "text-foreground" : "text-muted-foreground"}`}>{task.title}</p>
-                    {task.startTime && <p className="text-[10px] text-muted-foreground/60">{task.startTime}{task.endTime ? ` – ${task.endTime}` : ""}</p>}
+                    <p className={`text-xs font-medium truncate ${idx === activeIdx && timerState !== "idle" ? "text-foreground" : "text-muted-foreground"}`}>{task.title}</p>
+                    <div className="flex items-center gap-1.5">
+                      {task.startTime && <p className="text-[10px] text-muted-foreground/60">{task.startTime}{task.endTime ? ` – ${task.endTime}` : ""}</p>}
+                      <span className="text-[10px] text-muted-foreground/40">({formatDuration(getTaskDuration(task))})</span>
+                    </div>
                   </div>
-                  {idx === activeIdx && <div className="w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" />}
+                  {/* Focus/start button per task */}
+                  {timerState === "idle" && (
+                    <button
+                      onClick={() => {
+                        setActiveIdx(idx);
+                        startTimerForTask(idx);
+                      }}
+                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-primary/20 text-primary text-[10px] font-semibold active:scale-95 transition-all border border-primary/30"
+                    >
+                      🎯 Fokus
+                    </button>
+                  )}
                   {timerState === "finished" && idx === activeIdx && (
                     <button
                       onClick={(e) => { e.stopPropagation(); markTaskDone(); }}
@@ -409,9 +489,19 @@ const FocusPage = () => {
                       Done
                     </button>
                   )}
-                </button>
+                  {timerState !== "idle" && idx === activeIdx && timerState !== "finished" && (
+                    <div className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse flex-shrink-0" />
+                  )}
+                </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {focusTasks.length === 0 && (
+          <div className="text-center mt-4">
+            <p className="text-sm text-muted-foreground">Belum ada tugas fokus.</p>
+            <p className="text-xs text-muted-foreground/60 mt-1">Tambahkan tugas dengan prioritas tinggi di To-Do list</p>
           </div>
         )}
       </div>

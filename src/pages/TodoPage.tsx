@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import { Plus, Trash2, Calendar as CalendarIcon, Clock, ChevronLeft, ChevronRight, Play, Square, CheckCircle2, Filter, X, Pencil, Volume2, VolumeX } from "lucide-react";
+import { Plus, Trash2, Calendar as CalendarIcon, Clock, ChevronLeft, ChevronRight, Play, Square, CheckCircle2, Filter, X, Pencil, Volume2, VolumeX, Target } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, isToday, addMonths, subMonths, isBefore, startOfDay } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import BottomNav from "@/components/BottomNav";
@@ -93,6 +94,7 @@ const getDeadlineState = (dateStr: string): { label: string; className: string }
 };
 
 const TodoPage = () => {
+  const navigate = useNavigate();
   const [tasks, setTasks] = useState<Task[]>(loadTasks);
   const { voiceEnabled, toggleVoice, speak } = useBuddyVoice();
   const hasSpokenInitial = useRef(false);
@@ -625,6 +627,11 @@ const TodoPage = () => {
                   {!task.done && !task.isRunning && (
                     <button onClick={() => startTask(task.id)} className="p-1.5 text-accent active:text-accent/80 transition-colors">
                       <Play size={14} fill="currentColor" />
+                    </button>
+                  )}
+                  {!task.done && (
+                    <button onClick={() => navigate(`/focus?taskId=${task.id}`)} className="p-1.5 text-primary active:text-primary/80 transition-colors" title="Fokus">
+                      <Target size={14} />
                     </button>
                   )}
                   {task.isRunning && (
