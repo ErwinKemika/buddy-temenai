@@ -126,7 +126,6 @@ const FocusPage = () => {
   const [buddyState, setBuddyState] = useState<BuddyState>("idle");
   const [allTasks, setAllTasks] = useState<Task[]>(() => loadTasks());
   const [activeIdx, setActiveIdx] = useState(0);
-  const [showTaskList, setShowTaskList] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const nearEndFired = useRef(false);
 
