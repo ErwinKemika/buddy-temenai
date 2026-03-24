@@ -302,7 +302,7 @@ export function useChat() {
         resolvedText = await transcribeVoice(attachment.file);
       } catch (e) {
         console.error("[Transcribe] Error:", e);
-        setMessages(prev => [...prev, { role: "assistant", content: e instanceof Error ? e.message : "Voice note gagal diproses." }]);
+        setMessages(prev => [...prev, { id: genMsgId(), role: "assistant", content: e instanceof Error ? e.message : "Voice note gagal diproses." }]);
         setBuddyState("idle");
         return;
       }
