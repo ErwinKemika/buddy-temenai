@@ -275,6 +275,9 @@ export function useChat() {
       userContent = resolvedText;
     }
 
+    // Build todo context for Buddy
+    const todoContext = buildTodoContext();
+
     const chatMessages = [
       ...messages.map(m => ({ role: m.role, content: m.content })),
       { role: "user", content: userContent },
