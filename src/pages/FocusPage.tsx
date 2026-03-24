@@ -496,8 +496,23 @@ const FocusPage = () => {
                       Done
                     </button>
                   )}
-                  {timerState !== "idle" && idx === activeIdx && timerState !== "finished" && (
-                    <div className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse flex-shrink-0" />
+                  {timerState === "running" && idx === activeIdx && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); pauseTimer(); }}
+                      className="flex items-center gap-1 px-2 py-1.5 rounded-full bg-yellow-500/20 text-yellow-400 text-[10px] font-semibold active:scale-95 transition-all border border-yellow-500/30 flex-shrink-0"
+                    >
+                      <Pause size={10} />
+                      Pause
+                    </button>
+                  )}
+                  {timerState === "paused" && idx === activeIdx && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); startTimerForTask(); }}
+                      className="flex items-center gap-1 px-2 py-1.5 rounded-full bg-primary/20 text-primary text-[10px] font-semibold active:scale-95 transition-all border border-primary/30 flex-shrink-0"
+                    >
+                      <Play size={10} />
+                      Lanjut
+                    </button>
                   )}
                 </div>
               ))}
