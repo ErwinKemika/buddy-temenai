@@ -371,14 +371,15 @@ export function useChat() {
     ];
 
     let assistantSoFar = "";
+    const assistantMsgId = genMsgId();
     const upsertAssistant = (chunk: string) => {
       assistantSoFar += chunk;
       setMessages(prev => {
         const last = prev[prev.length - 1];
-        if (last?.role === "assistant") {
+        if (last?.role === "assistant" && last.id === assistantMsgId) {
           return prev.map((m, i) => i === prev.length - 1 ? { ...m, content: assistantSoFar } : m);
         }
-        return [...prev, { role: "assistant", content: assistantSoFar }];
+        return [...prev, { id: assistantMsgId, role: "assistant" as const, content: assistantSoFar }];
       });
     };
 
