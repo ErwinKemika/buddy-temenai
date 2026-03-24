@@ -228,9 +228,35 @@ const FocusPage = () => {
         if (prev <= 1) {
           clearTimer();
           setTimerState("finished");
-          setBuddyMsg(pickRandom(PHRASES.finished));
-          setBuddyState("speaking");
-          setTimeout(() => setBuddyState("idle"), 3000);
+          // Auto-complete the active task
+          setAllTasks(current => {
+            const activeTask = getFocusTasks(current)[activeIdx];
+            if (activeTask) {
+              const updated = current.map(t =>
+                t.id === activeTask.id ? { ...t, status: "done" as const, done: true, completedAt: new Date().toISOString() } : t
+              );
+              saveTasks(updated);
+              setBuddyMsg(pickRandom(PHRASES.taskDone));
+              setBuddyState("speaking");
+              // After a delay, reset to idle and move to next task
+              setTimeout(() => {
+                setBuddyState("idle");
+                const newFocus = getFocusTasks(updated);
+                if (newFocus.length > 0) {
+                  setActiveIdx(prev => Math.min(prev, newFocus.length - 1));
+                  setBuddyMsg(pickRandom(PHRASES.idle));
+                } else {
+                  setBuddyMsg("Semua tugas beres! Istirahat dulu ya 🎉");
+                }
+                setTimerState("idle");
+              }, 3000);
+              return updated;
+            }
+            setBuddyMsg(pickRandom(PHRASES.finished));
+            setBuddyState("speaking");
+            setTimeout(() => { setBuddyState("idle"); setTimerState("idle"); }, 3000);
+            return current;
+          });
           return 0;
         }
         if (prev === 121 && !nearEndFired.current) {
@@ -444,13 +470,6 @@ const FocusPage = () => {
               </button>
             </>
           )}
-          {timerState === "finished" && (
-            <button onClick={resetTimer}
-              className="flex items-center gap-2 bg-primary text-primary-foreground px-6 py-2.5 rounded-full text-xs font-semibold active:scale-95 transition-all shadow-lg shadow-primary/25">
-              <RotateCcw size={16} />
-              Reset
-            </button>
-          )}
         </div>
 
         {/* Task list with focus buttons */}
@@ -485,15 +504,6 @@ const FocusPage = () => {
                       className="flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-primary/20 text-primary text-[10px] font-semibold active:scale-95 transition-all border border-primary/30"
                     >
                       💻 Kerjakan sekarang
-                    </button>
-                  )}
-                  {timerState === "finished" && idx === activeIdx && (
-                    <button
-                      onClick={(e) => { e.stopPropagation(); markTaskDone(); }}
-                      className="flex items-center gap-1 text-[10px] text-accent active:scale-95 transition-all flex-shrink-0"
-                    >
-                      <CheckCircle2 size={12} />
-                      Done
                     </button>
                   )}
                   {timerState === "running" && idx === activeIdx && (
