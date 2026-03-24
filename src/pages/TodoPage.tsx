@@ -265,8 +265,7 @@ const TodoPage = () => {
         )
       );
       resetForm();
-      setBuddyMsg("Udah aku update ya! ✏️");
-      setTimeout(() => setBuddyMsg("Ada lagi yang mau diubah?"), 3000);
+      updateBuddyMsg("Udah aku update ya! ✏️", getBuddyLine(tasks));
       return;
     }
 
