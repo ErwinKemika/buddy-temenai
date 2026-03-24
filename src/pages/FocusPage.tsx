@@ -228,9 +228,35 @@ const FocusPage = () => {
         if (prev <= 1) {
           clearTimer();
           setTimerState("finished");
-          setBuddyMsg(pickRandom(PHRASES.finished));
-          setBuddyState("speaking");
-          setTimeout(() => setBuddyState("idle"), 3000);
+          // Auto-complete the active task
+          setAllTasks(current => {
+            const activeTask = getFocusTasks(current)[activeIdx];
+            if (activeTask) {
+              const updated = current.map(t =>
+                t.id === activeTask.id ? { ...t, status: "done" as const, done: true, completedAt: new Date().toISOString() } : t
+              );
+              saveTasks(updated);
+              setBuddyMsg(pickRandom(PHRASES.taskDone));
+              setBuddyState("speaking");
+              // After a delay, reset to idle and move to next task
+              setTimeout(() => {
+                setBuddyState("idle");
+                const newFocus = getFocusTasks(updated);
+                if (newFocus.length > 0) {
+                  setActiveIdx(prev => Math.min(prev, newFocus.length - 1));
+                  setBuddyMsg(pickRandom(PHRASES.idle));
+                } else {
+                  setBuddyMsg("Semua tugas beres! Istirahat dulu ya 🎉");
+                }
+                setTimerState("idle");
+              }, 3000);
+              return updated;
+            }
+            setBuddyMsg(pickRandom(PHRASES.finished));
+            setBuddyState("speaking");
+            setTimeout(() => { setBuddyState("idle"); setTimerState("idle"); }, 3000);
+            return current;
+          });
           return 0;
         }
         if (prev === 121 && !nearEndFired.current) {
