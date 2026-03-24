@@ -1,21 +1,32 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
+import { useAuth } from "@/hooks/useAuth";
 import buddyAvatar from "@/assets/buddy-avatar.png";
 import { Mail, Lock, Eye, EyeOff, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 const AuthPage = () => {
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (!loading && user) {
+      navigate("/", { replace: true });
+    }
+  }, [user, loading, navigate]);
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) return;
-    setLoading(true);
+    setSubmitting(true);
 
     try {
       if (isLogin) {
@@ -25,7 +36,7 @@ const AuthPage = () => {
       } else {
         if (password.length < 6) {
           toast.error("Password minimal 6 karakter");
-          setLoading(false);
+          setSubmitting(false);
           return;
         }
         const { error } = await supabase.auth.signUp({
@@ -40,12 +51,12 @@ const AuthPage = () => {
     } catch (err: any) {
       toast.error(err.message || "Terjadi kesalahan");
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
   const handleGoogleLogin = async () => {
-    setLoading(true);
+    setSubmitting(true);
     try {
       const { error } = await lovable.auth.signInWithOAuth("google", {
         redirect_uri: window.location.origin,
@@ -53,7 +64,7 @@ const AuthPage = () => {
       if (error) throw error;
     } catch (err: any) {
       toast.error(err.message || "Gagal login dengan Google");
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
@@ -108,10 +119,10 @@ const AuthPage = () => {
             </div>
             <button
               type="submit"
-              disabled={loading}
+              disabled={submitting}
               className="w-full bg-primary text-primary-foreground py-2.5 rounded-xl text-sm font-semibold active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
             >
-              {loading && <Loader2 size={16} className="animate-spin" />}
+              {submitting && <Loader2 size={16} className="animate-spin" />}
               {isLogin ? "Masuk" : "Daftar"}
             </button>
           </form>
@@ -124,7 +135,7 @@ const AuthPage = () => {
 
           <button
             onClick={handleGoogleLogin}
-            disabled={loading}
+            disabled={submitting}
             className="w-full flex items-center justify-center gap-2 bg-muted/50 border border-border/30 py-2.5 rounded-xl text-sm font-medium text-foreground active:scale-[0.98] transition-all disabled:opacity-50"
           >
             <svg width="18" height="18" viewBox="0 0 24 24">
