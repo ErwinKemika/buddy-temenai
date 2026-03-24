@@ -32,14 +32,9 @@ const loadTasks = (): Task[] => {
 
 const TodoPage = () => {
   const [tasks, setTasks] = useState<Task[]>(loadTasks);
-  const [newTask, setNewTask] = useState("");
   const [viewMode, setViewMode] = useState<ViewMode>("today");
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [calMonth, setCalMonth] = useState(new Date());
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [addDate, setAddDate] = useState(format(new Date(), "yyyy-MM-dd"));
-  const [addStartTime, setAddStartTime] = useState("");
-  const [addEndTime, setAddEndTime] = useState("");
   const [buddyMsg, setBuddyMsg] = useState("Mau ngapain hari ini? 📝");
   const [buddyChatLog, setBuddyChatLog] = useState<Array<{ role: "user" | "buddy"; text: string }>>([]);
 
