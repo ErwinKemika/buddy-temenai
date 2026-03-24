@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { Plus, Trash2, Calendar as CalendarIcon, Clock, ChevronLeft, ChevronRight, Play, Square, CheckCircle2 } from "lucide-react";
+import { Trash2, Clock, ChevronLeft, ChevronRight, Play, Square, CheckCircle2 } from "lucide-react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, isToday, addMonths, subMonths } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import BottomNav from "@/components/BottomNav";
