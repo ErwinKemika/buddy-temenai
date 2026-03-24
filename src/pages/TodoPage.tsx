@@ -626,7 +626,6 @@ const TodoPage = () => {
                       <Target size={14} />
                     </button>
                   )}
-                  )}
                   {task.done && (
                     <CheckCircle2 size={14} className="text-green-500" />
                   )}
