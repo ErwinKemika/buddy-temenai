@@ -139,6 +139,7 @@ const FocusPage = () => {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const nearEndFired = useRef(false);
   const autoStarted = useRef(false);
+  const activeTaskIdRef = useRef<string | null>(null);
 
   const focusTasks = useMemo(() => getFocusTasks(allTasks), [allTasks]);
   const activeTask = focusTasks[activeIdx] || null;
@@ -207,6 +208,10 @@ const FocusPage = () => {
     setSecondsLeft(startFrom);
     setTimerState("running");
 
+    // Capture the actual task ID for the timer closure
+    const runningTaskId = task?.id || null;
+    activeTaskIdRef.current = runningTaskId;
+
     // Set active task to in_progress
     if (task && task.status !== "in_progress") {
       const updated = allTasks.map(t =>
@@ -228,12 +233,12 @@ const FocusPage = () => {
         if (prev <= 1) {
           clearTimer();
           setTimerState("finished");
-          // Auto-complete the active task
+          // Auto-complete using the captured task ID, not activeIdx
           setAllTasks(current => {
-            const activeTask = getFocusTasks(current)[activeIdx];
-            if (activeTask) {
+            const taskToComplete = current.find(t => t.id === runningTaskId);
+            if (taskToComplete) {
               const updated = current.map(t =>
-                t.id === activeTask.id ? { ...t, status: "done" as const, done: true, completedAt: new Date().toISOString() } : t
+                t.id === runningTaskId ? { ...t, status: "done" as const, done: true, completedAt: new Date().toISOString() } : t
               );
               saveTasks(updated);
               setBuddyMsg(pickRandom(PHRASES.taskDone));
