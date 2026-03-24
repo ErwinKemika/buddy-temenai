@@ -1,4 +1,4 @@
-import { Settings, Moon, Sun, Volume2, VolumeX, Play, Pause, Bell } from "lucide-react";
+import { Settings, Moon, Sun, Volume2, VolumeX, Play, Pause } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
 import {
   DropdownMenu,
@@ -13,11 +13,9 @@ interface Props {
   onToggleVoice: () => void;
   autoPlayVoice: boolean;
   onToggleAutoPlay: () => void;
-  activeReminderCount: number;
-  onOpenReminders: () => void;
 }
 
-const BuddyHeader = ({ voiceEnabled, onToggleVoice, autoPlayVoice, onToggleAutoPlay, activeReminderCount, onOpenReminders }: Props) => {
+const BuddyHeader = ({ voiceEnabled, onToggleVoice, autoPlayVoice, onToggleAutoPlay }: Props) => {
   const { theme, toggleTheme } = useTheme();
 
   return (
@@ -35,18 +33,6 @@ const BuddyHeader = ({ voiceEnabled, onToggleVoice, autoPlayVoice, onToggleAutoP
         </div>
       </div>
       <div className="flex items-center gap-1">
-        <button
-          onClick={onOpenReminders}
-          className="p-2.5 rounded-full active:bg-muted transition-colors relative"
-          aria-label="Pengingat"
-        >
-          <Bell size={20} className="text-muted-foreground" />
-          {activeReminderCount > 0 && (
-            <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-primary text-primary-foreground text-[9px] font-bold flex items-center justify-center">
-              {activeReminderCount > 9 ? "9+" : activeReminderCount}
-            </span>
-          )}
-        </button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button className="p-2.5 rounded-full active:bg-muted transition-colors" aria-label="Pengaturan">
