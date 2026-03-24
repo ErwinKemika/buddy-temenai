@@ -303,8 +303,7 @@ const TodoPage = () => {
     );
     const task = tasks.find(t => t.id === id);
     if (task && !task.done) {
-      setBuddyMsg("Mantap! Satu selesai! 🎉");
-      setTimeout(() => setBuddyMsg("Lanjut yang lain yuk!"), 3000);
+      updateBuddyMsg("Nice, satu beres! 🎉", "Mau lanjut yang lain?");
     }
   };
 
