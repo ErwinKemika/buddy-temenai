@@ -1,6 +1,7 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { format, addDays, startOfWeek, endOfWeek, isToday, isTomorrow, isPast, parseISO } from "date-fns";
+import { useAuth } from "@/hooks/useAuth";
+import { format, addDays, startOfWeek, endOfWeek } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 
 interface TodoItem {
@@ -26,21 +27,13 @@ function buildTodoContext(): string {
     const today = new Date();
     const todayStr = format(today, "yyyy-MM-dd");
     const tomorrowStr = format(addDays(today, 1), "yyyy-MM-dd");
-    const weekStart = format(startOfWeek(today, { weekStartsOn: 1 }), "yyyy-MM-dd");
-    const weekEnd = format(endOfWeek(today, { weekStartsOn: 1 }), "yyyy-MM-dd");
 
     const enriched = todos.map(t => {
       let deadlineState = "upcoming";
       if (t.date === todayStr) deadlineState = "today";
       else if (t.date < todayStr && !t.completed) deadlineState = "overdue";
-      
-      // Handle recurring tasks visibility
-      const isVisible = t.recurrence === "Harian" ? true 
-        : t.recurrence === "Mingguan" ? true 
-        : true;
-
-      return { ...t, deadlineState, isVisible };
-    }).filter(t => t.isVisible);
+      return { ...t, deadlineState };
+    });
 
     const lines = enriched.map(t => {
       const parts = [`- "${t.title}"`];
@@ -70,9 +63,12 @@ export type Attachment = {
 };
 
 export type Message = {
+  id?: string;
   role: "user" | "assistant";
   content: string;
   attachment?: Attachment;
+  pinned?: boolean;
+  created_at?: string;
 };
 
 export type BuddyState = "idle" | "thinking" | "speaking";
@@ -80,13 +76,10 @@ export type BuddyState = "idle" | "thinking" | "speaking";
 async function uploadFile(file: File | Blob, folder: string): Promise<string> {
   const ext = file instanceof File ? file.name.split(".").pop() : "webm";
   const fileName = `${folder}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
-
   const { error } = await supabase.storage
     .from("chat-attachments")
     .upload(fileName, file, { contentType: file instanceof File ? file.type : "audio/webm" });
-
   if (error) throw error;
-
   const { data } = supabase.storage.from("chat-attachments").getPublicUrl(fileName);
   return data.publicUrl;
 }
@@ -94,10 +87,7 @@ async function uploadFile(file: File | Blob, folder: string): Promise<string> {
 async function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result as string;
-      resolve(result.split(",")[1]);
-    };
+    reader.onload = () => resolve((reader.result as string).split(",")[1]);
     reader.onerror = reject;
     reader.readAsDataURL(file);
   });
@@ -106,7 +96,6 @@ async function fileToBase64(file: File): Promise<string> {
 async function transcribeVoice(blob: Blob): Promise<string> {
   const formData = new FormData();
   formData.append("audio", blob, "voice-note.webm");
-
   const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/transcribe`, {
     method: "POST",
     headers: {
@@ -115,20 +104,16 @@ async function transcribeVoice(blob: Blob): Promise<string> {
     },
     body: formData,
   });
-
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(data.error || `Gagal mentranskrip voice note (${response.status})`);
-
   const text = typeof data.text === "string" ? data.text.trim() : "";
   if (!text) throw new Error("Voice note tidak terbaca, coba rekam lebih jelas ya.");
-
   return text;
 }
 
 async function playTTS(text: string): Promise<void> {
   const cleanText = text.replace(/[#*_~`>\[\]()!]/g, "").replace(/\n+/g, " ").trim();
   if (!cleanText || cleanText.length < 2) return;
-
   const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/tts`;
   const response = await fetch(url, {
     method: "POST",
@@ -139,17 +124,13 @@ async function playTTS(text: string): Promise<void> {
     },
     body: JSON.stringify({ text: cleanText.slice(0, 500), voiceId: "SCDJ1Fy4al0KS1awS6H9" }),
   });
-
   if (!response.ok) throw new Error(`TTS failed: ${response.status}`);
-
   const rawBlob = await response.blob();
   const audioBlob = new Blob([rawBlob], { type: "audio/mpeg" });
   if (audioBlob.size < 100) throw new Error("TTS returned invalid audio");
-
   const audioUrl = URL.createObjectURL(audioBlob);
   const audio = new Audio(audioUrl);
   audio.volume = 1.0;
-
   return new Promise<void>((resolve, reject) => {
     audio.onended = () => { URL.revokeObjectURL(audioUrl); resolve(); };
     audio.onerror = () => { URL.revokeObjectURL(audioUrl); reject(new Error("Audio playback failed")); };
@@ -157,29 +138,15 @@ async function playTTS(text: string): Promise<void> {
   });
 }
 
-/**
- * Determine if a response should be spoken aloud.
- * Only short, friendly messages (greetings, reminders, 1-2 sentences).
- */
 function shouldSpeak(text: string): boolean {
   const clean = text.replace(/[#*_~`>\[\]()!]/g, "").trim();
-
-  // Too long → don't speak
   if (clean.length > 200) return false;
-
-  // Count sentences (rough: split by . ! ? and filter empties)
   const sentences = clean.split(/[.!?]+/).filter(s => s.trim().length > 3);
   if (sentences.length > 2) return false;
-
-  // Has code blocks or lists → don't speak
   if (/```/.test(text) || /^\s*[-*]\s/m.test(text) || /^\s*\d+\.\s/m.test(text)) return false;
-
   return true;
 }
 
-/**
- * Extract speakable portion: first 1-2 sentences, max ~150 chars.
- */
 function extractSpeakableText(text: string): string {
   const clean = text.replace(/[#*_~`>\[\]()!]/g, "").replace(/\n+/g, " ").trim();
   const sentences = clean.match(/[^.!?]+[.!?]*/g) || [clean];
@@ -191,11 +158,83 @@ function extractSpeakableText(text: string): string {
   return result.trim() || clean.slice(0, 100);
 }
 
+// Save a message to Supabase
+async function saveMessageToDB(userId: string, msg: Message): Promise<string | undefined> {
+  const { data, error } = await supabase.from("messages").insert({
+    user_id: userId,
+    role: msg.role,
+    content: msg.content,
+    pinned: msg.pinned || false,
+    attachment_type: msg.attachment?.type || null,
+    attachment_url: msg.attachment?.url || null,
+    attachment_name: msg.attachment?.name || null,
+    attachment_mime: msg.attachment?.mimeType || null,
+  } as any).select("id").single();
+  if (error) { console.error("[DB Save]", error); return undefined; }
+  return (data as any)?.id;
+}
+
+// Load messages from Supabase
+async function loadMessagesFromDB(userId: string): Promise<Message[]> {
+  const { data, error } = await supabase.from("messages")
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: true }) as any;
+  if (error) { console.error("[DB Load]", error); return []; }
+  return (data || []).map((row: any) => ({
+    id: row.id,
+    role: row.role as "user" | "assistant",
+    content: row.content,
+    pinned: row.pinned,
+    created_at: row.created_at,
+    ...(row.attachment_type ? {
+      attachment: {
+        type: row.attachment_type,
+        url: row.attachment_url,
+        name: row.attachment_name,
+        mimeType: row.attachment_mime,
+      }
+    } : {}),
+  }));
+}
+
 export function useChat() {
+  const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [buddyState, setBuddyState] = useState<BuddyState>("idle");
-  const [voiceEnabled, setVoiceEnabled] = useState(true);
-  const [autoPlayVoice, setAutoPlayVoice] = useState(true);
+  const [voiceEnabled, setVoiceEnabled] = useState(() => {
+    const saved = localStorage.getItem("buddy-voice-enabled");
+    return saved !== null ? JSON.parse(saved) : true;
+  });
+  const [autoPlayVoice, setAutoPlayVoice] = useState(() => {
+    const saved = localStorage.getItem("buddy-autoplay-voice");
+    return saved !== null ? JSON.parse(saved) : true;
+  });
+  const loadedRef = useRef(false);
+
+  // Load messages from DB on mount
+  useEffect(() => {
+    if (!user || loadedRef.current) return;
+    loadedRef.current = true;
+    loadMessagesFromDB(user.id).then(msgs => {
+      if (msgs.length > 0) setMessages(msgs);
+    });
+  }, [user]);
+
+  // Persist voice settings
+  useEffect(() => { localStorage.setItem("buddy-voice-enabled", JSON.stringify(voiceEnabled)); }, [voiceEnabled]);
+  useEffect(() => { localStorage.setItem("buddy-autoplay-voice", JSON.stringify(autoPlayVoice)); }, [autoPlayVoice]);
+
+  const togglePin = useCallback(async (msgId: string) => {
+    setMessages(prev => prev.map(m =>
+      m.id === msgId ? { ...m, pinned: !m.pinned } : m
+    ));
+    // Update in DB
+    const msg = messages.find(m => m.id === msgId);
+    if (msg) {
+      await (supabase.from("messages").update({ pinned: !msg.pinned }).eq("id", msgId) as any);
+    }
+  }, [messages]);
 
   const streamChat = useCallback(async (
     chatMessages: Array<{ role: string; content: any }>,
@@ -249,7 +288,6 @@ export function useChat() {
       }
     }
 
-    // flush
     if (textBuffer.trim()) {
       for (let raw of textBuffer.split("\n")) {
         if (!raw) continue;
@@ -314,9 +352,19 @@ export function useChat() {
       role: "user",
       content: resolvedText || (attachmentData ? `[${attachmentData.type === "image" ? "Gambar" : "Dokumen"}]` : ""),
       attachment: attachmentData,
+      pinned: false,
+      created_at: new Date().toISOString(),
     };
 
     setMessages(prev => [...prev, userMsg]);
+
+    // Save user message to DB
+    if (user) {
+      const savedId = await saveMessageToDB(user.id, userMsg);
+      if (savedId) {
+        setMessages(prev => prev.map((m, i) => i === prev.length - 1 && m === userMsg ? { ...m, id: savedId } : m));
+      }
+    }
 
     // Build multimodal content for AI
     let userContent: any;
@@ -337,9 +385,7 @@ export function useChat() {
       userContent = resolvedText;
     }
 
-    // Build todo context for Buddy
     const todoContext = buildTodoContext();
-
     const chatMessages = [
       ...messages.map(m => ({ role: m.role, content: m.content })),
       { role: "user", content: userContent },
@@ -350,17 +396,25 @@ export function useChat() {
       assistantSoFar += chunk;
       setMessages(prev => {
         const last = prev[prev.length - 1];
-        if (last?.role === "assistant") {
+        if (last?.role === "assistant" && !last.id) {
           return prev.map((m, i) => i === prev.length - 1 ? { ...m, content: assistantSoFar } : m);
         }
-        return [...prev, { role: "assistant", content: assistantSoFar }];
+        return [...prev, { role: "assistant", content: assistantSoFar, pinned: false, created_at: new Date().toISOString() }];
       });
     };
 
     try {
       await streamChat(chatMessages, upsertAssistant, todoContext);
 
-      // Smart voice: only speak if voice is enabled, autoplay is on, and content is short/friendly
+      // Save assistant message to DB
+      if (user && assistantSoFar) {
+        const assistantMsg: Message = { role: "assistant", content: assistantSoFar, pinned: false, created_at: new Date().toISOString() };
+        const savedId = await saveMessageToDB(user.id, assistantMsg);
+        if (savedId) {
+          setMessages(prev => prev.map((m, i) => i === prev.length - 1 && m.role === "assistant" ? { ...m, id: savedId } : m));
+        }
+      }
+
       if (voiceEnabled && autoPlayVoice && assistantSoFar && shouldSpeak(assistantSoFar)) {
         setBuddyState("speaking");
         const speakText = extractSpeakableText(assistantSoFar);
@@ -370,18 +424,25 @@ export function useChat() {
       console.error("[Chat] Error:", e);
       upsertAssistant("Maaf, aku sedang gangguan. Coba lagi ya! 😅");
     } finally {
-    setBuddyState("idle");
+      setBuddyState("idle");
     }
-  }, [messages, voiceEnabled, autoPlayVoice, streamChat]);
+  }, [messages, voiceEnabled, autoPlayVoice, streamChat, user]);
 
   const injectReminderMessage = useCallback(async (text: string, speak: boolean) => {
-    setMessages(prev => [...prev, { role: "assistant", content: text }]);
+    const msg: Message = { role: "assistant", content: text, pinned: false, created_at: new Date().toISOString() };
+    setMessages(prev => [...prev, msg]);
+    if (user) {
+      const savedId = await saveMessageToDB(user.id, msg);
+      if (savedId) {
+        setMessages(prev => prev.map((m, i) => i === prev.length - 1 ? { ...m, id: savedId } : m));
+      }
+    }
     if (speak) {
       setBuddyState("speaking");
       try { await playTTS(text); } catch (e) { console.error("[TTS Reminder]", e); }
       setBuddyState("idle");
     }
-  }, []);
+  }, [user]);
 
-  return { messages, buddyState, voiceEnabled, setVoiceEnabled, autoPlayVoice, setAutoPlayVoice, sendMessage, injectReminderMessage };
+  return { messages, buddyState, voiceEnabled, setVoiceEnabled, autoPlayVoice, setAutoPlayVoice, sendMessage, injectReminderMessage, togglePin };
 }
