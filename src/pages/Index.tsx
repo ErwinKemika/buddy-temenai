@@ -120,12 +120,14 @@ const Index = () => {
     <div className="h-[100dvh] w-full flex flex-col buddy-gradient-bg space-stars overflow-hidden safe-area-inset">
       <BuddyHeader />
       <BuddyRobot buddyState={buddyState} />
-      <BuddySpeechBubble messages={messages} buddyState={buddyState} />
+      <BuddySpeechBubble messages={messages} buddyState={buddyState} onTogglePin={togglePin} onReply={startReply} />
       <BuddyControlBar
         onSendMessage={handleSendMessage}
         buddyState={buddyState}
         voiceEnabled={voiceEnabled}
         onToggleVoice={() => setVoiceEnabled(v => !v)}
+        replyingTo={replyingTo}
+        onCancelReply={cancelReply}
       />
       <BottomNav />
     </div>
