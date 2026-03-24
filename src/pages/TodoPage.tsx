@@ -1,8 +1,9 @@
-import { useState, useEffect, useMemo } from "react";
-import { Plus, Trash2, Calendar as CalendarIcon, Clock, ChevronLeft, ChevronRight, Play, Square, CheckCircle2, Filter, X, Pencil } from "lucide-react";
+import { useState, useEffect, useMemo, useRef } from "react";
+import { Plus, Trash2, Calendar as CalendarIcon, Clock, ChevronLeft, ChevronRight, Play, Square, CheckCircle2, Filter, X, Pencil, Volume2, VolumeX } from "lucide-react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, isToday, addMonths, subMonths, isBefore, startOfDay } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import BottomNav from "@/components/BottomNav";
+import { useBuddyVoice } from "@/hooks/useBuddyVoice";
 
 type Priority = "high" | "medium" | "low";
 type Status = "todo" | "in_progress" | "done";
@@ -93,6 +94,8 @@ const getDeadlineState = (dateStr: string): { label: string; className: string }
 
 const TodoPage = () => {
   const [tasks, setTasks] = useState<Task[]>(loadTasks);
+  const { voiceEnabled, toggleVoice, speak } = useBuddyVoice();
+  const hasSpokenInitial = useRef(false);
   const [newTask, setNewTask] = useState("");
   const [viewMode, setViewMode] = useState<ViewMode>("today");
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -151,13 +154,24 @@ const TodoPage = () => {
     setBuddyMsg(getBuddyLine(tasks));
   }, []);
 
-  // Animate message transitions
+  // Speak initial message once per session
+  useEffect(() => {
+    if (!hasSpokenInitial.current && buddyMsg) {
+      hasSpokenInitial.current = true;
+      // Small delay so page loads first
+      const t = setTimeout(() => speak(buddyMsg), 800);
+      return () => clearTimeout(t);
+    }
+  }, [buddyMsg]);
+
+  // Animate message transitions + trigger voice
   const updateBuddyMsg = (msg: string, autoRevert?: string, revertDelay = 3500) => {
     setBuddyMsgVisible(false);
     setBuddySpeaking(true);
     setTimeout(() => {
       setBuddyMsg(msg);
       setBuddyMsgVisible(true);
+      speak(msg); // Speak the action message
       setTimeout(() => setBuddySpeaking(false), 600);
     }, 200);
     if (autoRevert) {
@@ -349,6 +363,14 @@ const TodoPage = () => {
       {/* Mini Buddy header */}
       <header className="relative px-4 pt-[env(safe-area-inset-top,12px)] pb-2 bg-card/40 backdrop-blur-md border-b border-border/30 overflow-hidden">
         <div className="flex items-center gap-3 pt-2">
+          {/* Voice toggle */}
+          <button
+            onClick={toggleVoice}
+            className="absolute top-[env(safe-area-inset-top,12px)] right-3 mt-2 p-1.5 rounded-full bg-card/60 backdrop-blur-sm border border-border/30 z-10 transition-colors"
+            aria-label={voiceEnabled ? "Matikan suara Buddy" : "Nyalakan suara Buddy"}
+          >
+            {voiceEnabled ? <Volume2 size={14} className="text-accent" /> : <VolumeX size={14} className="text-muted-foreground" />}
+          </button>
           {/* Mini Buddy Robot */}
           <div className="relative shrink-0 animate-buddy-header-float">
             {/* Glow */}
