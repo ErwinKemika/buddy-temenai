@@ -131,20 +131,29 @@ const TodoPage = () => {
     return eachDayOfInterval({ start, end });
   }, [calMonth]);
 
-  const filteredTasks = useMemo(() => {
-    let list = tasks;
-    if (viewMode === "today") {
-      list = list.filter(t => t.date === todayStr);
-    } else {
-      list = list.filter(t => t.date === format(selectedDate, "yyyy-MM-dd"));
+  const isTaskOnDate = (task: Task, dateStr: string): boolean => {
+    if (task.recurrence === "daily") {
+      // Daily tasks appear on their creation date and every day after
+      return dateStr >= task.date;
     }
+    if (task.recurrence === "weekly") {
+      const taskDay = new Date(task.date).getDay();
+      const checkDay = new Date(dateStr).getDay();
+      return taskDay === checkDay && dateStr >= task.date;
+    }
+    return task.date === dateStr;
+  };
+
+  const filteredTasks = useMemo(() => {
+    const targetDate = viewMode === "today" ? todayStr : format(selectedDate, "yyyy-MM-dd");
+    let list = tasks.filter(t => isTaskOnDate(t, targetDate));
     if (filterPriority !== "all") list = list.filter(t => t.priority === filterPriority);
     if (filterStatus !== "all") list = list.filter(t => t.status === filterStatus);
     if (filterCategory !== "all") list = list.filter(t => t.category === filterCategory);
     return list;
   }, [tasks, viewMode, selectedDate, todayStr, filterPriority, filterStatus, filterCategory]);
 
-  const tasksOnDate = (dateStr: string) => tasks.filter(t => t.date === dateStr);
+  const tasksOnDate = (dateStr: string) => tasks.filter(t => isTaskOnDate(t, dateStr));
 
   const hasActiveFilters = filterPriority !== "all" || filterStatus !== "all" || filterCategory !== "all";
 
