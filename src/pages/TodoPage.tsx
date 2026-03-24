@@ -111,15 +111,65 @@ const TodoPage = () => {
   const [filterCategory, setFilterCategory] = useState<Category | "all">("all");
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
 
-  const BUDDY_GREETINGS = [
-    "Mau ngapain hari ini? 📝",
-    "Ada rencana apa hari ini?",
-    "Yuk mulai hari ini! 🚀",
-    "Semangat ya hari ini! 💪",
-    "Aku siap bantu kamu! ✨",
-    "Hari ini kita produktif yuk!",
-  ];
-  const [buddyMsg, setBuddyMsg] = useState(() => BUDDY_GREETINGS[Math.floor(Math.random() * BUDDY_GREETINGS.length)]);
+  const getBuddyLine = (taskList: Task[]) => {
+    const todayTasks = taskList.filter(t => isTaskOnDate(t, format(new Date(), "yyyy-MM-dd")));
+    const pending = todayTasks.filter(t => !t.done);
+    const done = todayTasks.filter(t => t.done);
+    const overdue = taskList.filter(t => {
+      const ds = getDeadlineState(t.date);
+      return ds?.label === "Terlambat" && !t.done;
+    });
+
+    if (todayTasks.length === 0) {
+      const lines = ["Mau ngapain hari ini?", "Ada rencana apa hari ini?", "Yuk isi jadwal hari ini!", "Belum ada kegiatan nih, mau tambahin?"];
+      return lines[Math.floor(Math.random() * lines.length)];
+    }
+    if (overdue.length > 0) {
+      return `Ada ${overdue.length} tugas yang terlambat nih, yuk dikerjain`;
+    }
+    if (done.length > 0 && pending.length === 0) {
+      const lines = ["Semua beres! Kamu keren banget hari ini ✨", "Mantap, semua tugas selesai! 🎉"];
+      return lines[Math.floor(Math.random() * lines.length)];
+    }
+    if (pending.length > 0) {
+      const lines = [
+        `Masih ada ${pending.length} tugas nih, semangat ya!`,
+        `${pending.length} tugas lagi, pasti bisa! 💪`,
+        "Yuk lanjut pelan-pelan, aku temenin",
+      ];
+      return lines[Math.floor(Math.random() * lines.length)];
+    }
+    return "Aku siap bantu kamu hari ini!";
+  };
+
+  const [buddyMsg, setBuddyMsg] = useState(() => "");
+  const [buddyMsgVisible, setBuddyMsgVisible] = useState(true);
+  const [buddySpeaking, setBuddySpeaking] = useState(false);
+
+  // Set initial message after mount
+  useEffect(() => {
+    setBuddyMsg(getBuddyLine(tasks));
+  }, []);
+
+  // Animate message transitions
+  const updateBuddyMsg = (msg: string, autoRevert?: string, revertDelay = 3500) => {
+    setBuddyMsgVisible(false);
+    setBuddySpeaking(true);
+    setTimeout(() => {
+      setBuddyMsg(msg);
+      setBuddyMsgVisible(true);
+      setTimeout(() => setBuddySpeaking(false), 600);
+    }, 200);
+    if (autoRevert) {
+      setTimeout(() => {
+        setBuddyMsgVisible(false);
+        setTimeout(() => {
+          setBuddyMsg(autoRevert);
+          setBuddyMsgVisible(true);
+        }, 200);
+      }, revertDelay);
+    }
+  };
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
