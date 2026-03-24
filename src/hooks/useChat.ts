@@ -398,10 +398,10 @@ export function useChat() {
     } finally {
     setBuddyState("idle");
     }
-  }, [messages, voiceEnabled, autoPlayVoice, streamChat]);
+  }, [messages, voiceEnabled, autoPlayVoice, streamChat, replyingTo]);
 
   const injectReminderMessage = useCallback(async (text: string, speak: boolean) => {
-    setMessages(prev => [...prev, { role: "assistant", content: text }]);
+    setMessages(prev => [...prev, { id: genMsgId(), role: "assistant", content: text }]);
     if (speak) {
       setBuddyState("speaking");
       try { await playTTS(text); } catch (e) { console.error("[TTS Reminder]", e); }
@@ -409,5 +409,9 @@ export function useChat() {
     }
   }, []);
 
-  return { messages, buddyState, voiceEnabled, setVoiceEnabled, autoPlayVoice, setAutoPlayVoice, sendMessage, injectReminderMessage };
+  return {
+    messages, buddyState, voiceEnabled, setVoiceEnabled, autoPlayVoice, setAutoPlayVoice,
+    sendMessage, injectReminderMessage,
+    togglePin, startReply, cancelReply, replyingTo,
+  };
 }
