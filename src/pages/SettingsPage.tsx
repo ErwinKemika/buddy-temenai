@@ -85,6 +85,23 @@ const SettingsPage = () => {
           </div>
           <span className={`text-xs font-semibold ${autoPlayVoice ? "text-accent" : "text-muted-foreground"}`}>{autoPlayVoice ? "ON" : "OFF"}</span>
         </button>
+
+        {/* User info */}
+        {user && (
+          <div className="bg-card/60 backdrop-blur-sm border border-border/40 rounded-2xl p-4">
+            <p className="text-xs text-muted-foreground">Login sebagai</p>
+            <p className="text-sm text-foreground font-medium truncate">{user.email}</p>
+          </div>
+        )}
+
+        {/* Logout */}
+        <button
+          onClick={async () => { await signOut(); navigate("/auth"); }}
+          className="w-full flex items-center justify-center gap-2 bg-destructive/10 border border-destructive/20 text-destructive py-3 rounded-2xl text-sm font-semibold active:scale-[0.98] transition-all"
+        >
+          <LogOut size={18} />
+          Keluar
+        </button>
       </div>
 
       <BottomNav />
