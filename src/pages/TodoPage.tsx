@@ -284,8 +284,7 @@ const TodoPage = () => {
     };
     setTasks(prev => [...prev, task]);
     resetForm();
-    setBuddyMsg("Oke, aku catat ya! 💪");
-    setTimeout(() => setBuddyMsg("Ada lagi yang mau dikerjain?"), 3000);
+    updateBuddyMsg("Sip, udah aku catat! 📝", getBuddyLine([...tasks, task]));
   };
 
   const toggleTask = (id: string) => {
