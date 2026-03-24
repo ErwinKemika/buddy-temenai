@@ -94,6 +94,7 @@ const getDeadlineState = (dateStr: string): { label: string; className: string }
 };
 
 const TodoPage = () => {
+  const navigate = useNavigate();
   const [tasks, setTasks] = useState<Task[]>(loadTasks);
   const { voiceEnabled, toggleVoice, speak } = useBuddyVoice();
   const hasSpokenInitial = useRef(false);
