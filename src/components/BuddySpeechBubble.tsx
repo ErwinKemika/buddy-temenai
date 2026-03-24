@@ -92,6 +92,7 @@ const BuddySpeechBubble = ({ messages, buddyState }: Props) => {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 };
