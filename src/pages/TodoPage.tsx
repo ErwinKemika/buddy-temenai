@@ -176,6 +176,32 @@ const TodoPage = () => {
   const addTask = () => {
     const title = newTask.trim();
     if (!title) return;
+
+    if (editingTaskId) {
+      // Edit existing task
+      setTasks(prev =>
+        prev.map(t =>
+          t.id === editingTaskId
+            ? {
+                ...t,
+                title,
+                date: addDate,
+                startTime: addStartTime || undefined,
+                endTime: addEndTime || undefined,
+                priority: addPriority,
+                category: addCategory || undefined,
+                recurrence: addRecurrence,
+                effort: addEffort || undefined,
+              }
+            : t
+        )
+      );
+      resetForm();
+      setBuddyMsg("Udah aku update ya! ✏️");
+      setTimeout(() => setBuddyMsg("Ada lagi yang mau diubah?"), 3000);
+      return;
+    }
+
     const task: Task = {
       id: Date.now().toString(),
       title,
