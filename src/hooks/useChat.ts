@@ -70,9 +70,12 @@ export type Attachment = {
 };
 
 export type Message = {
+  id: string;
   role: "user" | "assistant";
   content: string;
   attachment?: Attachment;
+  pinned?: boolean;
+  replyTo?: { id: string; content: string; role: "user" | "assistant" };
 };
 
 export type BuddyState = "idle" | "thinking" | "speaking";
