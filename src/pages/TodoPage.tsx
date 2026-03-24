@@ -41,6 +41,7 @@ const TodoPage = () => {
   const [addStartTime, setAddStartTime] = useState("");
   const [addEndTime, setAddEndTime] = useState("");
   const [buddyMsg, setBuddyMsg] = useState("Mau ngapain hari ini? 📝");
+  const [buddyChatLog, setBuddyChatLog] = useState<Array<{ role: "user" | "buddy"; text: string }>>([]);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
