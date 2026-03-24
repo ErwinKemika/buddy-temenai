@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 
 const SettingsPage = () => {
   const { theme, toggleTheme } = useTheme();
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const [voiceEnabled, setVoiceEnabled] = useState(() => {
     const saved = localStorage.getItem("buddy-voice-enabled");
