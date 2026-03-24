@@ -10,7 +10,7 @@ const BuddyRobot = ({ buddyState }: BuddyRobotProps) => {
   const isSpeaking = buddyState === "speaking";
 
   return (
-    <div className="shrink-0 flex flex-col items-center justify-center relative overflow-hidden py-2">
+    <div className="flex-1 flex flex-col items-center justify-center relative overflow-hidden">
       {/* Orbit rings */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
         <div className="orbit-ring w-[280px] h-[280px] animate-orbit opacity-40" />

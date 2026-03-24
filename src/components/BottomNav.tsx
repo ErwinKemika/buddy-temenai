@@ -20,12 +20,12 @@ const BottomNav = () => {
           <button
             key={path}
             onClick={() => navigate(path)}
-            className={`flex flex-col items-center gap-0.5 py-1.5 px-3 transition-colors ${
+            className={`flex flex-col items-center gap-0.5 py-2 px-4 transition-colors ${
               active ? "text-primary" : "text-muted-foreground"
             }`}
           >
-            <Icon size={18} strokeWidth={active ? 2.5 : 2} />
-            <span className="text-[9px] font-medium">{label}</span>
+            <Icon size={22} strokeWidth={active ? 2.5 : 2} />
+            <span className="text-[10px] font-medium">{label}</span>
           </button>
         );
       })}
