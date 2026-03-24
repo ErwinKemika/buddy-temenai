@@ -16,12 +16,10 @@ const BuddySpeechBubble = ({ messages, buddyState }: Props) => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
 
-  const lastMessages = messages.slice(-10);
-
-  if (lastMessages.length === 0 && !isLoading) {
+  if (messages.length === 0 && !isLoading) {
     return (
-      <div className="px-6 pb-2">
-        <div className="bg-card/60 backdrop-blur-sm border border-border/30 rounded-2xl px-4 py-3 max-w-[85%] mx-auto">
+      <div className="flex-1 flex items-end justify-center pb-4 relative z-10">
+        <div className="bg-card/60 backdrop-blur-sm border border-border/30 rounded-2xl px-4 py-3 max-w-[85%]">
           <p className="text-sm text-muted-foreground text-center">
             Ketik pesan atau kirim gambar untuk mulai ngobrol dengan Buddy! 🚀
           </p>
@@ -31,14 +29,20 @@ const BuddySpeechBubble = ({ messages, buddyState }: Props) => {
   }
 
   return (
-    <div ref={scrollRef} className="px-4 pb-2 overflow-y-auto max-h-[35vh] flex flex-col gap-2">
-      {lastMessages.map((msg, i) => (
-        <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+    <div
+      ref={scrollRef}
+      className="flex-1 overflow-y-auto flex flex-col gap-2 px-4 pt-3 pb-3 relative z-10"
+    >
+      {/* Spacer to push messages toward bottom initially */}
+      <div className="flex-1 min-h-0" />
+
+      {messages.map((msg, i) => (
+        <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"} animate-fade-in`}>
           <div
-            className={`max-w-[85%] px-3.5 py-2.5 text-[14px] leading-relaxed ${
+            className={`max-w-[85%] px-3.5 py-2.5 text-[14px] leading-relaxed shadow-lg ${
               msg.role === "assistant"
-                ? "bg-card/70 backdrop-blur-sm border border-primary/20 text-foreground rounded-2xl rounded-tl-sm"
-                : "bg-primary/20 border border-primary/30 text-foreground rounded-2xl rounded-tr-sm"
+                ? "bg-card/80 backdrop-blur-md border border-primary/20 text-foreground rounded-2xl rounded-tl-sm shadow-primary/5"
+                : "bg-primary/25 backdrop-blur-md border border-primary/30 text-foreground rounded-2xl rounded-tr-sm shadow-primary/5"
             }`}
           >
             {msg.role === "assistant" && (
@@ -77,9 +81,10 @@ const BuddySpeechBubble = ({ messages, buddyState }: Props) => {
           </div>
         </div>
       ))}
+
       {isLoading && messages[messages.length - 1]?.role === "user" && (
-        <div className="flex justify-start">
-          <div className="bg-card/70 backdrop-blur-sm border border-primary/20 rounded-2xl rounded-tl-sm px-4 py-3">
+        <div className="flex justify-start animate-fade-in">
+          <div className="bg-card/80 backdrop-blur-md border border-primary/20 rounded-2xl rounded-tl-sm px-4 py-3 shadow-lg shadow-primary/5">
             <span className="text-[11px] font-semibold text-accent mb-1 block font-orbitron">Buddy</span>
             <div className="flex gap-1.5">
               <div className="w-2 h-2 rounded-full bg-accent animate-bounce" style={{ animationDelay: "0s" }} />

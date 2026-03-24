@@ -5,15 +5,14 @@ interface BuddyRobotProps {
   opacity?: number;
 }
 
-const BuddyRobot = ({ buddyState, opacity = 1 }: BuddyRobotProps) => {
+const BuddyRobot = ({ buddyState }: BuddyRobotProps) => {
   const isTalking = buddyState === "speaking" || buddyState === "thinking";
   const isListening = false;
   const isSpeaking = buddyState === "speaking";
 
   return (
     <div
-      className="flex-1 flex flex-col items-center justify-center relative overflow-hidden transition-opacity duration-700 ease-in-out"
-      style={{ opacity }}
+      className="flex-1 flex flex-col items-center justify-center relative overflow-hidden"
     >
       {/* Orbit rings */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
