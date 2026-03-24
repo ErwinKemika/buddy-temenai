@@ -352,20 +352,16 @@ const FocusPage = () => {
             </div>
             {/* Body with Arms/Hands */}
             <div className="relative flex justify-center">
-              {/* Left Arm - reaching down to hold timer */}
-              <div className={`absolute -left-8 top-2 transition-transform duration-700 ${isActive ? "rotate-[5deg]" : ""}`}>
-                {/* Upper arm */}
-                <div className="w-3 h-12 bg-gradient-to-b from-buddy-body-light to-buddy-body rounded-full border border-primary/15" />
-                {/* Hand */}
+              {/* Left Arm - spread outward */}
+              <div className={`absolute -left-12 top-1 transition-transform duration-700 origin-top-right ${isActive ? "rotate-[-15deg]" : "rotate-[-25deg]"}`}>
+                <div className="w-3 h-8 bg-gradient-to-b from-buddy-body-light to-buddy-body rounded-full border border-primary/15" />
                 <div className={`w-5 h-5 rounded-full bg-gradient-to-b from-buddy-body-light to-buddy-body border border-primary/15 -ml-1 -mt-0.5 flex items-center justify-center transition-all duration-500 ${isActive ? "shadow-md shadow-accent/20" : ""}`}>
                   <div className="w-2.5 h-2.5 rounded-full bg-primary/20" />
                 </div>
               </div>
-              {/* Right Arm - reaching down to hold timer */}
-              <div className={`absolute -right-8 top-2 transition-transform duration-700 ${isActive ? "-rotate-[5deg]" : ""}`}>
-                {/* Upper arm */}
-                <div className="w-3 h-12 bg-gradient-to-b from-buddy-body-light to-buddy-body rounded-full border border-primary/15" />
-                {/* Hand */}
+              {/* Right Arm - spread outward */}
+              <div className={`absolute -right-12 top-1 transition-transform duration-700 origin-top-left ${isActive ? "rotate-[15deg]" : "rotate-[25deg]"}`}>
+                <div className="w-3 h-8 bg-gradient-to-b from-buddy-body-light to-buddy-body rounded-full border border-primary/15" />
                 <div className={`w-5 h-5 rounded-full bg-gradient-to-b from-buddy-body-light to-buddy-body border border-primary/15 -ml-0 -mt-0.5 flex items-center justify-center transition-all duration-500 ${isActive ? "shadow-md shadow-accent/20" : ""}`}>
                   <div className="w-2.5 h-2.5 rounded-full bg-primary/20" />
                 </div>
