@@ -16,6 +16,7 @@ interface Props {
 const BuddyControlBar = ({
   onSendMessage, buddyState,
   voiceEnabled, onToggleVoice,
+  replyingTo, onCancelReply,
 }: Props) => {
   const [input, setInput] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
