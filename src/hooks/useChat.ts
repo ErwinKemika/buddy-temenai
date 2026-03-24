@@ -194,11 +194,29 @@ function extractSpeakableText(text: string): string {
   return result.trim() || clean.slice(0, 100);
 }
 
+let msgCounter = 0;
+function genMsgId() {
+  return `msg-${Date.now()}-${++msgCounter}`;
+}
+
 export function useChat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [buddyState, setBuddyState] = useState<BuddyState>("idle");
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [autoPlayVoice, setAutoPlayVoice] = useState(true);
+  const [replyingTo, setReplyingTo] = useState<Message | null>(null);
+
+  const togglePin = useCallback((msgId: string) => {
+    setMessages(prev => prev.map(m => m.id === msgId ? { ...m, pinned: !m.pinned } : m));
+  }, []);
+
+  const startReply = useCallback((msg: Message) => {
+    setReplyingTo(msg);
+  }, []);
+
+  const cancelReply = useCallback(() => {
+    setReplyingTo(null);
+  }, []);
 
   const streamChat = useCallback(async (
     chatMessages: Array<{ role: string; content: any }>,
