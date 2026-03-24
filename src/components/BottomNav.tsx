@@ -1,10 +1,11 @@
-import { MessageCircle, ListChecks, Target } from "lucide-react";
+import { MessageCircle, ListChecks, Target, Settings } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 const tabs = [
   { path: "/", label: "Chat", icon: MessageCircle },
   { path: "/todo", label: "To-Do", icon: ListChecks },
   { path: "/focus", label: "Focus", icon: Target },
+  { path: "/settings", label: "Settings", icon: Settings },
 ];
 
 const BottomNav = () => {
@@ -27,7 +28,7 @@ const BottomNav = () => {
             <span className="text-[10px] font-medium">{label}</span>
           </button>
         );
-      })}
+      }}}
     </nav>
   );
 };
