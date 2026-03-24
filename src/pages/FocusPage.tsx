@@ -86,7 +86,7 @@ function saveTasks(tasks: Task[]) {
   localStorage.setItem(TODO_STORAGE_KEY, JSON.stringify(tasks));
 }
 
-/** Get focus-worthy tasks: today + high priority + not done */
+/** Get focus-worthy tasks: high priority, overdue, work category, or in_progress only */
 function getFocusTasks(allTasks: Task[]): Task[] {
   const today = startOfDay(new Date());
 
@@ -94,22 +94,18 @@ function getFocusTasks(allTasks: Task[]): Task[] {
     .filter(t => {
       if (t.status === "done" || t.done) return false;
       const taskDate = t.date ? startOfDay(new Date(t.date)) : null;
-      const isToday = taskDate && isSameDay(taskDate, today);
       const isOverdue = taskDate && isBefore(taskDate, today);
       const isHighPriority = t.priority === "high";
       const isWork = t.category === "work";
       const isInProgress = t.status === "in_progress";
 
-      return isToday || isOverdue || isHighPriority || isWork || isInProgress;
+      return isHighPriority || isOverdue || isWork || isInProgress;
     })
     .sort((a, b) => {
-      // In-progress first
       if (a.status === "in_progress" && b.status !== "in_progress") return -1;
       if (b.status === "in_progress" && a.status !== "in_progress") return 1;
-      // Then by priority
       const pw = (PRIORITY_WEIGHT[b.priority] || 0) - (PRIORITY_WEIGHT[a.priority] || 0);
       if (pw !== 0) return pw;
-      // Then by time
       if (a.startTime && b.startTime) return a.startTime.localeCompare(b.startTime);
       if (a.startTime) return -1;
       if (b.startTime) return 1;
