@@ -385,11 +385,16 @@ const FocusPage = () => {
           </div>
         </div>
 
-        {/* Buddy speech */}
-        <div className="mt-2 mb-3 max-w-[280px] text-center">
-          <p className="text-sm text-foreground/70 font-medium transition-all duration-500 animate-fade-in" key={buddyMsg}>
-            {buddyMsg}
-          </p>
+        {/* Buddy speech bubble */}
+        <div className="mt-2 mb-3 max-w-[280px] relative">
+          {/* Speech bubble tail */}
+          <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 rotate-45 bg-card/70 border-l border-t border-primary/25 backdrop-blur-sm" />
+          {/* Bubble */}
+          <div className="relative bg-card/70 backdrop-blur-sm border border-primary/25 rounded-2xl px-5 py-3 text-center shadow-[0_0_20px_rgba(139,92,246,0.15),0_0_40px_rgba(139,92,246,0.08)]">
+            <p className="text-sm text-foreground/80 font-medium transition-all duration-500 animate-fade-in" key={buddyMsg}>
+              {buddyMsg}
+            </p>
+          </div>
         </div>
 
         {/* Timer - smaller size */}
