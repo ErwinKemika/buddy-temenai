@@ -157,6 +157,20 @@ const TodoPage = () => {
     setAddRecurrence("once");
     setAddEffort("");
     setShowAddForm(false);
+    setEditingTaskId(null);
+  };
+
+  const startEditing = (task: Task) => {
+    setEditingTaskId(task.id);
+    setNewTask(task.title);
+    setAddDate(task.date);
+    setAddStartTime(task.startTime || "");
+    setAddEndTime(task.endTime || "");
+    setAddPriority(task.priority);
+    setAddCategory(task.category || "");
+    setAddRecurrence(task.recurrence);
+    setAddEffort(task.effort || "");
+    setShowAddForm(true);
   };
 
   const addTask = () => {
