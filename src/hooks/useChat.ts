@@ -332,10 +332,14 @@ export function useChat() {
     }
 
     const userMsg: Message = {
+      id: genMsgId(),
       role: "user",
       content: resolvedText || (attachmentData ? `[${attachmentData.type === "image" ? "Gambar" : "Dokumen"}]` : ""),
       attachment: attachmentData,
+      replyTo: replyingTo ? { id: replyingTo.id, content: replyingTo.content, role: replyingTo.role } : undefined,
     };
+
+    setReplyingTo(null);
 
     setMessages(prev => [...prev, userMsg]);
 
