@@ -110,7 +110,16 @@ const TodoPage = () => {
   const [filterStatus, setFilterStatus] = useState<Status | "all">("all");
   const [filterCategory, setFilterCategory] = useState<Category | "all">("all");
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
-  const [buddyMsg, setBuddyMsg] = useState("Mau ngapain hari ini? 📝");
+
+  const BUDDY_GREETINGS = [
+    "Mau ngapain hari ini? 📝",
+    "Ada rencana apa hari ini?",
+    "Yuk mulai hari ini! 🚀",
+    "Semangat ya hari ini! 💪",
+    "Aku siap bantu kamu! ✨",
+    "Hari ini kita produktif yuk!",
+  ];
+  const [buddyMsg, setBuddyMsg] = useState(() => BUDDY_GREETINGS[Math.floor(Math.random() * BUDDY_GREETINGS.length)]);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
