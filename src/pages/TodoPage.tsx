@@ -629,6 +629,11 @@ const TodoPage = () => {
                       <Play size={14} fill="currentColor" />
                     </button>
                   )}
+                  {!task.done && (
+                    <button onClick={() => navigate(`/focus?taskId=${task.id}`)} className="p-1.5 text-primary active:text-primary/80 transition-colors" title="Fokus">
+                      <Target size={14} />
+                    </button>
+                  )}
                   {task.isRunning && (
                     <button onClick={() => stopTask(task.id)} className="p-1.5 text-destructive active:text-destructive/80 transition-colors">
                       <Square size={14} fill="currentColor" />
