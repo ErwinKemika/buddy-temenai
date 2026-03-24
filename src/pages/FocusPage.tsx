@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
-import { Pause, Square, RotateCcw, CheckCircle2 } from "lucide-react";
+import { Pause, Play, Square, RotateCcw, CheckCircle2 } from "lucide-react";
 import { startOfDay, isBefore } from "date-fns";
 import { useSearchParams } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
@@ -496,8 +496,23 @@ const FocusPage = () => {
                       Done
                     </button>
                   )}
-                  {timerState !== "idle" && idx === activeIdx && timerState !== "finished" && (
-                    <div className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse flex-shrink-0" />
+                  {timerState === "running" && idx === activeIdx && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); pauseTimer(); }}
+                      className="flex items-center gap-1 px-2 py-1.5 rounded-full bg-yellow-500/20 text-yellow-400 text-[10px] font-semibold active:scale-95 transition-all border border-yellow-500/30 flex-shrink-0"
+                    >
+                      <Pause size={10} />
+                      Pause
+                    </button>
+                  )}
+                  {timerState === "paused" && idx === activeIdx && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); startTimerForTask(); }}
+                      className="flex items-center gap-1 px-2 py-1.5 rounded-full bg-primary/20 text-primary text-[10px] font-semibold active:scale-95 transition-all border border-primary/30 flex-shrink-0"
+                    >
+                      <Play size={10} />
+                      Lanjut
+                    </button>
                   )}
                 </div>
               ))}
@@ -520,12 +535,14 @@ const FocusPage = () => {
 
 const FocusEye = ({ state, delay }: { state: TimerState; delay: number }) => {
   const cls = state === "running"
-    ? "bg-gradient-to-b from-accent to-buddy-cyan-glow"
-    : state === "finished"
-      ? "bg-gradient-to-b from-green-400 to-accent animate-pulse"
-      : "bg-gradient-to-b from-accent to-buddy-cyan-glow animate-blink";
+    ? "bg-gradient-to-b from-green-400 to-green-500"
+    : state === "paused"
+      ? "bg-gradient-to-b from-red-400 to-red-500 animate-pulse"
+      : state === "finished"
+        ? "bg-gradient-to-b from-accent to-buddy-cyan-glow animate-pulse"
+        : "bg-gradient-to-b from-accent to-buddy-cyan-glow animate-blink";
   return (
-    <div className={`w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200 ${cls}`}
+    <div className={`w-9 h-9 rounded-full flex items-center justify-center transition-all duration-500 ${cls}`}
       style={{ animationDelay: `${delay}s` }}>
       <div className="w-3.5 h-3.5 rounded-full bg-primary-foreground/90" />
     </div>
