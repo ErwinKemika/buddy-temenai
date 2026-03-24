@@ -154,13 +154,24 @@ const TodoPage = () => {
     setBuddyMsg(getBuddyLine(tasks));
   }, []);
 
-  // Animate message transitions
+  // Speak initial message once per session
+  useEffect(() => {
+    if (!hasSpokenInitial.current && buddyMsg) {
+      hasSpokenInitial.current = true;
+      // Small delay so page loads first
+      const t = setTimeout(() => speak(buddyMsg), 800);
+      return () => clearTimeout(t);
+    }
+  }, [buddyMsg]);
+
+  // Animate message transitions + trigger voice
   const updateBuddyMsg = (msg: string, autoRevert?: string, revertDelay = 3500) => {
     setBuddyMsgVisible(false);
     setBuddySpeaking(true);
     setTimeout(() => {
       setBuddyMsg(msg);
       setBuddyMsgVisible(true);
+      speak(msg); // Speak the action message
       setTimeout(() => setBuddySpeaking(false), 600);
     }, 200);
     if (autoRevert) {
