@@ -111,15 +111,65 @@ const TodoPage = () => {
   const [filterCategory, setFilterCategory] = useState<Category | "all">("all");
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
 
-  const BUDDY_GREETINGS = [
-    "Mau ngapain hari ini? 📝",
-    "Ada rencana apa hari ini?",
-    "Yuk mulai hari ini! 🚀",
-    "Semangat ya hari ini! 💪",
-    "Aku siap bantu kamu! ✨",
-    "Hari ini kita produktif yuk!",
-  ];
-  const [buddyMsg, setBuddyMsg] = useState(() => BUDDY_GREETINGS[Math.floor(Math.random() * BUDDY_GREETINGS.length)]);
+  const getBuddyLine = (taskList: Task[]) => {
+    const todayTasks = taskList.filter(t => isTaskOnDate(t, format(new Date(), "yyyy-MM-dd")));
+    const pending = todayTasks.filter(t => !t.done);
+    const done = todayTasks.filter(t => t.done);
+    const overdue = taskList.filter(t => {
+      const ds = getDeadlineState(t.date);
+      return ds?.label === "Terlambat" && !t.done;
+    });
+
+    if (todayTasks.length === 0) {
+      const lines = ["Mau ngapain hari ini?", "Ada rencana apa hari ini?", "Yuk isi jadwal hari ini!", "Belum ada kegiatan nih, mau tambahin?"];
+      return lines[Math.floor(Math.random() * lines.length)];
+    }
+    if (overdue.length > 0) {
+      return `Ada ${overdue.length} tugas yang terlambat nih, yuk dikerjain`;
+    }
+    if (done.length > 0 && pending.length === 0) {
+      const lines = ["Semua beres! Kamu keren banget hari ini ✨", "Mantap, semua tugas selesai! 🎉"];
+      return lines[Math.floor(Math.random() * lines.length)];
+    }
+    if (pending.length > 0) {
+      const lines = [
+        `Masih ada ${pending.length} tugas nih, semangat ya!`,
+        `${pending.length} tugas lagi, pasti bisa! 💪`,
+        "Yuk lanjut pelan-pelan, aku temenin",
+      ];
+      return lines[Math.floor(Math.random() * lines.length)];
+    }
+    return "Aku siap bantu kamu hari ini!";
+  };
+
+  const [buddyMsg, setBuddyMsg] = useState(() => "");
+  const [buddyMsgVisible, setBuddyMsgVisible] = useState(true);
+  const [buddySpeaking, setBuddySpeaking] = useState(false);
+
+  // Set initial message after mount
+  useEffect(() => {
+    setBuddyMsg(getBuddyLine(tasks));
+  }, []);
+
+  // Animate message transitions
+  const updateBuddyMsg = (msg: string, autoRevert?: string, revertDelay = 3500) => {
+    setBuddyMsgVisible(false);
+    setBuddySpeaking(true);
+    setTimeout(() => {
+      setBuddyMsg(msg);
+      setBuddyMsgVisible(true);
+      setTimeout(() => setBuddySpeaking(false), 600);
+    }, 200);
+    if (autoRevert) {
+      setTimeout(() => {
+        setBuddyMsgVisible(false);
+        setTimeout(() => {
+          setBuddyMsg(autoRevert);
+          setBuddyMsgVisible(true);
+        }, 200);
+      }, revertDelay);
+    }
+  };
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
@@ -215,8 +265,7 @@ const TodoPage = () => {
         )
       );
       resetForm();
-      setBuddyMsg("Udah aku update ya! ✏️");
-      setTimeout(() => setBuddyMsg("Ada lagi yang mau diubah?"), 3000);
+      updateBuddyMsg("Udah aku update ya! ✏️", getBuddyLine(tasks));
       return;
     }
 
@@ -235,8 +284,7 @@ const TodoPage = () => {
     };
     setTasks(prev => [...prev, task]);
     resetForm();
-    setBuddyMsg("Oke, aku catat ya! 💪");
-    setTimeout(() => setBuddyMsg("Ada lagi yang mau dikerjain?"), 3000);
+    updateBuddyMsg("Sip, udah aku catat! 📝", getBuddyLine([...tasks, task]));
   };
 
   const toggleTask = (id: string) => {
@@ -255,8 +303,7 @@ const TodoPage = () => {
     );
     const task = tasks.find(t => t.id === id);
     if (task && !task.done) {
-      setBuddyMsg("Mantap! Satu selesai! 🎉");
-      setTimeout(() => setBuddyMsg("Lanjut yang lain yuk!"), 3000);
+      updateBuddyMsg("Nice, satu beres! 🎉", "Mau lanjut yang lain?");
     }
   };
 
@@ -266,7 +313,7 @@ const TodoPage = () => {
         t.id === id ? { ...t, isRunning: true, status: "in_progress" as Status, startedAt: t.startedAt || new Date().toISOString() } : t
       )
     );
-    setBuddyMsg("Gas! Semangat kerjain! 🔥");
+    updateBuddyMsg("Gas! Semangat kerjain! 🔥");
   };
 
   const stopTask = (id: string) => {
@@ -279,7 +326,7 @@ const TodoPage = () => {
 
   const deleteTask = (id: string) => {
     setTasks(prev => prev.filter(t => t.id !== id));
-    setBuddyMsg("Udah aku hapus ya.");
+    updateBuddyMsg("Udah aku hapus ya", getBuddyLine(tasks.filter(t => t.id !== id)));
   };
 
   const getElapsed = (task: Task) => {
@@ -326,12 +373,22 @@ const TodoPage = () => {
             </div>
           </div>
 
-          {/* Speech Bubble */}
-          <div className="relative flex-1 animate-fade-in">
-            <div className="relative bg-card/60 backdrop-blur-sm border border-primary/20 rounded-2xl rounded-bl-md px-3 py-2 shadow-lg shadow-primary/5">
+          {/* Speech Bubble — Buddy speaking line */}
+          <div className="relative flex-1">
+            <div className={`relative bg-card/60 backdrop-blur-sm border border-primary/20 rounded-2xl rounded-bl-md px-3.5 py-2.5 shadow-lg shadow-primary/5 transition-all duration-300 ${buddyMsgVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-1'}`}>
               {/* Bubble arrow */}
-              <div className="absolute left-[-6px] top-3.5 w-0 h-0 border-t-[5px] border-t-transparent border-b-[5px] border-b-transparent border-r-[6px] border-r-primary/20" />
-              <p className="text-sm text-foreground/90 leading-snug">{buddyMsg}</p>
+              <div className="absolute left-[-6px] top-4 w-0 h-0 border-t-[5px] border-t-transparent border-b-[5px] border-b-transparent border-r-[6px] border-r-primary/20" />
+              {/* Speaking indicator dots */}
+              <div className="flex items-start gap-2">
+                <p className="text-sm text-foreground/90 leading-snug flex-1 font-medium">{buddyMsg}</p>
+                {buddySpeaking && (
+                  <span className="flex gap-0.5 items-center pt-1 shrink-0">
+                    <span className="w-1 h-1 rounded-full bg-accent animate-pulse" />
+                    <span className="w-1 h-1 rounded-full bg-accent animate-pulse" style={{ animationDelay: '0.15s' }} />
+                    <span className="w-1 h-1 rounded-full bg-accent animate-pulse" style={{ animationDelay: '0.3s' }} />
+                  </span>
+                )}
+              </div>
             </div>
           </div>
         </div>
