@@ -1,8 +1,10 @@
-import { useState, useEffect, useMemo } from "react";
-import { Plus, Trash2, Calendar as CalendarIcon, Clock, ChevronLeft, ChevronRight, Play, Square, CheckCircle2 } from "lucide-react";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { Trash2, Clock, ChevronLeft, ChevronRight, Play, Square, CheckCircle2 } from "lucide-react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, isToday, addMonths, subMonths } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import BottomNav from "@/components/BottomNav";
+import TodoSmartInput from "@/components/TodoSmartInput";
+import { parseTodoInput, getRandomBuddyResponse } from "@/hooks/useTodoParser";
 
 interface Task {
   id: string;
@@ -30,15 +32,11 @@ const loadTasks = (): Task[] => {
 
 const TodoPage = () => {
   const [tasks, setTasks] = useState<Task[]>(loadTasks);
-  const [newTask, setNewTask] = useState("");
   const [viewMode, setViewMode] = useState<ViewMode>("today");
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [calMonth, setCalMonth] = useState(new Date());
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [addDate, setAddDate] = useState(format(new Date(), "yyyy-MM-dd"));
-  const [addStartTime, setAddStartTime] = useState("");
-  const [addEndTime, setAddEndTime] = useState("");
   const [buddyMsg, setBuddyMsg] = useState("Mau ngapain hari ini? 📝");
+  const [buddyChatLog, setBuddyChatLog] = useState<Array<{ role: "user" | "buddy"; text: string }>>([]);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
@@ -69,24 +67,35 @@ const TodoPage = () => {
 
   const tasksOnDate = (dateStr: string) => tasks.filter(t => t.date === dateStr);
 
-  const addTask = () => {
-    const title = newTask.trim();
-    if (!title) return;
+
+
+
+  const handleSmartInput = useCallback((text: string) => {
+    const parsed = parseTodoInput(text);
+    console.log("[TodoSmartInput] Raw:", text, "→ Parsed:", parsed);
+
     const task: Task = {
       id: Date.now().toString(),
-      title,
+      title: parsed.title,
       done: false,
-      date: addDate,
-      startTime: addStartTime || undefined,
-      endTime: addEndTime || undefined,
+      date: parsed.date,
+      startTime: parsed.startTime,
+      endTime: parsed.endTime,
     };
     setTasks(prev => [...prev, task]);
-    setNewTask("");
-    setAddStartTime("");
-    setAddEndTime("");
-    setShowAddForm(false);
-    setBuddyMsg("Oke, aku catat ya! 💪");
+
+    const response = getRandomBuddyResponse();
+    const timeInfo = parsed.startTime ? ` (${parsed.startTime}${parsed.endTime ? " - " + parsed.endTime : ""})` : "";
+    const dateLabel = parsed.date === format(new Date(), "yyyy-MM-dd") ? "hari ini" : format(new Date(parsed.date + "T00:00:00"), "d MMM", { locale: localeId });
+
+    setBuddyChatLog(prev => [
+      ...prev,
+      { role: "user", text },
+      { role: "buddy", text: `${response}\n📋 "${parsed.title}" — ${dateLabel}${timeInfo}` },
+    ]);
+    setBuddyMsg(response);
     setTimeout(() => setBuddyMsg("Ada lagi yang mau dikerjain?"), 3000);
+  }, []);
   };
 
   const toggleTask = (id: string) => {
@@ -333,75 +342,29 @@ const TodoPage = () => {
         })}
       </div>
 
-      {/* Add task area */}
+      {/* Buddy chat log */}
+      {buddyChatLog.length > 0 && (
+        <div className="px-4 pb-1 max-h-28 overflow-y-auto space-y-1.5">
+          {buddyChatLog.slice(-4).map((msg, i) => (
+            <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+              <div className={`max-w-[80%] px-3 py-1.5 rounded-xl text-xs whitespace-pre-line ${
+                msg.role === "user"
+                  ? "bg-primary/20 text-foreground"
+                  : "bg-card/60 text-foreground/90 border border-border/30"
+              }`}>
+                {msg.text}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Smart input area */}
       <div className="px-3 pt-2 pb-2 bg-card/40 backdrop-blur-md border-t border-border/30">
-        {showAddForm ? (
-          <div className="space-y-2">
-            <input
-              type="text"
-              value={newTask}
-              onChange={e => setNewTask(e.target.value)}
-              placeholder="Judul tugas..."
-              className="w-full bg-muted/50 border border-border/30 rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none"
-              autoFocus
-            />
-            <div className="flex gap-2">
-              <div className="flex-1">
-                <label className="text-[10px] text-muted-foreground mb-0.5 block">Tanggal</label>
-                <input
-                  type="date"
-                  value={addDate}
-                  onChange={e => setAddDate(e.target.value)}
-                  className="w-full bg-muted/50 border border-border/30 rounded-lg px-2 py-1.5 text-xs text-foreground outline-none"
-                />
-              </div>
-              <div className="flex-1">
-                <label className="text-[10px] text-muted-foreground mb-0.5 block">Mulai</label>
-                <input
-                  type="time"
-                  value={addStartTime}
-                  onChange={e => setAddStartTime(e.target.value)}
-                  className="w-full bg-muted/50 border border-border/30 rounded-lg px-2 py-1.5 text-xs text-foreground outline-none"
-                />
-              </div>
-              <div className="flex-1">
-                <label className="text-[10px] text-muted-foreground mb-0.5 block">Selesai</label>
-                <input
-                  type="time"
-                  value={addEndTime}
-                  onChange={e => setAddEndTime(e.target.value)}
-                  className="w-full bg-muted/50 border border-border/30 rounded-lg px-2 py-1.5 text-xs text-foreground outline-none"
-                />
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setShowAddForm(false)}
-                className="flex-1 py-2 rounded-lg text-xs text-muted-foreground bg-muted/30 active:bg-muted/50"
-              >
-                Batal
-              </button>
-              <button
-                onClick={addTask}
-                disabled={!newTask.trim()}
-                className="flex-1 py-2 rounded-lg text-xs bg-primary text-primary-foreground active:bg-primary/80 disabled:opacity-30"
-              >
-                Simpan
-              </button>
-            </div>
-          </div>
-        ) : (
-          <button
-            onClick={() => {
-              setAddDate(viewMode === "today" ? todayStr : format(selectedDate, "yyyy-MM-dd"));
-              setShowAddForm(true);
-            }}
-            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-full bg-primary text-primary-foreground active:bg-primary/80 transition-colors"
-          >
-            <Plus size={18} />
-            <span className="text-sm font-medium">Tambah Tugas</span>
-          </button>
-        )}
+        <TodoSmartInput
+          onSubmit={handleSmartInput}
+          placeholder="Ketik tugas... cth: Meeting besok jam 3"
+        />
       </div>
 
       <BottomNav />
