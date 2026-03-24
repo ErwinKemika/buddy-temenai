@@ -358,7 +358,7 @@ export function useChat() {
     };
 
     try {
-      await streamChat(chatMessages, upsertAssistant);
+      await streamChat(chatMessages, upsertAssistant, todoContext);
 
       // Smart voice: only speak if voice is enabled, autoplay is on, and content is short/friendly
       if (voiceEnabled && autoPlayVoice && assistantSoFar && shouldSpeak(assistantSoFar)) {
