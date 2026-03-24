@@ -1,4 +1,4 @@
-import { Send, Volume2, VolumeX, Plus, Mic, AlarmClock } from "lucide-react";
+import { Send, Volume2, VolumeX, Plus, Mic } from "lucide-react";
 import { useState } from "react";
 import { BuddyState } from "@/hooks/useChat";
 import AttachmentMenu from "./AttachmentMenu";
