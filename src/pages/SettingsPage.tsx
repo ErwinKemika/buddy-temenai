@@ -1,9 +1,10 @@
-import { Moon, Sun, Volume2, VolumeX, Play, Pause, ArrowLeft } from "lucide-react";
+import { Moon, Sun, Volume2, VolumeX, Play, Pause, ArrowLeft, LogOut } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import BottomNav from "@/components/BottomNav";
 import buddyAvatar from "@/assets/buddy-avatar.png";
+import { useAuth } from "@/hooks/useAuth";
 
 const SettingsPage = () => {
   const { theme, toggleTheme } = useTheme();
