@@ -28,7 +28,7 @@ const BottomNav = () => {
             <span className="text-[10px] font-medium">{label}</span>
           </button>
         );
-      }}}
+      })}
     </nav>
   );
 };
