@@ -477,7 +477,7 @@ const FocusPage = () => {
                       }}
                       className="flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-primary/20 text-primary text-[10px] font-semibold active:scale-95 transition-all border border-primary/30"
                     >
-                      🎯 Fokus
+                      💻 Kerjakan sekarang
                     </button>
                   )}
                   {timerState === "finished" && idx === activeIdx && (
