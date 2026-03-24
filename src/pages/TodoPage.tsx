@@ -94,6 +94,8 @@ const getDeadlineState = (dateStr: string): { label: string; className: string }
 
 const TodoPage = () => {
   const [tasks, setTasks] = useState<Task[]>(loadTasks);
+  const { voiceEnabled, toggleVoice, speak } = useBuddyVoice();
+  const hasSpokenInitial = useRef(false);
   const [newTask, setNewTask] = useState("");
   const [viewMode, setViewMode] = useState<ViewMode>("today");
   const [selectedDate, setSelectedDate] = useState(new Date());
