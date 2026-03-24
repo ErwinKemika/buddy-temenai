@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
-import { Pause, Square, RotateCcw, CheckCircle2 } from "lucide-react";
+import { Pause, Play, Square, RotateCcw, CheckCircle2 } from "lucide-react";
 import { startOfDay, isBefore } from "date-fns";
 import { useSearchParams } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
