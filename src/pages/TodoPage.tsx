@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { Plus, Trash2, Calendar as CalendarIcon, Clock, ChevronLeft, ChevronRight, Play, Square, CheckCircle2, Filter, X } from "lucide-react";
+import { Plus, Trash2, Calendar as CalendarIcon, Clock, ChevronLeft, ChevronRight, Play, Square, CheckCircle2, Filter, X, Pencil } from "lucide-react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, isToday, addMonths, subMonths, isBefore, startOfDay } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import BottomNav from "@/components/BottomNav";
@@ -109,6 +109,7 @@ const TodoPage = () => {
   const [filterPriority, setFilterPriority] = useState<Priority | "all">("all");
   const [filterStatus, setFilterStatus] = useState<Status | "all">("all");
   const [filterCategory, setFilterCategory] = useState<Category | "all">("all");
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [buddyMsg, setBuddyMsg] = useState("Mau ngapain hari ini? 📝");
 
   useEffect(() => {
@@ -156,11 +157,51 @@ const TodoPage = () => {
     setAddRecurrence("once");
     setAddEffort("");
     setShowAddForm(false);
+    setEditingTaskId(null);
+  };
+
+  const startEditing = (task: Task) => {
+    setEditingTaskId(task.id);
+    setNewTask(task.title);
+    setAddDate(task.date);
+    setAddStartTime(task.startTime || "");
+    setAddEndTime(task.endTime || "");
+    setAddPriority(task.priority);
+    setAddCategory(task.category || "");
+    setAddRecurrence(task.recurrence);
+    setAddEffort(task.effort || "");
+    setShowAddForm(true);
   };
 
   const addTask = () => {
     const title = newTask.trim();
     if (!title) return;
+
+    if (editingTaskId) {
+      // Edit existing task
+      setTasks(prev =>
+        prev.map(t =>
+          t.id === editingTaskId
+            ? {
+                ...t,
+                title,
+                date: addDate,
+                startTime: addStartTime || undefined,
+                endTime: addEndTime || undefined,
+                priority: addPriority,
+                category: addCategory || undefined,
+                recurrence: addRecurrence,
+                effort: addEffort || undefined,
+              }
+            : t
+        )
+      );
+      resetForm();
+      setBuddyMsg("Udah aku update ya! ✏️");
+      setTimeout(() => setBuddyMsg("Ada lagi yang mau diubah?"), 3000);
+      return;
+    }
+
     const task: Task = {
       id: Date.now().toString(),
       title,
@@ -467,6 +508,11 @@ const TodoPage = () => {
                   {task.done && (
                     <CheckCircle2 size={14} className="text-green-500" />
                   )}
+                  {!task.done && (
+                    <button onClick={() => startEditing(task)} className="p-1.5 text-muted-foreground active:text-accent transition-colors">
+                      <Pencil size={14} />
+                    </button>
+                  )}
                   <button onClick={() => deleteTask(task.id)} className="p-1.5 text-muted-foreground active:text-destructive transition-colors">
                     <Trash2 size={14} />
                   </button>
@@ -588,7 +634,7 @@ const TodoPage = () => {
               </button>
               <button onClick={addTask} disabled={!newTask.trim()}
                 className="flex-1 py-2 rounded-lg text-xs bg-primary text-primary-foreground active:bg-primary/80 disabled:opacity-30">
-                Simpan
+                {editingTaskId ? "Update" : "Simpan"}
               </button>
             </div>
           </div>
