@@ -2,7 +2,6 @@ import { BuddyState } from "@/hooks/useChat";
 
 interface BuddyRobotProps {
   buddyState: BuddyState;
-  opacity?: number;
 }
 
 const BuddyRobot = ({ buddyState }: BuddyRobotProps) => {
@@ -11,9 +10,7 @@ const BuddyRobot = ({ buddyState }: BuddyRobotProps) => {
   const isSpeaking = buddyState === "speaking";
 
   return (
-    <div
-      className="flex-1 flex flex-col items-center justify-center relative overflow-hidden"
-    >
+    <div className="flex-1 flex flex-col items-center justify-center relative overflow-hidden">
       {/* Orbit rings */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
         <div className="orbit-ring w-[280px] h-[280px] animate-orbit opacity-40" />
