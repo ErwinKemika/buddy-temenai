@@ -313,7 +313,7 @@ const TodoPage = () => {
         t.id === id ? { ...t, isRunning: true, status: "in_progress" as Status, startedAt: t.startedAt || new Date().toISOString() } : t
       )
     );
-    setBuddyMsg("Gas! Semangat kerjain! 🔥");
+    updateBuddyMsg("Gas! Semangat kerjain! 🔥");
   };
 
   const stopTask = (id: string) => {
