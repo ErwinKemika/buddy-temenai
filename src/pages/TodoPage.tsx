@@ -67,25 +67,8 @@ const TodoPage = () => {
 
   const tasksOnDate = (dateStr: string) => tasks.filter(t => t.date === dateStr);
 
-  const addTask = () => {
-    const title = newTask.trim();
-    if (!title) return;
-    const task: Task = {
-      id: Date.now().toString(),
-      title,
-      done: false,
-      date: addDate,
-      startTime: addStartTime || undefined,
-      endTime: addEndTime || undefined,
-    };
-    setTasks(prev => [...prev, task]);
-    setNewTask("");
-    setAddStartTime("");
-    setAddEndTime("");
-    setShowAddForm(false);
-    setBuddyMsg("Oke, aku catat ya! 💪");
-    setTimeout(() => setBuddyMsg("Ada lagi yang mau dikerjain?"), 3000);
-  };
+
+
 
   const handleSmartInput = useCallback((text: string) => {
     const parsed = parseTodoInput(text);
