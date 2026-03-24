@@ -470,13 +470,6 @@ const FocusPage = () => {
               </button>
             </>
           )}
-          {timerState === "finished" && (
-            <button onClick={resetTimer}
-              className="flex items-center gap-2 bg-primary text-primary-foreground px-6 py-2.5 rounded-full text-xs font-semibold active:scale-95 transition-all shadow-lg shadow-primary/25">
-              <RotateCcw size={16} />
-              Reset
-            </button>
-          )}
         </div>
 
         {/* Task list with focus buttons */}
