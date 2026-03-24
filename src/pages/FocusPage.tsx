@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { Play, Square, Pause, RotateCcw, CheckCircle2 } from "lucide-react";
-import { format, isSameDay, startOfDay, isBefore } from "date-fns";
+import { startOfDay, isBefore } from "date-fns";
 import BottomNav from "@/components/BottomNav";
 import { BuddyState } from "@/hooks/useChat";
 
