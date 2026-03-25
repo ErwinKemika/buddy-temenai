@@ -35,7 +35,7 @@ const Index = () => {
     messages, buddyState,
     voiceEnabled, setVoiceEnabled,
     autoPlayVoice, setAutoPlayVoice,
-    sendMessage, injectReminderMessage,
+    sendMessage, injectReminderMessage, clearMessages,
   } = useChat();
 
   const remindedRef = useRef(loadRemindedSet());
