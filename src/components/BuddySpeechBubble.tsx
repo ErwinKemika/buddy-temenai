@@ -8,7 +8,7 @@ interface Props {
   buddyState: BuddyState;
 }
 
-type BuddyEmotion = "normal" | "sad";
+type BuddyEmotion = "normal" | "sad" | "happy" | "angry";
 
 const SAD_KEYWORDS = [
   "sedih", "galau", "nangis", "menangis", "kecewa", "patah hati", "putus",
@@ -17,13 +17,36 @@ const SAD_KEYWORDS = [
   "takut", "cemas", "gelisah", "khawatir", "anxious", "panik", "bingung",
   "lelah", "capek", "cape", "burnout", "overwhelm", "susah", "sulit",
   "masalah", "problem", "curhat", "down", "bad mood", "bete", "kesel",
-  "marah", "frustrasi", "frustrated", "helpless", "sendirian", "ditinggal",
+  "frustrasi", "frustrated", "helpless", "sendirian", "ditinggal",
   "😢", "😭", "😞", "😔", "😟", "😥", "💔", "😰", "😩", "😫", "🥺"
+];
+
+const HAPPY_KEYWORDS = [
+  "senang", "seneng", "bahagia", "happy", "gembira", "excited", "yeay", "yey",
+  "hore", "horee", "berhasil", "sukses", "menang", "juara", "lulus", "diterima",
+  "dapat", "rejeki", "untung", "beruntung", "lucky", "amazing", "hebat", "keren",
+  "mantap", "mantab", "asik", "asyik", "seru", "bagus", "best", "terbaik",
+  "bangga", "proud", "grateful", "bersyukur", "syukur", "alhamdulillah",
+  "semangat", "termotivasi", "inspired", "produktif", "achievement",
+  "🎉", "🥳", "😄", "😊", "🎊", "🏆", "💪", "✨", "🔥", "❤️", "😍", "🥰", "👏"
+];
+
+const ANGRY_KEYWORDS = [
+  "malas", "males", "mager", "nunda", "menunda", "procrastinate", "ogah",
+  "gak mau", "ga mau", "nggak mau", "enggan", "skip", "bolos", "cabut",
+  "bodo amat", "bodo amah", "masa bodoh", "cuek", "acuh", "abai",
+  "males banget", "ngantuk", "tidur aja", "rebahan", "gabut",
+  "nyerah", "menyerah", "give up", "nanti aja", "ntar aja", "besok aja",
+  "gak semangat", "ga semangat", "loyo", "lemes", "lesu", "unmotivated",
+  "😴", "🥱", "😒", "😑", "🙄", "💤", "😤", "👎"
 ];
 
 function detectEmotion(content: string): BuddyEmotion {
   const lower = content.toLowerCase();
-  return SAD_KEYWORDS.some(k => lower.includes(k)) ? "sad" : "normal";
+  if (SAD_KEYWORDS.some(k => lower.includes(k))) return "sad";
+  if (HAPPY_KEYWORDS.some(k => lower.includes(k))) return "happy";
+  if (ANGRY_KEYWORDS.some(k => lower.includes(k))) return "angry";
+  return "normal";
 }
 
 /** Find the user message right before this assistant message */
@@ -42,20 +65,30 @@ const BuddyMiniHead = ({ buddyState, emotion }: { buddyState: BuddyState; emotio
   const isSpeaking = buddyState === "speaking";
   const isThinking = buddyState === "thinking";
   const isSad = emotion === "sad";
+  const isHappy = emotion === "happy";
+  const isAngry = emotion === "angry";
 
   const eyeColor = isSad
     ? "bg-gradient-to-b from-yellow-400 to-yellow-500"
-    : isSpeaking
-      ? "bg-gradient-to-b from-accent to-buddy-cyan-glow animate-talk"
-      : "bg-gradient-to-b from-accent to-buddy-cyan-glow animate-blink";
+    : isHappy
+      ? "bg-gradient-to-b from-green-400 to-green-500"
+      : isAngry
+        ? "bg-gradient-to-b from-red-400 to-red-500"
+        : isSpeaking
+          ? "bg-gradient-to-b from-accent to-buddy-cyan-glow animate-talk"
+          : "bg-gradient-to-b from-accent to-buddy-cyan-glow animate-blink";
+
+  const antennaColor = isSad ? 'bg-yellow-400/70'
+    : isHappy ? 'bg-green-400/70 animate-pulse'
+    : isAngry ? 'bg-red-400/70'
+    : isSpeaking ? 'bg-accent animate-pulse'
+    : 'bg-accent/70 animate-antenna';
 
   return (
     <div className="relative shrink-0 self-end mb-1">
       {/* Antenna */}
       <div className="flex flex-col items-center">
-        <div className={`w-[5px] h-[5px] rounded-full ${
-          isSad ? 'bg-yellow-400/70' : isSpeaking ? 'bg-accent animate-pulse' : 'bg-accent/70 animate-antenna'
-        }`} />
+        <div className={`w-[5px] h-[5px] rounded-full ${antennaColor}`} />
         <div className="w-[2px] h-[3px] bg-accent/40" />
       </div>
       {/* Head */}
@@ -64,33 +97,56 @@ const BuddyMiniHead = ({ buddyState, emotion }: { buddyState: BuddyState; emotio
       }`}>
         {/* Top shine */}
         <div className="absolute top-0 left-0 right-0 h-[2px] rounded-t-[0.6rem] bg-gradient-to-r from-primary/20 via-accent/30 to-primary/20" />
+
+        {/* Angry eyebrows */}
+        {isAngry && (
+          <div className="absolute top-[4px] inset-x-0 flex items-center justify-center gap-[6px] z-10">
+            <div className="w-[7px] h-[2px] bg-red-400/80 rounded-full -rotate-12" />
+            <div className="w-[7px] h-[2px] bg-red-400/80 rounded-full rotate-12" />
+          </div>
+        )}
+
         {/* Eyes */}
         <div className="absolute inset-0 flex items-center justify-center gap-[6px] pt-[2px]">
           {/* Left eye */}
           <div className="relative">
-            <div className={`w-[7px] h-[7px] rounded-full ${eyeColor}`}>
-              <div className="w-[3px] h-[3px] rounded-full bg-primary-foreground/80 mx-auto mt-[2px]" />
-            </div>
-            {/* Tear drop */}
+            {isHappy ? (
+              /* Happy squint eye - like ^_^ */
+              <div className="w-[7px] h-[4px] border-t-[2px] border-green-400 rounded-t-full mt-[2px]" />
+            ) : (
+              <div className={`w-[7px] h-[7px] rounded-full ${eyeColor}`}>
+                <div className="w-[3px] h-[3px] rounded-full bg-primary-foreground/80 mx-auto mt-[2px]" />
+              </div>
+            )}
             {isSad && (
               <div className="absolute -bottom-[4px] left-1/2 -translate-x-1/2 w-[3px] h-[4px] rounded-b-full bg-yellow-300/80 animate-tear-drop" />
             )}
           </div>
           {/* Right eye */}
           <div className="relative">
-            <div className={`w-[7px] h-[7px] rounded-full ${eyeColor}`} style={{ animationDelay: '0.05s' }}>
-              <div className="w-[3px] h-[3px] rounded-full bg-primary-foreground/80 mx-auto mt-[2px]" />
-            </div>
+            {isHappy ? (
+              <div className="w-[7px] h-[4px] border-t-[2px] border-green-400 rounded-t-full mt-[2px]" />
+            ) : (
+              <div className={`w-[7px] h-[7px] rounded-full ${eyeColor}`} style={{ animationDelay: '0.05s' }}>
+                <div className="w-[3px] h-[3px] rounded-full bg-primary-foreground/80 mx-auto mt-[2px]" />
+              </div>
+            )}
             {isSad && (
               <div className="absolute -bottom-[4px] left-1/2 -translate-x-1/2 w-[3px] h-[4px] rounded-b-full bg-yellow-300/80 animate-tear-drop" style={{ animationDelay: '0.4s' }} />
             )}
           </div>
         </div>
+
         {/* Mouth */}
         <div className="absolute bottom-[3px] left-1/2 -translate-x-1/2">
           {isSad ? (
-            /* Sad frown mouth - curved down */
             <div className="w-[8px] h-[4px] border-b-[2px] border-yellow-400/60 rounded-b-full" />
+          ) : isHappy ? (
+            /* Happy smile - curved up */
+            <div className="w-[8px] h-[4px] border-t-[2px] border-green-400/80 rounded-t-full" />
+          ) : isAngry ? (
+            /* Angry tight mouth */
+            <div className="w-[6px] h-[2px] bg-red-400/60 rounded-full" />
           ) : isSpeaking ? (
             <div className="flex items-end gap-[1px] h-[4px]">
               {[0, 1, 2].map((j) => (
@@ -101,6 +157,7 @@ const BuddyMiniHead = ({ buddyState, emotion }: { buddyState: BuddyState; emotio
             <div className="w-[6px] h-[2px] rounded-full bg-muted-foreground/20" />
           )}
         </div>
+
         {/* Ears */}
         <div className="absolute left-[-3px] top-1/2 -translate-y-1/2 w-[3px] h-[6px] rounded-l-full bg-primary/30" />
         <div className="absolute right-[-3px] top-1/2 -translate-y-1/2 w-[3px] h-[6px] rounded-r-full bg-primary/30" />
