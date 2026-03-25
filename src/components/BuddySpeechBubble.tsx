@@ -36,7 +36,7 @@ const BuddySpeechBubble = ({ messages, buddyState }: Props) => {
       {/* Glass panel */}
       <div
         ref={scrollRef}
-        className="flex-1 min-h-0 overflow-y-auto rounded-2xl bg-card/50 backdrop-blur-xl border border-border/20 shadow-lg shadow-black/20 px-3 py-3 flex flex-col gap-2"
+        className="flex-1 min-h-0 overflow-y-auto rounded-2xl bg-card/20 backdrop-blur-sm border border-border/10 shadow-lg shadow-black/10 px-3 py-3 flex flex-col gap-2"
       >
         {messages.map((msg, i) => (
           <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
