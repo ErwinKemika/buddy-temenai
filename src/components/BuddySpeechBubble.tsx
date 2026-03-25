@@ -8,7 +8,7 @@ interface Props {
   buddyState: BuddyState;
 }
 
-type BuddyEmotion = "normal" | "sad";
+type BuddyEmotion = "normal" | "sad" | "happy" | "angry";
 
 const SAD_KEYWORDS = [
   "sedih", "galau", "nangis", "menangis", "kecewa", "patah hati", "putus",
@@ -17,13 +17,36 @@ const SAD_KEYWORDS = [
   "takut", "cemas", "gelisah", "khawatir", "anxious", "panik", "bingung",
   "lelah", "capek", "cape", "burnout", "overwhelm", "susah", "sulit",
   "masalah", "problem", "curhat", "down", "bad mood", "bete", "kesel",
-  "marah", "frustrasi", "frustrated", "helpless", "sendirian", "ditinggal",
+  "frustrasi", "frustrated", "helpless", "sendirian", "ditinggal",
   "😢", "😭", "😞", "😔", "😟", "😥", "💔", "😰", "😩", "😫", "🥺"
+];
+
+const HAPPY_KEYWORDS = [
+  "senang", "seneng", "bahagia", "happy", "gembira", "excited", "yeay", "yey",
+  "hore", "horee", "berhasil", "sukses", "menang", "juara", "lulus", "diterima",
+  "dapat", "rejeki", "untung", "beruntung", "lucky", "amazing", "hebat", "keren",
+  "mantap", "mantab", "asik", "asyik", "seru", "bagus", "best", "terbaik",
+  "bangga", "proud", "grateful", "bersyukur", "syukur", "alhamdulillah",
+  "semangat", "termotivasi", "inspired", "produktif", "achievement",
+  "🎉", "🥳", "😄", "😊", "🎊", "🏆", "💪", "✨", "🔥", "❤️", "😍", "🥰", "👏"
+];
+
+const ANGRY_KEYWORDS = [
+  "malas", "males", "mager", "nunda", "menunda", "procrastinate", "ogah",
+  "gak mau", "ga mau", "nggak mau", "enggan", "skip", "bolos", "cabut",
+  "bodo amat", "bodo amah", "masa bodoh", "cuek", "acuh", "abai",
+  "males banget", "ngantuk", "tidur aja", "rebahan", "gabut",
+  "nyerah", "menyerah", "give up", "nanti aja", "ntar aja", "besok aja",
+  "gak semangat", "ga semangat", "loyo", "lemes", "lesu", "unmotivated",
+  "😴", "🥱", "😒", "😑", "🙄", "💤", "😤", "👎"
 ];
 
 function detectEmotion(content: string): BuddyEmotion {
   const lower = content.toLowerCase();
-  return SAD_KEYWORDS.some(k => lower.includes(k)) ? "sad" : "normal";
+  if (SAD_KEYWORDS.some(k => lower.includes(k))) return "sad";
+  if (HAPPY_KEYWORDS.some(k => lower.includes(k))) return "happy";
+  if (ANGRY_KEYWORDS.some(k => lower.includes(k))) return "angry";
+  return "normal";
 }
 
 /** Find the user message right before this assistant message */
