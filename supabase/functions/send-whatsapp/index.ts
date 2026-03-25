@@ -20,7 +20,7 @@ serve(async (req) => {
     });
   }
 
-  const TWILIO_API_KEY = Deno.env.get('TWILIO_API_KEY');
+  const TWILIO_API_KEY = Deno.env.get('TWILIO_API_KEY_1') || Deno.env.get('TWILIO_API_KEY');
   if (!TWILIO_API_KEY) {
     return new Response(JSON.stringify({ error: 'TWILIO_API_KEY not configured' }), {
       status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
