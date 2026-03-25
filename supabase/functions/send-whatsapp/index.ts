@@ -20,8 +20,11 @@ serve(async (req) => {
     });
   }
 
-  const TWILIO_API_KEY = Deno.env.get('TWILIO_API_KEY_1') || Deno.env.get('TWILIO_API_KEY');
-  if (!TWILIO_API_KEY) {
+  const twilioApiKeys = [Deno.env.get('TWILIO_API_KEY'), Deno.env.get('TWILIO_API_KEY_1')].filter(
+    (value): value is string => Boolean(value),
+  );
+
+  if (!twilioApiKeys.length) {
     return new Response(JSON.stringify({ error: 'TWILIO_API_KEY not configured' }), {
       status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
@@ -36,27 +39,41 @@ serve(async (req) => {
       });
     }
 
-    // Format number for WhatsApp
     const whatsappTo = to.startsWith('whatsapp:') ? to : `whatsapp:${to}`;
 
-    const response = await fetch(`${GATEWAY_URL}/Messages.json`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'X-Connection-Api-Key': TWILIO_API_KEY,
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: new URLSearchParams({
-        To: whatsappTo,
-        From: TWILIO_FROM,
-        Body: message,
-      }),
-    });
+    let lastError: string | null = null;
 
-    const data = await response.json();
-    if (!response.ok) {
-      throw new Error(`Twilio API error [${response.status}]: ${JSON.stringify(data)}`);
+    for (const twilioApiKey of twilioApiKeys) {
+      const response = await fetch(`${GATEWAY_URL}/Messages.json`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+          'X-Connection-Api-Key': twilioApiKey,
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          To: whatsappTo,
+          From: TWILIO_FROM,
+          Body: message,
+        }),
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        return new Response(JSON.stringify({ success: true, sid: data.sid }), {
+          status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      const details = typeof data?.message === 'string' ? data.message : JSON.stringify(data);
+      lastError = `Twilio API error [${response.status}]: ${details}`;
+
+      if (response.status !== 401 || !String(details).toLowerCase().includes('credential not found')) {
+        throw new Error(lastError);
+      }
     }
+
+    throw new Error(lastError ?? 'No valid Twilio credential found');
 
     return new Response(JSON.stringify({ success: true, sid: data.sid }), {
       status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
