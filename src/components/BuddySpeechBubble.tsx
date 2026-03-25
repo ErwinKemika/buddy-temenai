@@ -140,10 +140,12 @@ const BuddyMiniHead = ({ buddyState, emotion }: { buddyState: BuddyState; emotio
         {/* Mouth */}
         <div className="absolute bottom-[3px] left-1/2 -translate-x-1/2">
           {isSad ? (
-            /* Sad frown - curved down */
-            <div className="w-[8px] h-[4px] border-b-[2px] border-yellow-400/60 rounded-b-full" />
+            /* Sad frown -( using top half of circle */
+            <div className="w-[8px] h-[5px] overflow-hidden">
+              <div className="w-[8px] h-[8px] rounded-full border-[2px] border-yellow-400/60 mt-[3px]" />
+            </div>
           ) : isHappy ? (
-            /* Happy smile :-) using bottom border curve */
+            /* Happy smile :-) using bottom half of circle */
             <div className="w-[8px] h-[5px] overflow-hidden">
               <div className="w-[8px] h-[8px] rounded-full border-[2px] border-green-400/80 -mt-[3px]" />
             </div>
