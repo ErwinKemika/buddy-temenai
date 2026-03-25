@@ -18,11 +18,14 @@ const BuddySpeechBubble = ({ messages, buddyState }: Props) => {
 
   if (messages.length === 0 && !isLoading) {
     return (
-      <div className="flex-1 flex items-center justify-center px-6">
-        <div className="bg-card/70 backdrop-blur-xl border border-border/30 rounded-2xl px-5 py-4 max-w-[85%] shadow-lg shadow-black/20">
+      <div className="flex-1 flex flex-col items-center justify-start pt-6 px-6">
+        {/* Comic speech bubble above Buddy */}
+        <div className="relative bg-card/80 backdrop-blur-xl border border-border/30 rounded-2xl px-5 py-4 max-w-[85%] shadow-[0_0_20px_rgba(139,92,246,0.15)]">
           <p className="text-sm text-muted-foreground text-center">
             Ketik pesan atau kirim gambar untuk mulai ngobrol dengan Buddy! 🚀
           </p>
+          {/* Speech bubble tail pointing down */}
+          <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-t-[12px] border-t-card/80" />
         </div>
       </div>
     );
