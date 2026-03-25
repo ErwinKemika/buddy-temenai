@@ -9,16 +9,16 @@ import buddyAvatar from "@/assets/buddy-avatar.png";
 const AuthPage = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const [isLogin, setIsLogin] = useState(true);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
 
   // Redirect if already logged in
   if (!authLoading && user) {
     navigate("/", { replace: true });
     return null;
   }
-  const [isLogin, setIsLogin] = useState(true);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
