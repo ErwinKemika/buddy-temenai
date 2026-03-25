@@ -191,11 +191,32 @@ function extractSpeakableText(text: string): string {
   return result.trim() || clean.slice(0, 100);
 }
 
+const CHAT_STORAGE_KEY = "buddy-chat-messages";
+
+function loadMessages(): Message[] {
+  try {
+    const raw = localStorage.getItem(CHAT_STORAGE_KEY);
+    if (!raw) return [];
+    return JSON.parse(raw) as Message[];
+  } catch { return []; }
+}
+
+function saveMessages(msgs: Message[]) {
+  try {
+    localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(msgs));
+  } catch { /* ignore quota errors */ }
+}
+
 export function useChat() {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<Message[]>(loadMessages);
   const [buddyState, setBuddyState] = useState<BuddyState>("idle");
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [autoPlayVoice, setAutoPlayVoice] = useState(true);
+
+  // Persist messages to localStorage whenever they change
+  useEffect(() => {
+    saveMessages(messages);
+  }, [messages]);
 
   const streamChat = useCallback(async (
     chatMessages: Array<{ role: string; content: any }>,
