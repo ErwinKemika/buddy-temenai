@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface Reminder {
   id: string;
   title: string;
-  dateTime: string; // ISO string
-  earlyMinutes: number; // 0 = no early reminder
+  dateTime: string;
+  earlyMinutes: number;
   earlyFired: boolean;
   fired: boolean;
 }
@@ -14,17 +15,42 @@ const STORAGE_KEY = "buddy-reminders";
 function loadReminders(): Reminder[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    const parsed = raw ? JSON.parse(raw) : [];
-    console.log("[Reminder Load] Loaded reminders:", parsed);
-    return parsed;
+    return raw ? JSON.parse(raw) : [];
   } catch {
     return [];
   }
 }
 
 function saveReminders(reminders: Reminder[]) {
-  console.log("[Reminder Save] Persisting reminder list:", reminders);
   localStorage.setItem(STORAGE_KEY, JSON.stringify(reminders));
+}
+
+async function sendWhatsAppReminder(message: string) {
+  try {
+    // Get user's WhatsApp number from profile
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("whatsapp_number")
+      .eq("user_id", user.id)
+      .single();
+
+    if (!profile?.whatsapp_number) return;
+
+    const { error } = await supabase.functions.invoke("send-whatsapp", {
+      body: { to: profile.whatsapp_number, message },
+    });
+
+    if (error) {
+      console.error("[WhatsApp] Failed to send:", error);
+    } else {
+      console.log("[WhatsApp] Reminder sent successfully");
+    }
+  } catch (err) {
+    console.error("[WhatsApp] Error:", err);
+  }
 }
 
 export function useReminders(onTrigger: (message: string) => void) {
@@ -32,26 +58,16 @@ export function useReminders(onTrigger: (message: string) => void) {
   const onTriggerRef = useRef(onTrigger);
   onTriggerRef.current = onTrigger;
 
-  // Persist on change
   useEffect(() => {
     saveReminders(reminders);
   }, [reminders]);
 
-  // Check every 5 seconds
   useEffect(() => {
     const check = () => {
       const now = Date.now();
-      const nowDate = new Date(now);
-      console.log(`[Reminder Check] Current time: ${nowDate.toLocaleString()}`);
 
       setReminders(prev => {
-        console.log(`[Reminder Check] Total reminders: ${prev.length}`);
-        console.log("[Reminder Check] Full reminder list:", prev);
-
-        if (prev.length === 0) {
-          console.log("[Reminder Check] No reminders saved");
-          return prev;
-        }
+        if (prev.length === 0) return prev;
 
         let changed = false;
         const triggers: Array<() => void> = [];
@@ -59,19 +75,17 @@ export function useReminders(onTrigger: (message: string) => void) {
           const target = new Date(r.dateTime).getTime();
           const copy = { ...r };
 
-          console.log(
-            `[Reminder Check] title="${r.title}" target="${new Date(target).toLocaleString()}" iso="${r.dateTime}" fired=${r.fired} earlyFired=${r.earlyFired} diff=${Math.round((target - now) / 1000)}s`
-          );
-
           // Early reminder
           if (r.earlyMinutes > 0 && !r.earlyFired) {
             const earlyTime = target - r.earlyMinutes * 60_000;
             if (now >= earlyTime && now < target) {
               copy.earlyFired = true;
               changed = true;
-              const msg = `Halo, ${r.earlyMinutes} menit lagi kamu ada ${r.title}.`;
-              console.log(`[Reminder EARLY TRIGGERED] "${r.title}": ${msg}`);
-              triggers.push(() => onTriggerRef.current(msg));
+              const msg = `⏰ Halo, ${r.earlyMinutes} menit lagi kamu ada ${r.title}.`;
+              triggers.push(() => {
+                onTriggerRef.current(msg);
+                sendWhatsAppReminder(msg);
+              });
             }
           }
 
@@ -79,17 +93,16 @@ export function useReminders(onTrigger: (message: string) => void) {
           if (!r.fired && now >= target) {
             copy.fired = true;
             changed = true;
-            const msg = `Halo, sekarang waktunya ${r.title}. Semangat ya! 💪`;
-            console.log(`[Reminder TRIGGERED] "${r.title}": ${msg}`);
-            triggers.push(() => onTriggerRef.current(msg));
-          } else if (r.fired) {
-            console.log(`[Reminder Check] "${r.title}" already fired, skipping.`);
+            const msg = `⏰ Halo, sekarang waktunya ${r.title}. Semangat ya! 💪`;
+            triggers.push(() => {
+              onTriggerRef.current(msg);
+              sendWhatsAppReminder(msg);
+            });
           }
 
           return copy;
         });
 
-        // Fire triggers outside setState to avoid issues
         if (triggers.length > 0) {
           setTimeout(() => triggers.forEach(fn => fn()), 0);
         }
@@ -98,10 +111,8 @@ export function useReminders(onTrigger: (message: string) => void) {
       });
     };
 
-    // Run immediately on mount
     check();
     const interval = setInterval(check, 5_000);
-
     return () => clearInterval(interval);
   }, []);
 
@@ -114,14 +125,7 @@ export function useReminders(onTrigger: (message: string) => void) {
       earlyFired: false,
       fired: false,
     };
-    console.log(`[Reminder Save] Raw input -> title="${title}" dateTime="${dateTime}" earlyMinutes=${earlyMinutes}`);
-    console.log(`[Reminder Save] Parsed target local: ${new Date(dateTime).toLocaleString()}`);
-    setReminders(prev => {
-      const updated = [...prev, newReminder];
-      console.log("[Reminder Save] Saved reminder:", newReminder);
-      console.log("[Reminder Save] Updated reminder list:", updated);
-      return updated;
-    });
+    setReminders(prev => [...prev, newReminder]);
   }, []);
 
   const deleteReminder = useCallback((id: string) => {
