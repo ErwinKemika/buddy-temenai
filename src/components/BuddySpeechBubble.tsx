@@ -110,29 +110,29 @@ const BuddyMiniHead = ({ buddyState, emotion }: { buddyState: BuddyState; emotio
         <div className="absolute inset-0 flex items-center justify-center gap-[6px] pt-[2px]">
           {/* Left eye */}
           <div className="relative">
-            {isHappy ? (
-              /* Happy squint eye - like ^_^ */
-              <div className="w-[7px] h-[4px] border-t-[2px] border-green-400 rounded-t-full mt-[2px]" />
+            {isSad ? (
+              /* Sad squint eye - like ╥_╥ */
+              <div className="w-[7px] h-[4px] border-t-[2px] border-yellow-400 rounded-t-full mt-[2px]" />
             ) : (
               <div className={`w-[7px] h-[7px] rounded-full ${eyeColor}`}>
                 <div className="w-[3px] h-[3px] rounded-full bg-primary-foreground/80 mx-auto mt-[2px]" />
               </div>
             )}
             {isSad && (
-              <div className="absolute -bottom-[4px] left-1/2 -translate-x-1/2 w-[3px] h-[4px] rounded-b-full bg-yellow-300/80 animate-tear-drop" />
+              <div className="absolute -bottom-[1px] left-1/2 -translate-x-1/2 w-[3px] h-[4px] rounded-b-full bg-yellow-300/80 animate-tear-drop" />
             )}
           </div>
           {/* Right eye */}
           <div className="relative">
-            {isHappy ? (
-              <div className="w-[7px] h-[4px] border-t-[2px] border-green-400 rounded-t-full mt-[2px]" />
+            {isSad ? (
+              <div className="w-[7px] h-[4px] border-t-[2px] border-yellow-400 rounded-t-full mt-[2px]" />
             ) : (
               <div className={`w-[7px] h-[7px] rounded-full ${eyeColor}`} style={{ animationDelay: '0.05s' }}>
                 <div className="w-[3px] h-[3px] rounded-full bg-primary-foreground/80 mx-auto mt-[2px]" />
               </div>
             )}
             {isSad && (
-              <div className="absolute -bottom-[4px] left-1/2 -translate-x-1/2 w-[3px] h-[4px] rounded-b-full bg-yellow-300/80 animate-tear-drop" style={{ animationDelay: '0.4s' }} />
+              <div className="absolute -bottom-[1px] left-1/2 -translate-x-1/2 w-[3px] h-[4px] rounded-b-full bg-yellow-300/80 animate-tear-drop" style={{ animationDelay: '0.4s' }} />
             )}
           </div>
         </div>
@@ -140,12 +140,12 @@ const BuddyMiniHead = ({ buddyState, emotion }: { buddyState: BuddyState; emotio
         {/* Mouth */}
         <div className="absolute bottom-[3px] left-1/2 -translate-x-1/2">
           {isSad ? (
+            /* Sad frown - curved down */
             <div className="w-[8px] h-[4px] border-b-[2px] border-yellow-400/60 rounded-b-full" />
           ) : isHappy ? (
             /* Happy smile - curved up */
             <div className="w-[8px] h-[4px] border-t-[2px] border-green-400/80 rounded-t-full" />
           ) : isAngry ? (
-            /* Angry tight mouth */
             <div className="w-[6px] h-[2px] bg-red-400/60 rounded-full" />
           ) : isSpeaking ? (
             <div className="flex items-end gap-[1px] h-[4px]">
