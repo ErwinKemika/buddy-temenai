@@ -387,3 +387,13 @@
 *::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--muted-foreground) / 0.5);
 }
+
+/* Tear drop animation */
+@keyframes tear-drop {
+  0% { opacity: 0; transform: translateX(-50%) translateY(0); }
+  30% { opacity: 0.9; }
+  100% { opacity: 0; transform: translateX(-50%) translateY(6px); }
+}
+.animate-tear-drop {
+  animation: tear-drop 1.8s ease-in-out infinite;
+}
