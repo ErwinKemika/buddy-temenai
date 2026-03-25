@@ -111,7 +111,7 @@ const Index = () => {
     <div className="h-[100dvh] w-full flex flex-col buddy-gradient-bg space-stars overflow-hidden safe-area-inset relative">
       {/* Buddy fixed in background - full opacity when no messages, faded when chatting */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
-        <div className={`transition-opacity duration-700 ${messages.length > 0 ? 'opacity-20' : 'opacity-100'}`}>
+        <div className={`transition-opacity duration-700 ${messages.length > 0 ? 'opacity-30' : 'opacity-100'}`}>
           <BuddyRobot buddyState={buddyState} />
         </div>
       </div>
