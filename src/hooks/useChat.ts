@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { format, addDays, startOfWeek, endOfWeek, isToday, isTomorrow, isPast, parseISO } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
@@ -191,11 +191,32 @@ function extractSpeakableText(text: string): string {
   return result.trim() || clean.slice(0, 100);
 }
 
+const CHAT_STORAGE_KEY = "buddy-chat-messages";
+
+function loadMessages(): Message[] {
+  try {
+    const raw = localStorage.getItem(CHAT_STORAGE_KEY);
+    if (!raw) return [];
+    return JSON.parse(raw) as Message[];
+  } catch { return []; }
+}
+
+function saveMessages(msgs: Message[]) {
+  try {
+    localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(msgs));
+  } catch { /* ignore quota errors */ }
+}
+
 export function useChat() {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<Message[]>(loadMessages);
   const [buddyState, setBuddyState] = useState<BuddyState>("idle");
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [autoPlayVoice, setAutoPlayVoice] = useState(true);
+
+  // Persist messages to localStorage whenever they change
+  useEffect(() => {
+    saveMessages(messages);
+  }, [messages]);
 
   const streamChat = useCallback(async (
     chatMessages: Array<{ role: string; content: any }>,
@@ -383,5 +404,10 @@ export function useChat() {
     }
   }, []);
 
-  return { messages, buddyState, voiceEnabled, setVoiceEnabled, autoPlayVoice, setAutoPlayVoice, sendMessage, injectReminderMessage };
+  const clearMessages = useCallback(() => {
+    setMessages([]);
+    localStorage.removeItem(CHAT_STORAGE_KEY);
+  }, []);
+
+  return { messages, buddyState, voiceEnabled, setVoiceEnabled, autoPlayVoice, setAutoPlayVoice, sendMessage, injectReminderMessage, clearMessages };
 }

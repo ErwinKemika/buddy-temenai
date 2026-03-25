@@ -35,7 +35,7 @@ const Index = () => {
     messages, buddyState,
     voiceEnabled, setVoiceEnabled,
     autoPlayVoice, setAutoPlayVoice,
-    sendMessage, injectReminderMessage,
+    sendMessage, injectReminderMessage, clearMessages,
   } = useChat();
 
   const remindedRef = useRef(loadRemindedSet());
@@ -118,7 +118,7 @@ const Index = () => {
 
       {/* Foreground: Header + Chat + Input + Nav */}
       <div className="relative z-10 flex flex-col h-full">
-        <BuddyHeader />
+        <BuddyHeader onClearChat={clearMessages} hasMessages={messages.length > 0} />
 
         {/* Glass chat container */}
         <div className="flex-1 min-h-0 flex flex-col">
