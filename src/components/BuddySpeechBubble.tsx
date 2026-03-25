@@ -8,46 +8,90 @@ interface Props {
   buddyState: BuddyState;
 }
 
+type BuddyEmotion = "normal" | "sad";
+
+const SAD_KEYWORDS = [
+  "sedih", "galau", "nangis", "menangis", "kecewa", "patah hati", "putus",
+  "kesepian", "lonely", "depresi", "stress", "stres", "tertekan", "gagal",
+  "menderita", "sakit hati", "terpuruk", "hopeless", "putus asa", "menyesal",
+  "takut", "cemas", "gelisah", "khawatir", "anxious", "panik", "bingung",
+  "lelah", "capek", "cape", "burnout", "overwhelm", "susah", "sulit",
+  "masalah", "problem", "curhat", "down", "bad mood", "bete", "kesel",
+  "marah", "frustrasi", "frustrated", "helpless", "sendirian", "ditinggal",
+  "😢", "😭", "😞", "😔", "😟", "😥", "💔", "😰", "😩", "😫", "🥺"
+];
+
+function detectEmotion(content: string): BuddyEmotion {
+  const lower = content.toLowerCase();
+  return SAD_KEYWORDS.some(k => lower.includes(k)) ? "sad" : "normal";
+}
+
+/** Find the user message right before this assistant message */
+function getEmotionForAssistantMsg(messages: Message[], index: number): BuddyEmotion {
+  // Look backwards for the preceding user message
+  for (let i = index - 1; i >= 0; i--) {
+    if (messages[i].role === "user") {
+      return detectEmotion(messages[i].content);
+    }
+  }
+  return "normal";
+}
+
 /** Mini animated Buddy head avatar for chat bubbles */
-const BuddyMiniHead = ({ buddyState }: { buddyState: BuddyState }) => {
+const BuddyMiniHead = ({ buddyState, emotion }: { buddyState: BuddyState; emotion: BuddyEmotion }) => {
   const isSpeaking = buddyState === "speaking";
   const isThinking = buddyState === "thinking";
+  const isSad = emotion === "sad";
+
+  const eyeColor = isSad
+    ? "bg-gradient-to-b from-yellow-400 to-yellow-500"
+    : isSpeaking
+      ? "bg-gradient-to-b from-accent to-buddy-cyan-glow animate-talk"
+      : "bg-gradient-to-b from-accent to-buddy-cyan-glow animate-blink";
 
   return (
     <div className="relative shrink-0 self-end mb-1">
       {/* Antenna */}
       <div className="flex flex-col items-center">
         <div className={`w-[5px] h-[5px] rounded-full ${
-          isSpeaking ? 'bg-accent animate-pulse' : 'bg-accent/70 animate-antenna'
+          isSad ? 'bg-yellow-400/70' : isSpeaking ? 'bg-accent animate-pulse' : 'bg-accent/70 animate-antenna'
         }`} />
         <div className="w-[2px] h-[3px] bg-accent/40" />
       </div>
       {/* Head */}
-      <div className={`w-8 h-7 rounded-[0.6rem] bg-gradient-to-b from-buddy-body-light to-buddy-body border border-primary/20 relative overflow-hidden ${
+      <div className={`w-8 h-7 rounded-[0.6rem] bg-gradient-to-b from-buddy-body-light to-buddy-body border border-primary/20 relative overflow-visible ${
         isThinking ? 'animate-head-tilt' : 'animate-float'
       }`}>
         {/* Top shine */}
         <div className="absolute top-0 left-0 right-0 h-[2px] rounded-t-[0.6rem] bg-gradient-to-r from-primary/20 via-accent/30 to-primary/20" />
         {/* Eyes */}
         <div className="absolute inset-0 flex items-center justify-center gap-[6px] pt-[2px]">
-          <div className={`w-[7px] h-[7px] rounded-full ${
-            isSpeaking
-              ? 'bg-gradient-to-b from-accent to-buddy-cyan-glow animate-talk'
-              : 'bg-gradient-to-b from-accent to-buddy-cyan-glow animate-blink'
-          }`}>
-            <div className="w-[3px] h-[3px] rounded-full bg-primary-foreground/80 mx-auto mt-[2px]" />
+          {/* Left eye */}
+          <div className="relative">
+            <div className={`w-[7px] h-[7px] rounded-full ${eyeColor}`}>
+              <div className="w-[3px] h-[3px] rounded-full bg-primary-foreground/80 mx-auto mt-[2px]" />
+            </div>
+            {/* Tear drop */}
+            {isSad && (
+              <div className="absolute -bottom-[4px] left-1/2 -translate-x-1/2 w-[3px] h-[4px] rounded-b-full bg-yellow-300/80 animate-tear-drop" />
+            )}
           </div>
-          <div className={`w-[7px] h-[7px] rounded-full ${
-            isSpeaking
-              ? 'bg-gradient-to-b from-accent to-buddy-cyan-glow animate-talk'
-              : 'bg-gradient-to-b from-accent to-buddy-cyan-glow animate-blink'
-          }`} style={{ animationDelay: '0.05s' }}>
-            <div className="w-[3px] h-[3px] rounded-full bg-primary-foreground/80 mx-auto mt-[2px]" />
+          {/* Right eye */}
+          <div className="relative">
+            <div className={`w-[7px] h-[7px] rounded-full ${eyeColor}`} style={{ animationDelay: '0.05s' }}>
+              <div className="w-[3px] h-[3px] rounded-full bg-primary-foreground/80 mx-auto mt-[2px]" />
+            </div>
+            {isSad && (
+              <div className="absolute -bottom-[4px] left-1/2 -translate-x-1/2 w-[3px] h-[4px] rounded-b-full bg-yellow-300/80 animate-tear-drop" style={{ animationDelay: '0.4s' }} />
+            )}
           </div>
         </div>
         {/* Mouth */}
         <div className="absolute bottom-[3px] left-1/2 -translate-x-1/2">
-          {isSpeaking ? (
+          {isSad ? (
+            /* Sad frown mouth - curved down */
+            <div className="w-[8px] h-[4px] border-b-[2px] border-yellow-400/60 rounded-b-full" />
+          ) : isSpeaking ? (
             <div className="flex items-end gap-[1px] h-[4px]">
               {[0, 1, 2].map((j) => (
                 <div key={j} className="w-[2px] bg-accent rounded-full animate-waveform" style={{ animationDelay: `${j * 0.12}s` }} />
@@ -73,6 +117,14 @@ const BuddySpeechBubble = ({ messages, buddyState }: Props) => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
 
+  // Detect emotion from latest user message (for loading state)
+  const latestUserEmotion: BuddyEmotion = (() => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].role === "user") return detectEmotion(messages[i].content);
+    }
+    return "normal";
+  })();
+
   if (messages.length === 0 && !isLoading) {
     return (
       <div className="flex-1 flex flex-col items-center justify-start pt-6 px-6">
@@ -92,52 +144,56 @@ const BuddySpeechBubble = ({ messages, buddyState }: Props) => {
         ref={scrollRef}
         className="flex-1 min-h-0 overflow-y-auto rounded-2xl bg-card/20 backdrop-blur-sm border border-border/10 shadow-lg shadow-black/10 px-3 py-3 flex flex-col gap-3"
       >
-        {messages.map((msg, i) => (
-          <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-            {msg.role === "assistant" && (
-              <div className="mr-2">
-                <BuddyMiniHead buddyState={buddyState} />
-              </div>
-            )}
-            <div
-              className={`max-w-[80%] px-3.5 py-2.5 text-[14px] leading-relaxed ${
-                msg.role === "assistant"
-                  ? "bg-background/60 backdrop-blur-sm border border-primary/20 text-foreground rounded-2xl rounded-bl-sm"
-                  : "bg-primary/20 border border-primary/30 text-foreground rounded-2xl rounded-tr-sm"
-              }`}
-            >
-              {msg.attachment?.type === "image" && (
-                <img
-                  src={msg.attachment.url}
-                  alt="Attachment"
-                  className="rounded-lg max-h-48 w-auto mb-1.5 cursor-pointer"
-                  onClick={() => window.open(msg.attachment!.url, "_blank")}
-                />
-              )}
+        {messages.map((msg, i) => {
+          const emotion = msg.role === "assistant" ? getEmotionForAssistantMsg(messages, i) : "normal";
 
-              {msg.attachment?.type === "document" && (
-                <a
-                  href={msg.attachment.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 bg-muted/30 rounded-lg px-3 py-2 mb-1.5 hover:bg-muted/50 transition-colors"
-                >
-                  <FileText size={18} className="text-primary shrink-0" />
-                  <span className="text-xs truncate">{msg.attachment.name}</span>
-                </a>
-              )}
-
-              {msg.content && msg.content !== "[Gambar]" && msg.content !== "[Dokumen]" && (
-                <div className="prose prose-sm prose-invert max-w-none [&>p]:m-0">
-                  <ReactMarkdown>{msg.content}</ReactMarkdown>
+          return (
+            <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+              {msg.role === "assistant" && (
+                <div className="mr-2">
+                  <BuddyMiniHead buddyState={buddyState} emotion={emotion} />
                 </div>
               )}
+              <div
+                className={`max-w-[80%] px-3.5 py-2.5 text-[14px] leading-relaxed ${
+                  msg.role === "assistant"
+                    ? "bg-background/60 backdrop-blur-sm border border-primary/20 text-foreground rounded-2xl rounded-bl-sm"
+                    : "bg-primary/20 border border-primary/30 text-foreground rounded-2xl rounded-tr-sm"
+                }`}
+              >
+                {msg.attachment?.type === "image" && (
+                  <img
+                    src={msg.attachment.url}
+                    alt="Attachment"
+                    className="rounded-lg max-h-48 w-auto mb-1.5 cursor-pointer"
+                    onClick={() => window.open(msg.attachment!.url, "_blank")}
+                  />
+                )}
+
+                {msg.attachment?.type === "document" && (
+                  <a
+                    href={msg.attachment.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 bg-muted/30 rounded-lg px-3 py-2 mb-1.5 hover:bg-muted/50 transition-colors"
+                  >
+                    <FileText size={18} className="text-primary shrink-0" />
+                    <span className="text-xs truncate">{msg.attachment.name}</span>
+                  </a>
+                )}
+
+                {msg.content && msg.content !== "[Gambar]" && msg.content !== "[Dokumen]" && (
+                  <div className="prose prose-sm prose-invert max-w-none [&>p]:m-0">
+                    <ReactMarkdown>{msg.content}</ReactMarkdown>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
         {isLoading && messages[messages.length - 1]?.role === "user" && (
           <div className="flex justify-start items-end gap-2">
-            <BuddyMiniHead buddyState={buddyState} />
+            <BuddyMiniHead buddyState={buddyState} emotion={latestUserEmotion} />
             <div className="bg-background/60 backdrop-blur-sm border border-primary/20 rounded-2xl rounded-bl-sm px-4 py-3">
               <div className="flex gap-1.5">
                 <div className="w-2 h-2 rounded-full bg-accent animate-bounce" style={{ animationDelay: "0s" }} />
