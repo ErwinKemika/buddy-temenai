@@ -381,5 +381,5 @@ export function useChat() {
     setMessages(prev => [...prev, separator, ...tagged]);
   }, []);
 
-  return { messages, buddyState, voiceEnabled, setVoiceEnabled, autoPlayVoice, setAutoPlayVoice, sendMessage, injectReminderMessage, clearMessages, importVoiceSession };
+  return { messages, buddyState, voiceEnabled, setVoiceEnabled, sendMessage, injectReminderMessage, clearMessages, importVoiceSession };
 }
