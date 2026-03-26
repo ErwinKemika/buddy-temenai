@@ -571,7 +571,7 @@ const TodoPage = () => {
                       <Pencil size={14} />
                     </button>
                   )}
-                  <button onClick={() => deleteTask(task.id)} className="p-1.5 text-muted-foreground active:text-destructive transition-colors">
+                  <button onClick={() => handleDeleteTask(task.id)} className="p-1.5 text-muted-foreground active:text-destructive transition-colors">
                     <Trash2 size={14} />
                   </button>
                 </div>
