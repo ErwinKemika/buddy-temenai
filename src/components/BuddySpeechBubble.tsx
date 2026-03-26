@@ -244,9 +244,23 @@ const BuddySpeechBubble = ({ messages, buddyState }: Props) => {
                 )}
 
                 {msg.content && msg.content !== "[Gambar]" && msg.content !== "[Dokumen]" && (
-                  <div className="prose prose-sm prose-invert max-w-none [&>p]:mb-2 [&>p:last-child]:mb-0 [&_ul]:list-disc [&_ul]:pl-4 [&_ul]:mb-2 [&_ol]:list-decimal [&_ol]:pl-4 [&_ol]:mb-2 [&_li]:mb-1 [&_h1]:mb-2 [&_h2]:mb-2 [&_h3]:mb-1 [&_pre]:mb-2 [&_code]:text-accent">
+                  <div className="prose prose-sm prose-invert max-w-none [&>p]:mb-2 [&>p:last-child]:mb-0 [&_ul]:list-disc [&_ul]:pl-4 [&_ul]:mb-2 [&_ol]:list-decimal [&_ol]:pl-4 [&_ol]:mb-2 [&_li]:mb-1 [&_h1]:mb-2 [&_h2]:mb-2 [&_h3]:mb-1 [&_pre]:mb-2 [&_code]:text-accent [&_*]:break-words [&_a]:break-all [&_code]:break-all">
                     {msg.source === "voice" && <span className="text-[10px] mr-1">🎙️</span>}
-                    <ReactMarkdown>{msg.content}</ReactMarkdown>
+                    <ReactMarkdown
+                      components={{
+                        a: ({ href, children }) => (
+                          <a
+                            href={href}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-accent underline underline-offset-2 hover:text-accent/80 transition-colors break-all"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {children}
+                          </a>
+                        ),
+                      }}
+                    >{msg.content}</ReactMarkdown>
                   </div>
                 )}
               </div>
