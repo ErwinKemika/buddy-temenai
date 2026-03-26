@@ -99,6 +99,7 @@ export type Database = {
         Row: {
           category: string | null
           completed: boolean
+          completed_at: string | null
           created_at: string
           deadline: string | null
           effort: string | null
@@ -113,6 +114,7 @@ export type Database = {
         Insert: {
           category?: string | null
           completed?: boolean
+          completed_at?: string | null
           created_at?: string
           deadline?: string | null
           effort?: string | null
@@ -127,6 +129,7 @@ export type Database = {
         Update: {
           category?: string | null
           completed?: boolean
+          completed_at?: string | null
           created_at?: string
           deadline?: string | null
           effort?: string | null
