@@ -37,7 +37,7 @@ const AnalyticsPage = () => {
         dayMap[d] = 0;
       }
       for (const t of todos) {
-        const d = t.created_at?.slice(0, 10);
+        const d = t.completed_at?.slice(0, 10);
         if (d && d in dayMap) dayMap[d]++;
       }
       setDailyData(Object.entries(dayMap).map(([day, count]) => ({
