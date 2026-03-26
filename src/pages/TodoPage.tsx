@@ -519,7 +519,7 @@ const TodoPage = () => {
                 <div className="flex flex-col items-center gap-1 shrink-0">
                   <div className={`w-2 h-2 rounded-full ${PRIORITY_COLORS[task.priority]}`} />
                   <button
-                    onClick={() => toggleTask(task.id)}
+                    onClick={() => handleToggleTask(task.id)}
                     className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-colors ${
                       task.done ? "bg-green-500 border-green-500 text-primary-foreground" : "border-muted-foreground"
                     }`}
