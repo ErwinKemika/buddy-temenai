@@ -218,7 +218,7 @@ export function useTodos() {
     if (user) {
       const { error } = await supabase
         .from("todos")
-        .update({ completed: newDone })
+        .update({ completed: newDone, completed_at: newDone ? new Date().toISOString() : null })
         .eq("id", id);
       if (error) console.error("[useTodos] toggle error:", error);
       
