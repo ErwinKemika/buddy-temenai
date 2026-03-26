@@ -220,36 +220,28 @@ const TodoPage = () => {
     setShowAddForm(true);
   };
 
-  const addTask = () => {
+  const handleAddTask = () => {
     const title = newTask.trim();
     if (!title) return;
 
     if (editingTaskId) {
-      // Edit existing task
-      setTasks(prev =>
-        prev.map(t =>
-          t.id === editingTaskId
-            ? {
-                ...t,
-                title,
-                date: addDate,
-                startTime: addStartTime || undefined,
-                endTime: addEndTime || undefined,
-                priority: addPriority,
-                category: addCategory || undefined,
-                recurrence: addRecurrence,
-                effort: addEffort || undefined,
-              }
-            : t
-        )
-      );
+      updateTask(editingTaskId, {
+        title,
+        date: addDate,
+        startTime: addStartTime || undefined,
+        endTime: addEndTime || undefined,
+        priority: addPriority,
+        category: addCategory || undefined,
+        recurrence: addRecurrence,
+        effort: addEffort || undefined,
+      });
       resetForm();
       updateBuddyMsg("Udah aku update ya! ✏️", getBuddyLine(tasks));
       return;
     }
 
     const task: Task = {
-      id: Date.now().toString(),
+      id: crypto.randomUUID(),
       title,
       done: false,
       date: addDate,
@@ -261,25 +253,13 @@ const TodoPage = () => {
       recurrence: addRecurrence,
       effort: addEffort || undefined,
     };
-    setTasks(prev => [...prev, task]);
+    addTaskToDb(task);
     resetForm();
     updateBuddyMsg("Sip, udah aku catat! 📝", getBuddyLine([...tasks, task]));
   };
 
-  const toggleTask = (id: string) => {
-    setTasks(prev =>
-      prev.map(t => {
-        if (t.id !== id) return t;
-        const nowDone = !t.done;
-        return {
-          ...t,
-          done: nowDone,
-          status: nowDone ? "done" as Status : "todo" as Status,
-          completedAt: nowDone ? new Date().toISOString() : undefined,
-          isRunning: nowDone ? false : t.isRunning,
-        };
-      })
-    );
+  const handleToggleTask = (id: string) => {
+    toggleTaskInDb(id);
     const task = tasks.find(t => t.id === id);
     if (task && !task.done) {
       updateBuddyMsg("Nice, satu beres! 🎉", "Mau lanjut yang lain?");
@@ -287,21 +267,15 @@ const TodoPage = () => {
   };
 
   const startTask = (_id: string) => {
-    // Task execution moved to Focus page
-  
     updateBuddyMsg("Gas! Semangat kerjain! 🔥");
   };
 
   const stopTask = (id: string) => {
-    setTasks(prev =>
-      prev.map(t =>
-        t.id === id ? { ...t, isRunning: false } : t
-      )
-    );
+    updateTask(id, { isRunning: false });
   };
 
-  const deleteTask = (id: string) => {
-    setTasks(prev => prev.filter(t => t.id !== id));
+  const handleDeleteTask = (id: string) => {
+    deleteTaskFromDb(id);
     updateBuddyMsg("Udah aku hapus ya", getBuddyLine(tasks.filter(t => t.id !== id)));
   };
 
