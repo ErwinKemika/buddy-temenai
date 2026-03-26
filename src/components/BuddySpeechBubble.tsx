@@ -250,17 +250,24 @@ const BuddySpeechBubble = ({ messages, buddyState }: Props) => {
                     {msg.source === "voice" && <span className="text-[10px] mr-1">🎙️</span>}
                     <ReactMarkdown
                       components={{
-                        a: ({ href, children }) => (
-                          <a
-                            href={href}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-accent underline underline-offset-2 hover:text-accent/80 transition-colors break-all pointer-events-auto cursor-pointer relative z-10"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            {children}
-                          </a>
-                        ),
+                        a: (props) => {
+                          const { href, children } = props;
+                          return (
+                            <a
+                              href={href}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-accent underline underline-offset-2 hover:text-accent/80 transition-colors break-all cursor-pointer"
+                              style={{ touchAction: "manipulation", pointerEvents: "auto" }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (href) window.open(href, "_blank", "noopener,noreferrer");
+                              }}
+                            >
+                              {children}
+                            </a>
+                          );
+                        },
                       }}
                     >{msg.content}</ReactMarkdown>
                   </div>
