@@ -216,7 +216,7 @@ const BuddySpeechBubble = ({ messages, buddyState }: Props) => {
                 </div>
               )}
               <div
-                className={`max-w-[80%] px-3.5 py-2.5 text-[14px] leading-relaxed ${
+                className={`max-w-[80%] min-w-0 overflow-hidden px-3.5 py-2.5 text-[14px] leading-relaxed ${
                   msg.role === "assistant"
                     ? "bg-background/60 backdrop-blur-sm border border-primary/20 text-foreground rounded-2xl rounded-bl-sm"
                     : "bg-primary/20 border border-primary/30 text-foreground rounded-2xl rounded-tr-sm"
