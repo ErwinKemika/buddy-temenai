@@ -34,23 +34,17 @@ const GLOW_CLASSES: Record<VoiceState, string> = {
 const VoiceMode = ({ onEndCall, streamChat, playTTS, transcribeVoice, buildTodoContext }: Props) => {
   const [voiceState, setVoiceState] = useState<VoiceState>("idle");
   const [sessionMessages, setSessionMessages] = useState<Message[]>([]);
-  const [buddyText, setBuddyText] = useState("");
-  const [userText, setUserText] = useState("");
-  const [showBuddyBubble, setShowBuddyBubble] = useState(false);
-  const [showUserBubble, setShowUserBubble] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const animFrameRef = useRef<number>(0);
-  const buddyBubbleTimerRef = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
     return () => {
       cancelAnimationFrame(animFrameRef.current);
       streamRef.current?.getTracks().forEach(t => t.stop());
-      if (buddyBubbleTimerRef.current) clearTimeout(buddyBubbleTimerRef.current);
     };
   }, []);
 
@@ -108,7 +102,6 @@ const VoiceMode = ({ onEndCall, streamChat, playTTS, transcribeVoice, buildTodoC
 
   const startRecording = useCallback(async () => {
     if (voiceState !== "idle") return;
-    setShowBuddyBubble(false);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
@@ -158,9 +151,6 @@ const VoiceMode = ({ onEndCall, streamChat, playTTS, transcribeVoice, buildTodoC
       return;
     }
 
-    setUserText(transcribed);
-    setShowUserBubble(true);
-
     const userMsg: Message = { role: "user", content: transcribed, source: "voice" };
     setSessionMessages(prev => [...prev, userMsg]);
 
@@ -179,10 +169,6 @@ const VoiceMode = ({ onEndCall, streamChat, playTTS, transcribeVoice, buildTodoC
       assistantText = "Maaf, aku sedang gangguan. Coba lagi ya! 😅";
     }
 
-    setShowUserBubble(false);
-    setBuddyText(assistantText);
-    setShowBuddyBubble(true);
-
     const assistantMsg: Message = { role: "assistant", content: assistantText, source: "voice" };
     setSessionMessages(prev => [...prev, assistantMsg]);
 
@@ -193,7 +179,6 @@ const VoiceMode = ({ onEndCall, streamChat, playTTS, transcribeVoice, buildTodoC
       console.error("[VoiceMode] TTS failed:", e);
     }
 
-    buddyBubbleTimerRef.current = setTimeout(() => setShowBuddyBubble(false), 3000);
     setVoiceState("idle");
   }, [voiceState, sessionMessages, streamChat, playTTS, transcribeVoice, buildTodoContext]);
 
@@ -252,32 +237,6 @@ const VoiceMode = ({ onEndCall, streamChat, playTTS, transcribeVoice, buildTodoC
           voiceState === "speaking" ? "brightness-125 drop-shadow-[0_0_30px_hsl(var(--accent)/0.4)]" : ""
         }`}>
           <BuddyRobot buddyState={buddyState} />
-
-          {/* Buddy speech bubble — right side */}
-          <div
-            className={`absolute -right-28 top-4 w-44 transition-all duration-500 pointer-events-none ${
-              showBuddyBubble ? "opacity-100 translate-x-0" : "opacity-0 translate-x-2"
-            }`}
-          >
-            <div className="relative bg-background/60 backdrop-blur-xl border border-primary/15 rounded-2xl rounded-bl-sm px-3 py-2 shadow-lg shadow-accent/10">
-              <p className="text-[10px] text-foreground/90 line-clamp-2 leading-relaxed">
-                {buddyText}
-              </p>
-            </div>
-          </div>
-
-          {/* User speech bubble — left side */}
-          <div
-            className={`absolute -left-28 top-8 w-36 transition-all duration-500 pointer-events-none ${
-              showUserBubble ? "opacity-100 -translate-x-0" : "opacity-0 -translate-x-2"
-            }`}
-          >
-            <div className="relative bg-primary/15 backdrop-blur-xl border border-primary/20 rounded-2xl rounded-br-sm px-3 py-2">
-              <p className="text-[10px] text-foreground/80 line-clamp-2 leading-relaxed">
-                {userText}
-              </p>
-            </div>
-          </div>
         </div>
       </div>
 
