@@ -204,6 +204,7 @@ const BuddySpeechBubble = ({ messages, buddyState }: Props) => {
       <div
         ref={scrollRef}
         className="flex-1 min-h-0 overflow-y-auto rounded-2xl bg-card/20 backdrop-blur-sm border border-border/10 shadow-lg shadow-black/10 px-3 py-3 flex flex-col gap-3"
+        style={{ touchAction: "pan-y" }}
       >
         {messages.map((msg, i) => {
           const emotion = msg.role === "assistant" ? getEmotionForAssistantMsg(messages, i) : "normal";
