@@ -1,1 +1,0 @@
-ALTER TABLE public.todos ADD COLUMN completed_at timestamp with time zone DEFAULT NULL;
