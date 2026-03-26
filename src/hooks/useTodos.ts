@@ -139,8 +139,13 @@ export function useTodos() {
   }, [user]);
 
   const updateTask = useCallback(async (id: string, updates: Partial<Task>) => {
+    let taskEffort: string | undefined;
     setTasks(prev =>
-      prev.map(t => (t.id === id ? { ...t, ...updates } : t))
+      prev.map(t => {
+        if (t.id !== id) return t;
+        if (updates.done === true && !t.done) taskEffort = t.effort;
+        return { ...t, ...updates };
+      })
     );
     if (user) {
       const dbUpdates: Record<string, any> = {};
@@ -158,8 +163,13 @@ export function useTodos() {
         const { error } = await supabase.from("todos").update(dbUpdates).eq("id", id);
         if (error) console.error("[useTodos] update error:", error);
       }
+
+      // Award XP when completing via updateTask (e.g. Focus timer)
+      if (updates.done === true && taskEffort !== undefined) {
+        await awardXP(taskEffort);
+      }
     }
-  }, [user]);
+  }, [user, awardXP]);
 
   const deleteTask = useCallback(async (id: string) => {
     setTasks(prev => prev.filter(t => t.id !== id));
