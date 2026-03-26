@@ -83,6 +83,16 @@ export function useGamification() {
 
       if (data) {
         setProfile(data as GamificationProfile);
+      } else {
+        // Create default profile for new user
+        await supabase.from("profiles").insert({
+          user_id: user.id,
+          xp: 0,
+          level: 1,
+          streak: 0,
+          total_tasks_completed: 0,
+          last_active_date: null,
+        });
       }
 
       const { count } = await supabase
@@ -105,13 +115,23 @@ export function useGamification() {
     const xpGain = EFFORT_XP[effort || ""] || 10;
     const today = todayStr();
 
-    const { data: current } = await supabase
+    let { data: current } = await supabase
       .from("profiles")
       .select("xp, streak, last_active_date, total_tasks_completed")
       .eq("user_id", user.id)
       .single();
 
-    if (!current) return;
+    if (!current) {
+      await supabase.from("profiles").insert({
+        user_id: user.id,
+        xp: 0,
+        level: 1,
+        streak: 0,
+        total_tasks_completed: 0,
+        last_active_date: null,
+      });
+      current = { xp: 0, streak: 0, last_active_date: null, total_tasks_completed: 0 };
+    }
 
     const newXP = (current.xp || 0) + xpGain;
     const newLevel = getLevel(newXP);
