@@ -47,19 +47,7 @@ const EFFORT_LABELS: Record<Effort, string> = {
   deep: "Deep Work",
 };
 
-const loadTasks = (): Task[] => {
-  try {
-    const raw = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-    return raw.map((t: any) => ({
-      ...t,
-      priority: t.priority || "medium",
-      status: t.status || (t.done ? "done" : "todo"),
-      recurrence: t.recurrence || "once",
-    }));
-  } catch {
-    return [];
-  }
-};
+// Tasks loaded from useTodos hook (Supabase + localStorage)
 
 const getDeadlineState = (dateStr: string): { label: string; className: string } | null => {
   const today = startOfDay(new Date());
