@@ -405,6 +405,11 @@ export function useChat() {
     }
   }, []);
 
+  const clearMessages = useCallback(() => {
+    setMessages([]);
+    localStorage.removeItem(CHAT_STORAGE_KEY);
+  }, []);
+
   const importVoiceSession = useCallback((voiceMessages: Message[]) => {
     if (voiceMessages.length === 0) return;
     const separator: Message = {
