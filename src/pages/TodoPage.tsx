@@ -152,14 +152,12 @@ const TodoPage = () => {
     }
   };
 
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
-  }, [tasks]);
+  // localStorage sync is handled by useTodos hook
 
+  // Force re-render for running timers
+  const [, forceRender] = useState(0);
   useEffect(() => {
-    const interval = setInterval(() => {
-      setTasks(prev => [...prev]);
-    }, 1000);
+    const interval = setInterval(() => forceRender(n => n + 1), 1000);
     return () => clearInterval(interval);
   }, []);
 
