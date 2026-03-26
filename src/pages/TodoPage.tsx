@@ -690,7 +690,7 @@ const TodoPage = () => {
                 className="flex-1 py-2 rounded-lg text-xs text-muted-foreground bg-muted/30 active:bg-muted/50">
                 Batal
               </button>
-              <button onClick={addTask} disabled={!newTask.trim()}
+              <button onClick={handleAddTask} disabled={!newTask.trim()}
                 className="flex-1 py-2 rounded-lg text-xs bg-primary text-primary-foreground active:bg-primary/80 disabled:opacity-30">
                 {editingTaskId ? "Update" : "Simpan"}
               </button>
