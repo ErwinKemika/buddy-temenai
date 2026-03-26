@@ -83,6 +83,16 @@ export function useGamification() {
 
       if (data) {
         setProfile(data as GamificationProfile);
+      } else {
+        // Create default profile for new user
+        await supabase.from("profiles").insert({
+          user_id: user.id,
+          xp: 0,
+          level: 1,
+          streak: 0,
+          total_tasks_completed: 0,
+          last_active_date: null,
+        });
       }
 
       const { count } = await supabase
