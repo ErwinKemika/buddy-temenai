@@ -58,25 +58,40 @@ export type Database = {
           created_at: string
           display_name: string | null
           id: string
+          last_active_date: string | null
+          level: number
+          streak: number
+          total_tasks_completed: number
           updated_at: string
           user_id: string
           whatsapp_number: string | null
+          xp: number
         }
         Insert: {
           created_at?: string
           display_name?: string | null
           id?: string
+          last_active_date?: string | null
+          level?: number
+          streak?: number
+          total_tasks_completed?: number
           updated_at?: string
           user_id: string
           whatsapp_number?: string | null
+          xp?: number
         }
         Update: {
           created_at?: string
           display_name?: string | null
           id?: string
+          last_active_date?: string | null
+          level?: number
+          streak?: number
+          total_tasks_completed?: number
           updated_at?: string
           user_id?: string
           whatsapp_number?: string | null
+          xp?: number
         }
         Relationships: []
       }
