@@ -59,7 +59,7 @@ function dbToTask(row: any): Task {
     category: row.category as Category | undefined,
     recurrence: (row.recurrence || "once") as Recurrence,
     effort: row.effort as Effort | undefined,
-    completedAt: row.completed ? row.created_at : undefined,
+    completedAt: row.completed_at || undefined,
   };
 }
 
