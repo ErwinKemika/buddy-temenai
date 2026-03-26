@@ -171,10 +171,12 @@ export function useTodos() {
 
   const toggleTask = useCallback(async (id: string) => {
     let newDone = false;
+    let taskEffort: string | undefined;
     setTasks(prev =>
       prev.map(t => {
         if (t.id !== id) return t;
         newDone = !t.done;
+        taskEffort = t.effort;
         return {
           ...t,
           done: newDone,
@@ -190,8 +192,13 @@ export function useTodos() {
         .update({ completed: newDone })
         .eq("id", id);
       if (error) console.error("[useTodos] toggle error:", error);
+      
+      // Award XP when completing a task
+      if (newDone) {
+        await awardXP(taskEffort);
+      }
     }
-  }, [user]);
+  }, [user, awardXP]);
 
   const bulkUpdate = useCallback(async (updatedTasks: Task[]) => {
     setTasks(updatedTasks);
