@@ -104,7 +104,7 @@ async function fileToBase64(file: File): Promise<string> {
   });
 }
 
-async function transcribeVoice(blob: Blob): Promise<string> {
+export async function transcribeVoice(blob: Blob): Promise<string> {
   const formData = new FormData();
   formData.append("audio", blob, "voice-note.webm");
 
