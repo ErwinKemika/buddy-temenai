@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
+import { useGamification } from "./useGamification";
 
 export type Priority = "high" | "medium" | "low";
 export type Status = "todo" | "in_progress" | "done";
