@@ -132,10 +132,13 @@ const Index = () => {
 
       {/* Foreground */}
       <div className="relative z-10 flex flex-col h-full">
-        <BuddyHeader onClearChat={clearMessages} hasMessages={messages.length > 0} />
+        {/* Header — hidden in voice mode */}
+        <div className={`transition-all duration-500 ${mode === "voice" ? "opacity-0 scale-95 h-0 overflow-hidden" : "opacity-100 scale-100"}`}>
+          <BuddyHeader onClearChat={clearMessages} hasMessages={messages.length > 0} />
+        </div>
         
-        {/* Mode toggle */}
-        <div className="flex items-center justify-center gap-1 px-4 pt-2 pb-1">
+        {/* Mode toggle — always visible */}
+        <div className={`flex items-center justify-center gap-1 px-4 pt-2 pb-1 ${mode === "voice" ? "absolute top-2 left-0 z-20 w-full" : ""}`}>
           <button
             onClick={() => setMode("chat")}
             className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
@@ -182,7 +185,10 @@ const Index = () => {
           />
         )}
 
-        <BottomNav />
+        {/* BottomNav — hidden in voice mode */}
+        <div className={`transition-all duration-500 ${mode === "voice" ? "opacity-0 scale-95 h-0 overflow-hidden" : "opacity-100 scale-100"}`}>
+          <BottomNav />
+        </div>
       </div>
     </div>
   );

@@ -24,6 +24,13 @@ const STATUS_TEXT: Record<VoiceState, string> = {
   speaking: "Buddy sedang bicara...",
 };
 
+const GLOW_CLASSES: Record<VoiceState, string> = {
+  idle: "bg-transparent",
+  listening: "bg-[radial-gradient(circle,hsl(250,70%,30%)_0%,transparent_70%)]",
+  thinking: "bg-[radial-gradient(circle,hsl(250,70%,25%)_0%,transparent_70%)]",
+  speaking: "bg-[radial-gradient(circle,hsl(190,90%,20%)_0%,transparent_70%)]",
+};
+
 const VoiceMode = ({ onEndCall, streamChat, playTTS, transcribeVoice, buildTodoContext }: Props) => {
   const [voiceState, setVoiceState] = useState<VoiceState>("idle");
   const [sessionMessages, setSessionMessages] = useState<Message[]>([]);
@@ -39,7 +46,6 @@ const VoiceMode = ({ onEndCall, streamChat, playTTS, transcribeVoice, buildTodoC
   const animFrameRef = useRef<number>(0);
   const buddyBubbleTimerRef = useRef<ReturnType<typeof setTimeout>>();
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       cancelAnimationFrame(animFrameRef.current);
@@ -48,7 +54,7 @@ const VoiceMode = ({ onEndCall, streamChat, playTTS, transcribeVoice, buildTodoC
     };
   }, []);
 
-  // Waveform visualizer — horizontal bar style
+  // Waveform visualizer
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -71,7 +77,7 @@ const VoiceMode = ({ onEndCall, streamChat, playTTS, transcribeVoice, buildTodoC
         analyserRef.current.getByteFrequencyData(dataArray);
 
         const isBuddy = voiceState === "speaking";
-        const color = isBuddy ? "0, 245, 212" : "220, 220, 255"; // cyan vs white-ish
+        const color = isBuddy ? "0, 245, 212" : "180, 160, 255";
 
         for (let i = 0; i < barCount; i++) {
           const dataIndex = Math.floor((i / barCount) * bufferLength);
@@ -85,7 +91,6 @@ const VoiceMode = ({ onEndCall, streamChat, playTTS, transcribeVoice, buildTodoC
           ctx.fill();
         }
       } else {
-        // Subtle idle pulse
         const time = Date.now() / 1000;
         for (let i = 0; i < barCount; i++) {
           const pulse = Math.sin(time * 2 + i * 0.3) * 0.3 + 0.5;
@@ -153,7 +158,6 @@ const VoiceMode = ({ onEndCall, streamChat, playTTS, transcribeVoice, buildTodoC
       return;
     }
 
-    // Show user bubble
     setUserText(transcribed);
     setShowUserBubble(true);
 
@@ -175,7 +179,6 @@ const VoiceMode = ({ onEndCall, streamChat, playTTS, transcribeVoice, buildTodoC
       assistantText = "Maaf, aku sedang gangguan. Coba lagi ya! 😅";
     }
 
-    // Hide user bubble, show buddy bubble
     setShowUserBubble(false);
     setBuddyText(assistantText);
     setShowBuddyBubble(true);
@@ -190,9 +193,7 @@ const VoiceMode = ({ onEndCall, streamChat, playTTS, transcribeVoice, buildTodoC
       console.error("[VoiceMode] TTS failed:", e);
     }
 
-    // Fade out buddy bubble after 3s
     buddyBubbleTimerRef.current = setTimeout(() => setShowBuddyBubble(false), 3000);
-
     setVoiceState("idle");
   }, [voiceState, sessionMessages, streamChat, playTTS, transcribeVoice, buildTodoContext]);
 
@@ -218,8 +219,13 @@ const VoiceMode = ({ onEndCall, streamChat, playTTS, transcribeVoice, buildTodoC
 
   return (
     <div className="flex-1 flex flex-col items-center relative overflow-hidden">
+      {/* Reactive background glow */}
+      <div
+        className={`absolute inset-0 pointer-events-none transition-all duration-[600ms] ease-in-out ${GLOW_CLASSES[voiceState]}`}
+      />
+
       {/* "Selesai" button — top right */}
-      <div className="w-full flex justify-end px-4 pt-2 pb-0">
+      <div className="w-full flex justify-end px-4 pt-2 pb-0 relative z-10">
         <button
           onClick={handleEnd}
           className="text-xs text-muted-foreground/70 hover:text-foreground transition-colors font-medium px-3 py-1.5"
@@ -229,15 +235,25 @@ const VoiceMode = ({ onEndCall, streamChat, playTTS, transcribeVoice, buildTodoC
       </div>
 
       {/* Main area — Buddy takes ~65% height */}
-      <div className="flex-1 flex items-center justify-center w-full relative" style={{ minHeight: "60%" }}>
+      <div className="flex-1 flex items-center justify-center w-full relative" style={{ minHeight: "65%" }}>
         {/* Radial glow behind Buddy */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 rounded-full bg-accent/[0.12] blur-[80px] pointer-events-none" />
+        <div
+          className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full blur-[100px] pointer-events-none transition-all duration-[600ms] ease-in-out ${
+            voiceState === "speaking"
+              ? "bg-accent/20"
+              : voiceState === "listening"
+              ? "bg-primary/15"
+              : "bg-accent/[0.08]"
+          }`}
+        />
 
-        {/* Buddy robot — scaled up */}
-        <div className="relative scale-[1.35] origin-center">
+        {/* Buddy robot — scaled up with brightness change */}
+        <div className={`relative scale-[1.5] origin-center transition-all duration-[600ms] ${
+          voiceState === "speaking" ? "brightness-125 drop-shadow-[0_0_30px_hsl(var(--accent)/0.4)]" : ""
+        }`}>
           <BuddyRobot buddyState={buddyState} />
 
-          {/* Buddy speech bubble — right side of head */}
+          {/* Buddy speech bubble — right side */}
           <div
             className={`absolute -right-28 top-4 w-44 transition-all duration-500 pointer-events-none ${
               showBuddyBubble ? "opacity-100 translate-x-0" : "opacity-0 translate-x-2"
@@ -250,7 +266,7 @@ const VoiceMode = ({ onEndCall, streamChat, playTTS, transcribeVoice, buildTodoC
             </div>
           </div>
 
-          {/* User speech bubble — left side of head */}
+          {/* User speech bubble — left side */}
           <div
             className={`absolute -left-28 top-8 w-36 transition-all duration-500 pointer-events-none ${
               showUserBubble ? "opacity-100 -translate-x-0" : "opacity-0 -translate-x-2"
@@ -265,24 +281,24 @@ const VoiceMode = ({ onEndCall, streamChat, playTTS, transcribeVoice, buildTodoC
         </div>
       </div>
 
-      {/* Waveform — below Buddy */}
+      {/* Waveform */}
       <canvas
         ref={canvasRef}
         width={320}
         height={40}
-        className="w-72 h-10 mb-2 opacity-90"
+        className="w-72 h-10 mb-2 opacity-90 relative z-10"
       />
 
       {/* Status text */}
       <p
-        className="text-xs font-medium font-orbitron tracking-wider text-accent/80 mb-4 animate-fade-in"
+        className="text-xs font-medium font-orbitron tracking-wider text-accent/80 mb-4 animate-fade-in relative z-10"
         key={voiceState}
       >
         {STATUS_TEXT[voiceState]}
       </p>
 
-      {/* Mic button — single, centered */}
-      <div className="mb-4 flex flex-col items-center gap-2">
+      {/* Mic button */}
+      <div className="mb-6 flex flex-col items-center gap-2 relative z-10">
         <button
           onClick={handleMicTap}
           disabled={voiceState === "thinking" || voiceState === "speaking"}
