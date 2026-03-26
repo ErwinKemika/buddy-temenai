@@ -159,7 +159,7 @@ const Index = () => {
             }`}
           >
             <Mic size={14} />
-            Voice
+            Ngobrol
           </button>
         </div>
 
