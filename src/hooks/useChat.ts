@@ -73,6 +73,7 @@ export type Message = {
   role: "user" | "assistant";
   content: string;
   attachment?: Attachment;
+  source?: "chat" | "voice";
 };
 
 export type BuddyState = "idle" | "thinking" | "speaking";
