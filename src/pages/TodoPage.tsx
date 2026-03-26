@@ -59,7 +59,8 @@ const getDeadlineState = (dateStr: string): { label: string; className: string }
 
 const TodoPage = () => {
   const navigate = useNavigate();
-  const [tasks, setTasks] = useState<Task[]>(loadTasks);
+  const { tasks, setTasks: bulkSetTasks, addTask: addTaskToDb, updateTask, deleteTask: deleteTaskFromDb, toggleTask: toggleTaskInDb } = useTodos();
+  const setTasks = bulkSetTasks;
   const { voiceEnabled, toggleVoice, speak } = useBuddyVoice();
   const hasSpokenInitial = useRef(false);
   const [newTask, setNewTask] = useState("");
