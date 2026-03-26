@@ -4,25 +4,9 @@ import { startOfDay, isBefore } from "date-fns";
 import { useSearchParams } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
 import { BuddyState } from "@/hooks/useChat";
+import { useTodos, type Task } from "@/hooks/useTodos";
 
-const TODO_STORAGE_KEY = "buddy-todos";
-
-interface Task {
-  id: string;
-  title: string;
-  done: boolean;
-  date: string;
-  startTime?: string;
-  endTime?: string;
-  startedAt?: string;
-  completedAt?: string;
-  isRunning?: boolean;
-  priority: "high" | "medium" | "low";
-  status: "todo" | "in_progress" | "done";
-  category?: "work" | "personal" | "health" | "learning";
-  recurrence: "once" | "daily" | "weekly";
-  effort?: "quick" | "medium" | "deep";
-}
+// Task type imported from useTodos
 
 const PRIORITY_WEIGHT = { high: 3, medium: 2, low: 1 };
 
@@ -70,21 +54,7 @@ function pickRandom(arr: string[]) {
 
 type TimerState = "idle" | "running" | "paused" | "finished";
 
-function loadTasks(): Task[] {
-  try {
-    const raw = JSON.parse(localStorage.getItem(TODO_STORAGE_KEY) || "[]");
-    return raw.map((t: any) => ({
-      ...t,
-      priority: t.priority || "medium",
-      status: t.status || (t.done ? "done" : "todo"),
-      recurrence: t.recurrence || "once",
-    }));
-  } catch { return []; }
-}
-
-function saveTasks(tasks: Task[]) {
-  localStorage.setItem(TODO_STORAGE_KEY, JSON.stringify(tasks));
-}
+// loadTasks/saveTasks removed — handled by useTodos hook
 
 /** Calculate duration in seconds from task startTime/endTime, fallback to 25min */
 function getTaskDuration(task: Task | null): number {
@@ -130,11 +100,11 @@ const PRIORITY_DOT: Record<string, string> = {
 const FocusPage = () => {
   const [searchParams] = useSearchParams();
   const taskIdFromUrl = searchParams.get("taskId");
+  const { tasks: allTasks, setTasks: setAllTasks, updateTask: updateTaskInDb } = useTodos();
 
   const [timerState, setTimerState] = useState<TimerState>("idle");
   const [buddyMsg, setBuddyMsg] = useState(() => pickRandom(PHRASES.idle));
   const [buddyState, setBuddyState] = useState<BuddyState>("idle");
-  const [allTasks, setAllTasks] = useState<Task[]>(() => loadTasks());
   const [activeIdx, setActiveIdx] = useState(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const nearEndFired = useRef(false);
@@ -161,20 +131,12 @@ const FocusPage = () => {
       if (idx >= 0) {
         setActiveIdx(idx);
         autoStarted.current = true;
-        // Auto-start after a brief delay
         setTimeout(() => {
           startTimerForTask(idx);
         }, 500);
       }
     }
   }, [taskIdFromUrl, focusTasks]);
-
-  // Reload tasks from storage on mount and when window refocuses
-  useEffect(() => {
-    const reload = () => setAllTasks(loadTasks());
-    window.addEventListener("focus", reload);
-    return () => window.removeEventListener("focus", reload);
-  }, []);
 
   const clearTimer = useCallback(() => {
     if (intervalRef.current) clearInterval(intervalRef.current);
@@ -183,19 +145,18 @@ const FocusPage = () => {
 
   const markTaskDone = useCallback(() => {
     if (!activeTask) return;
-    const updated = allTasks.map(t =>
-      t.id === activeTask.id ? { ...t, status: "done" as const, done: true, completedAt: new Date().toISOString() } : t
-    );
-    setAllTasks(updated);
-    saveTasks(updated);
+    updateTaskInDb(activeTask.id, { done: true, status: "done" as any, completedAt: new Date().toISOString() });
     setBuddyMsg(pickRandom(PHRASES.taskDone));
     setBuddyState("speaking");
     setTimeout(() => setBuddyState("idle"), 2000);
+    const updated = allTasks.map(t =>
+      t.id === activeTask.id ? { ...t, status: "done" as const, done: true } : t
+    );
     const newFocus = getFocusTasks(updated);
     setActiveIdx(prev => Math.min(prev, Math.max(0, newFocus.length - 1)));
     setTimerState("idle");
     clearTimer();
-  }, [activeTask, allTasks, clearTimer]);
+  }, [activeTask, allTasks, clearTimer, updateTaskInDb]);
 
   const startTimerForTask = (idx?: number) => {
     const taskIdx = idx ?? activeIdx;
@@ -208,17 +169,12 @@ const FocusPage = () => {
     setSecondsLeft(startFrom);
     setTimerState("running");
 
-    // Capture the actual task ID for the timer closure
     const runningTaskId = task?.id || null;
     activeTaskIdRef.current = runningTaskId;
 
     // Set active task to in_progress
     if (task && task.status !== "in_progress") {
-      const updated = allTasks.map(t =>
-        t.id === task.id ? { ...t, status: "in_progress" as const, isRunning: true, startedAt: t.startedAt || new Date().toISOString() } : t
-      );
-      setAllTasks(updated);
-      saveTasks(updated);
+      updateTaskInDb(task.id, { status: "in_progress" as any, isRunning: true, startedAt: task.startedAt || new Date().toISOString() });
     }
 
     setBuddyMsg(task
@@ -233,35 +189,17 @@ const FocusPage = () => {
         if (prev <= 1) {
           clearTimer();
           setTimerState("finished");
-          // Auto-complete using the captured task ID, not activeIdx
-          setAllTasks(current => {
-            const taskToComplete = current.find(t => t.id === runningTaskId);
-            if (taskToComplete) {
-              const updated = current.map(t =>
-                t.id === runningTaskId ? { ...t, status: "done" as const, done: true, completedAt: new Date().toISOString() } : t
-              );
-              saveTasks(updated);
-              setBuddyMsg(pickRandom(PHRASES.taskDone));
-              setBuddyState("speaking");
-              // After a delay, reset to idle and move to next task
-              setTimeout(() => {
-                setBuddyState("idle");
-                const newFocus = getFocusTasks(updated);
-                if (newFocus.length > 0) {
-                  setActiveIdx(prev => Math.min(prev, newFocus.length - 1));
-                  setBuddyMsg(pickRandom(PHRASES.idle));
-                } else {
-                  setBuddyMsg("Semua tugas beres! Istirahat dulu ya 🎉");
-                }
-                setTimerState("idle");
-              }, 3000);
-              return updated;
-            }
-            setBuddyMsg(pickRandom(PHRASES.finished));
-            setBuddyState("speaking");
-            setTimeout(() => { setBuddyState("idle"); setTimerState("idle"); }, 3000);
-            return current;
-          });
+          // Auto-complete using the captured task ID
+          if (runningTaskId) {
+            updateTaskInDb(runningTaskId, { done: true, status: "done" as any, completedAt: new Date().toISOString() });
+          }
+          setBuddyMsg(pickRandom(PHRASES.taskDone));
+          setBuddyState("speaking");
+          setTimeout(() => {
+            setBuddyState("idle");
+            setBuddyMsg(pickRandom(PHRASES.idle));
+            setTimerState("idle");
+          }, 3000);
           return 0;
         }
         if (prev === 121 && !nearEndFired.current) {

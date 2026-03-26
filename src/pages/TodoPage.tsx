@@ -5,33 +5,9 @@ import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameM
 import { id as localeId } from "date-fns/locale";
 import BottomNav from "@/components/BottomNav";
 import { useBuddyVoice } from "@/hooks/useBuddyVoice";
-
-type Priority = "high" | "medium" | "low";
-type Status = "todo" | "in_progress" | "done";
-type Category = "work" | "personal" | "health" | "learning";
-type Recurrence = "once" | "daily" | "weekly";
-type Effort = "quick" | "medium" | "deep";
-
-interface Task {
-  id: string;
-  title: string;
-  done: boolean;
-  date: string;
-  startTime?: string;
-  endTime?: string;
-  startedAt?: string;
-  completedAt?: string;
-  isRunning?: boolean;
-  priority: Priority;
-  status: Status;
-  category?: Category;
-  recurrence: Recurrence;
-  effort?: Effort;
-}
+import { useTodos, type Task, type Priority, type Status, type Category, type Recurrence, type Effort } from "@/hooks/useTodos";
 
 type ViewMode = "month" | "today";
-
-const STORAGE_KEY = "buddy-todos";
 
 const PRIORITY_COLORS: Record<Priority, string> = {
   high: "bg-red-500",
@@ -71,19 +47,7 @@ const EFFORT_LABELS: Record<Effort, string> = {
   deep: "Deep Work",
 };
 
-const loadTasks = (): Task[] => {
-  try {
-    const raw = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-    return raw.map((t: any) => ({
-      ...t,
-      priority: t.priority || "medium",
-      status: t.status || (t.done ? "done" : "todo"),
-      recurrence: t.recurrence || "once",
-    }));
-  } catch {
-    return [];
-  }
-};
+// Tasks loaded from useTodos hook (Supabase + localStorage)
 
 const getDeadlineState = (dateStr: string): { label: string; className: string } | null => {
   const today = startOfDay(new Date());
@@ -95,7 +59,8 @@ const getDeadlineState = (dateStr: string): { label: string; className: string }
 
 const TodoPage = () => {
   const navigate = useNavigate();
-  const [tasks, setTasks] = useState<Task[]>(loadTasks);
+  const { tasks, setTasks: bulkSetTasks, addTask: addTaskToDb, updateTask, deleteTask: deleteTaskFromDb, toggleTask: toggleTaskInDb } = useTodos();
+  const setTasks = bulkSetTasks;
   const { voiceEnabled, toggleVoice, speak } = useBuddyVoice();
   const hasSpokenInitial = useRef(false);
   const [newTask, setNewTask] = useState("");
@@ -187,14 +152,12 @@ const TodoPage = () => {
     }
   };
 
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
-  }, [tasks]);
+  // localStorage sync is handled by useTodos hook
 
+  // Force re-render for running timers
+  const [, forceRender] = useState(0);
   useEffect(() => {
-    const interval = setInterval(() => {
-      setTasks(prev => [...prev]);
-    }, 1000);
+    const interval = setInterval(() => forceRender(n => n + 1), 1000);
     return () => clearInterval(interval);
   }, []);
 
@@ -257,36 +220,28 @@ const TodoPage = () => {
     setShowAddForm(true);
   };
 
-  const addTask = () => {
+  const handleAddTask = () => {
     const title = newTask.trim();
     if (!title) return;
 
     if (editingTaskId) {
-      // Edit existing task
-      setTasks(prev =>
-        prev.map(t =>
-          t.id === editingTaskId
-            ? {
-                ...t,
-                title,
-                date: addDate,
-                startTime: addStartTime || undefined,
-                endTime: addEndTime || undefined,
-                priority: addPriority,
-                category: addCategory || undefined,
-                recurrence: addRecurrence,
-                effort: addEffort || undefined,
-              }
-            : t
-        )
-      );
+      updateTask(editingTaskId, {
+        title,
+        date: addDate,
+        startTime: addStartTime || undefined,
+        endTime: addEndTime || undefined,
+        priority: addPriority,
+        category: addCategory || undefined,
+        recurrence: addRecurrence,
+        effort: addEffort || undefined,
+      });
       resetForm();
       updateBuddyMsg("Udah aku update ya! ✏️", getBuddyLine(tasks));
       return;
     }
 
     const task: Task = {
-      id: Date.now().toString(),
+      id: crypto.randomUUID(),
       title,
       done: false,
       date: addDate,
@@ -298,25 +253,13 @@ const TodoPage = () => {
       recurrence: addRecurrence,
       effort: addEffort || undefined,
     };
-    setTasks(prev => [...prev, task]);
+    addTaskToDb(task);
     resetForm();
     updateBuddyMsg("Sip, udah aku catat! 📝", getBuddyLine([...tasks, task]));
   };
 
-  const toggleTask = (id: string) => {
-    setTasks(prev =>
-      prev.map(t => {
-        if (t.id !== id) return t;
-        const nowDone = !t.done;
-        return {
-          ...t,
-          done: nowDone,
-          status: nowDone ? "done" as Status : "todo" as Status,
-          completedAt: nowDone ? new Date().toISOString() : undefined,
-          isRunning: nowDone ? false : t.isRunning,
-        };
-      })
-    );
+  const handleToggleTask = (id: string) => {
+    toggleTaskInDb(id);
     const task = tasks.find(t => t.id === id);
     if (task && !task.done) {
       updateBuddyMsg("Nice, satu beres! 🎉", "Mau lanjut yang lain?");
@@ -324,21 +267,15 @@ const TodoPage = () => {
   };
 
   const startTask = (_id: string) => {
-    // Task execution moved to Focus page
-  
     updateBuddyMsg("Gas! Semangat kerjain! 🔥");
   };
 
   const stopTask = (id: string) => {
-    setTasks(prev =>
-      prev.map(t =>
-        t.id === id ? { ...t, isRunning: false } : t
-      )
-    );
+    updateTask(id, { isRunning: false });
   };
 
-  const deleteTask = (id: string) => {
-    setTasks(prev => prev.filter(t => t.id !== id));
+  const handleDeleteTask = (id: string) => {
+    deleteTaskFromDb(id);
     updateBuddyMsg("Udah aku hapus ya", getBuddyLine(tasks.filter(t => t.id !== id)));
   };
 
@@ -582,7 +519,7 @@ const TodoPage = () => {
                 <div className="flex flex-col items-center gap-1 shrink-0">
                   <div className={`w-2 h-2 rounded-full ${PRIORITY_COLORS[task.priority]}`} />
                   <button
-                    onClick={() => toggleTask(task.id)}
+                    onClick={() => handleToggleTask(task.id)}
                     className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-colors ${
                       task.done ? "bg-green-500 border-green-500 text-primary-foreground" : "border-muted-foreground"
                     }`}
@@ -634,7 +571,7 @@ const TodoPage = () => {
                       <Pencil size={14} />
                     </button>
                   )}
-                  <button onClick={() => deleteTask(task.id)} className="p-1.5 text-muted-foreground active:text-destructive transition-colors">
+                  <button onClick={() => handleDeleteTask(task.id)} className="p-1.5 text-muted-foreground active:text-destructive transition-colors">
                     <Trash2 size={14} />
                   </button>
                 </div>
@@ -753,7 +690,7 @@ const TodoPage = () => {
                 className="flex-1 py-2 rounded-lg text-xs text-muted-foreground bg-muted/30 active:bg-muted/50">
                 Batal
               </button>
-              <button onClick={addTask} disabled={!newTask.trim()}
+              <button onClick={handleAddTask} disabled={!newTask.trim()}
                 className="flex-1 py-2 rounded-lg text-xs bg-primary text-primary-foreground active:bg-primary/80 disabled:opacity-30">
                 {editingTaskId ? "Update" : "Simpan"}
               </button>

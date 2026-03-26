@@ -80,6 +80,51 @@ export type Database = {
         }
         Relationships: []
       }
+      todos: {
+        Row: {
+          category: string | null
+          completed: boolean
+          created_at: string
+          deadline: string | null
+          effort: string | null
+          end_time: string | null
+          id: string
+          priority: string
+          recurrence: string | null
+          start_time: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          completed?: boolean
+          created_at?: string
+          deadline?: string | null
+          effort?: string | null
+          end_time?: string | null
+          id?: string
+          priority?: string
+          recurrence?: string | null
+          start_time?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          completed?: boolean
+          created_at?: string
+          deadline?: string | null
+          effort?: string | null
+          end_time?: string | null
+          id?: string
+          priority?: string
+          recurrence?: string | null
+          start_time?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
