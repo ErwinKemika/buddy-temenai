@@ -278,6 +278,7 @@ export async function streamChat(
 }
 
 export function useChat() {
+  const [messages, setMessages] = useState<Message[]>(loadMessages);
   const [buddyState, setBuddyState] = useState<BuddyState>("idle");
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [autoPlayVoice, setAutoPlayVoice] = useState(true);
