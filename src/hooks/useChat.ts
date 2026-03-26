@@ -126,7 +126,7 @@ export async function transcribeVoice(blob: Blob): Promise<string> {
   return text;
 }
 
-async function playTTS(text: string): Promise<void> {
+export async function playTTS(text: string): Promise<void> {
   const cleanText = text.replace(/[#*_~`>\[\]()!]/g, "").replace(/\n+/g, " ").trim();
   if (!cleanText || cleanText.length < 2) return;
 
