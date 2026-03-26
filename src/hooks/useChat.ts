@@ -354,7 +354,7 @@ export function useChat() {
     } finally {
     setBuddyState("idle");
     }
-  }, [messages, voiceEnabled, autoPlayVoice]);
+  }, [messages]);
 
   const injectReminderMessage = useCallback(async (text: string, speak: boolean) => {
     setMessages(prev => [...prev, { role: "assistant", content: text }]);
