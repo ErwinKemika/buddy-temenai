@@ -81,6 +81,7 @@ function taskToDb(task: Task, userId: string) {
 
 export function useTodos() {
   const { user } = useAuth();
+  const { awardXP } = useGamification();
   const [tasks, setTasks] = useState<Task[]>(loadLocal);
   const [loading, setLoading] = useState(false);
   const initialLoaded = useRef(false);
