@@ -253,7 +253,7 @@ const BuddySpeechBubble = ({ messages, buddyState }: Props) => {
                             href={href}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-accent underline underline-offset-2 hover:text-accent/80 transition-colors break-all"
+                            className="text-accent underline underline-offset-2 hover:text-accent/80 transition-colors break-all pointer-events-auto cursor-pointer relative z-10"
                             onClick={(e) => e.stopPropagation()}
                           >
                             {children}
