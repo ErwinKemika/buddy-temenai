@@ -222,6 +222,7 @@ const BuddySpeechBubble = ({ messages, buddyState }: Props) => {
                     ? "bg-background/60 backdrop-blur-sm border border-primary/20 text-foreground rounded-2xl rounded-bl-sm"
                     : "bg-primary/20 border border-primary/30 text-foreground rounded-2xl rounded-tr-sm"
                 }`}
+                style={{ touchAction: "auto" }}
               >
                 {msg.attachment?.type === "image" && (
                   <img
