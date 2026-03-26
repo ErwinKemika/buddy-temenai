@@ -176,7 +176,10 @@ export function useTodos() {
       if (updates.category !== undefined) dbUpdates.category = updates.category || null;
       if (updates.recurrence !== undefined) dbUpdates.recurrence = updates.recurrence;
       if (updates.effort !== undefined) dbUpdates.effort = updates.effort || null;
-      if (updates.done !== undefined) dbUpdates.completed = updates.done;
+      if (updates.done !== undefined) {
+        dbUpdates.completed = updates.done;
+        dbUpdates.completed_at = updates.done ? new Date().toISOString() : null;
+      }
 
       if (Object.keys(dbUpdates).length > 0) {
         const { error } = await supabase.from("todos").update(dbUpdates).eq("id", id);
@@ -218,7 +221,7 @@ export function useTodos() {
     if (user) {
       const { error } = await supabase
         .from("todos")
-        .update({ completed: newDone })
+        .update({ completed: newDone, completed_at: newDone ? new Date().toISOString() : null })
         .eq("id", id);
       if (error) console.error("[useTodos] toggle error:", error);
       

@@ -24,7 +24,7 @@ const AnalyticsPage = () => {
       const sevenDaysAgo = subDays(new Date(), 6).toISOString();
       const { data: todos } = await supabase
         .from("todos")
-        .select("created_at, category, completed")
+        .select("completed_at, category, completed")
         .eq("user_id", user.id)
         .eq("completed", true);
 
@@ -37,7 +37,7 @@ const AnalyticsPage = () => {
         dayMap[d] = 0;
       }
       for (const t of todos) {
-        const d = t.created_at?.slice(0, 10);
+        const d = t.completed_at?.slice(0, 10);
         if (d && d in dayMap) dayMap[d]++;
       }
       setDailyData(Object.entries(dayMap).map(([day, count]) => ({
