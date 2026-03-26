@@ -405,10 +405,16 @@ export async function streamChat(
     }
   }, []);
 
-  const clearMessages = useCallback(() => {
-    setMessages([]);
-    localStorage.removeItem(CHAT_STORAGE_KEY);
+  const importVoiceSession = useCallback((voiceMessages: Message[]) => {
+    if (voiceMessages.length === 0) return;
+    const separator: Message = {
+      role: "assistant",
+      content: `── 🎙️ Voice Call · ${new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })} ──`,
+      source: "voice",
+    };
+    const tagged = voiceMessages.map(m => ({ ...m, source: "voice" as const }));
+    setMessages(prev => [...prev, separator, ...tagged]);
   }, []);
 
-  return { messages, buddyState, voiceEnabled, setVoiceEnabled, autoPlayVoice, setAutoPlayVoice, sendMessage, injectReminderMessage, clearMessages };
+  return { messages, buddyState, voiceEnabled, setVoiceEnabled, autoPlayVoice, setAutoPlayVoice, sendMessage, injectReminderMessage, clearMessages, importVoiceSession };
 }
