@@ -1,8 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { Mic, PhoneOff } from "lucide-react";
+import { Mic } from "lucide-react";
 import BuddyRobot from "./BuddyRobot";
 import { BuddyState, Message } from "@/hooks/useChat";
-
 
 type VoiceState = "idle" | "listening" | "thinking" | "speaking";
 
@@ -28,22 +27,28 @@ const STATUS_TEXT: Record<VoiceState, string> = {
 const VoiceMode = ({ onEndCall, streamChat, playTTS, transcribeVoice, buildTodoContext }: Props) => {
   const [voiceState, setVoiceState] = useState<VoiceState>("idle");
   const [sessionMessages, setSessionMessages] = useState<Message[]>([]);
+  const [buddyText, setBuddyText] = useState("");
+  const [userText, setUserText] = useState("");
+  const [showBuddyBubble, setShowBuddyBubble] = useState(false);
+  const [showUserBubble, setShowUserBubble] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const animFrameRef = useRef<number>(0);
+  const buddyBubbleTimerRef = useRef<ReturnType<typeof setTimeout>>();
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
       cancelAnimationFrame(animFrameRef.current);
       streamRef.current?.getTracks().forEach(t => t.stop());
+      if (buddyBubbleTimerRef.current) clearTimeout(buddyBubbleTimerRef.current);
     };
   }, []);
 
-  // Waveform visualizer
+  // Waveform visualizer — horizontal bar style
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -56,35 +61,40 @@ const VoiceMode = ({ onEndCall, streamChat, playTTS, transcribeVoice, buildTodoC
       const h = canvas.height;
       ctx.clearRect(0, 0, w, h);
 
+      const barCount = 40;
+      const barWidth = w / barCount - 2;
+      const centerY = h / 2;
+
       if (analyserRef.current && (voiceState === "listening" || voiceState === "speaking")) {
         const bufferLength = analyserRef.current.frequencyBinCount;
         const dataArray = new Uint8Array(bufferLength);
-        analyserRef.current.getByteTimeDomainData(dataArray);
+        analyserRef.current.getByteFrequencyData(dataArray);
 
-        const alpha = voiceState === "listening" ? 1 : 0.3;
-        ctx.lineWidth = 2;
-        ctx.strokeStyle = `rgba(139, 92, 246, ${alpha})`;
-        ctx.beginPath();
+        const isBuddy = voiceState === "speaking";
+        const color = isBuddy ? "0, 245, 212" : "220, 220, 255"; // cyan vs white-ish
 
-        const sliceWidth = w / bufferLength;
-        let x = 0;
-        for (let i = 0; i < bufferLength; i++) {
-          const v = dataArray[i] / 128.0;
-          const y = (v * h) / 2;
-          if (i === 0) ctx.moveTo(x, y);
-          else ctx.lineTo(x, y);
-          x += sliceWidth;
+        for (let i = 0; i < barCount; i++) {
+          const dataIndex = Math.floor((i / barCount) * bufferLength);
+          const value = dataArray[dataIndex] / 255;
+          const barH = Math.max(2, value * (h * 0.8));
+          const alpha = 0.4 + value * 0.6;
+
+          ctx.fillStyle = `rgba(${color}, ${alpha})`;
+          ctx.beginPath();
+          ctx.roundRect(i * (barWidth + 2), centerY - barH / 2, barWidth, barH, 2);
+          ctx.fill();
         }
-        ctx.lineTo(w, h / 2);
-        ctx.stroke();
       } else {
-        // Flat line when idle
-        ctx.strokeStyle = "rgba(139, 92, 246, 0.2)";
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(0, h / 2);
-        ctx.lineTo(w, h / 2);
-        ctx.stroke();
+        // Subtle idle pulse
+        const time = Date.now() / 1000;
+        for (let i = 0; i < barCount; i++) {
+          const pulse = Math.sin(time * 2 + i * 0.3) * 0.3 + 0.5;
+          const barH = 2 + pulse * 4;
+          ctx.fillStyle = `rgba(139, 92, 246, ${0.15 + pulse * 0.1})`;
+          ctx.beginPath();
+          ctx.roundRect(i * (barWidth + 2), centerY - barH / 2, barWidth, barH, 2);
+          ctx.fill();
+        }
       }
     };
     draw();
@@ -93,15 +103,15 @@ const VoiceMode = ({ onEndCall, streamChat, playTTS, transcribeVoice, buildTodoC
 
   const startRecording = useCallback(async () => {
     if (voiceState !== "idle") return;
+    setShowBuddyBubble(false);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
 
-      // Setup analyser for waveform
       const audioCtx = new AudioContext();
       const source = audioCtx.createMediaStreamSource(stream);
       const analyser = audioCtx.createAnalyser();
-      analyser.fftSize = 256;
+      analyser.fftSize = 128;
       source.connect(analyser);
       analyserRef.current = analyser;
 
@@ -124,7 +134,6 @@ const VoiceMode = ({ onEndCall, streamChat, playTTS, transcribeVoice, buildTodoC
     const mr = mediaRecorderRef.current;
     if (!mr) return;
 
-    // Stop recording
     await new Promise<void>((resolve) => {
       mr.onstop = () => resolve();
       mr.stop();
@@ -134,21 +143,23 @@ const VoiceMode = ({ onEndCall, streamChat, playTTS, transcribeVoice, buildTodoC
 
     const blob = new Blob(chunksRef.current, { type: "audio/webm;codecs=opus" });
 
-    // Transcribe
     setVoiceState("thinking");
-    let userText: string;
+    let transcribed: string;
     try {
-      userText = await transcribeVoice(blob);
+      transcribed = await transcribeVoice(blob);
     } catch (e) {
       console.error("[VoiceMode] Transcription failed:", e);
       setVoiceState("idle");
       return;
     }
 
-    const userMsg: Message = { role: "user", content: userText, source: "voice" };
+    // Show user bubble
+    setUserText(transcribed);
+    setShowUserBubble(true);
+
+    const userMsg: Message = { role: "user", content: transcribed, source: "voice" };
     setSessionMessages(prev => [...prev, userMsg]);
 
-    // Get AI response
     let assistantText = "";
     const upsert = (chunk: string) => {
       assistantText += chunk;
@@ -164,16 +175,23 @@ const VoiceMode = ({ onEndCall, streamChat, playTTS, transcribeVoice, buildTodoC
       assistantText = "Maaf, aku sedang gangguan. Coba lagi ya! 😅";
     }
 
+    // Hide user bubble, show buddy bubble
+    setShowUserBubble(false);
+    setBuddyText(assistantText);
+    setShowBuddyBubble(true);
+
     const assistantMsg: Message = { role: "assistant", content: assistantText, source: "voice" };
     setSessionMessages(prev => [...prev, assistantMsg]);
 
-    // Play TTS
     setVoiceState("speaking");
     try {
       await playTTS(assistantText);
     } catch (e) {
       console.error("[VoiceMode] TTS failed:", e);
     }
+
+    // Fade out buddy bubble after 3s
+    buddyBubbleTimerRef.current = setTimeout(() => setShowBuddyBubble(false), 3000);
 
     setVoiceState("idle");
   }, [voiceState, sessionMessages, streamChat, playTTS, transcribeVoice, buildTodoContext]);
@@ -186,8 +204,7 @@ const VoiceMode = ({ onEndCall, streamChat, playTTS, transcribeVoice, buildTodoC
     }
   }, [voiceState, startRecording, stopRecordingAndProcess]);
 
-  const handleEndCall = useCallback(() => {
-    // Stop any recording
+  const handleEnd = useCallback(() => {
     mediaRecorderRef.current?.stop();
     streamRef.current?.getTracks().forEach(t => t.stop());
     analyserRef.current = null;
@@ -200,62 +217,97 @@ const VoiceMode = ({ onEndCall, streamChat, playTTS, transcribeVoice, buildTodoC
     : "idle";
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-between py-6 px-4">
-      {/* Buddy Robot - centered */}
-      <div className="flex-1 flex items-center justify-center">
-        <div className="relative">
-          {/* Pulsing ring when listening */}
-          {voiceState === "listening" && (
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="w-72 h-72 rounded-full border-2 border-accent/40 animate-ping" style={{ animationDuration: "2s" }} />
-              <div className="absolute w-60 h-60 rounded-full border border-primary/30 animate-ping" style={{ animationDuration: "1.5s" }} />
-            </div>
-          )}
+    <div className="flex-1 flex flex-col items-center relative overflow-hidden">
+      {/* "Selesai" button — top right */}
+      <div className="w-full flex justify-end px-4 pt-2 pb-0">
+        <button
+          onClick={handleEnd}
+          className="text-xs text-muted-foreground/70 hover:text-foreground transition-colors font-medium px-3 py-1.5"
+        >
+          Selesai
+        </button>
+      </div>
+
+      {/* Main area — Buddy takes ~65% height */}
+      <div className="flex-1 flex items-center justify-center w-full relative" style={{ minHeight: "60%" }}>
+        {/* Radial glow behind Buddy */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 rounded-full bg-accent/[0.12] blur-[80px] pointer-events-none" />
+
+        {/* Buddy robot — scaled up */}
+        <div className="relative scale-[1.35] origin-center">
           <BuddyRobot buddyState={buddyState} />
+
+          {/* Buddy speech bubble — right side of head */}
+          <div
+            className={`absolute -right-28 top-4 w-44 transition-all duration-500 pointer-events-none ${
+              showBuddyBubble ? "opacity-100 translate-x-0" : "opacity-0 translate-x-2"
+            }`}
+          >
+            <div className="relative bg-background/60 backdrop-blur-xl border border-primary/15 rounded-2xl rounded-bl-sm px-3 py-2 shadow-lg shadow-accent/10">
+              <p className="text-[10px] text-foreground/90 line-clamp-2 leading-relaxed">
+                {buddyText}
+              </p>
+            </div>
+          </div>
+
+          {/* User speech bubble — left side of head */}
+          <div
+            className={`absolute -left-28 top-8 w-36 transition-all duration-500 pointer-events-none ${
+              showUserBubble ? "opacity-100 -translate-x-0" : "opacity-0 -translate-x-2"
+            }`}
+          >
+            <div className="relative bg-primary/15 backdrop-blur-xl border border-primary/20 rounded-2xl rounded-br-sm px-3 py-2">
+              <p className="text-[10px] text-foreground/80 line-clamp-2 leading-relaxed">
+                {userText}
+              </p>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Status text */}
-      <p className="text-sm font-medium font-orbitron tracking-wider text-accent mb-4 animate-fade-in" key={voiceState}>
-        {STATUS_TEXT[voiceState]}
-      </p>
-
-      {/* Waveform */}
+      {/* Waveform — below Buddy */}
       <canvas
         ref={canvasRef}
         width={320}
-        height={48}
-        className="w-80 h-12 mb-6 opacity-80"
+        height={40}
+        className="w-72 h-10 mb-2 opacity-90"
       />
 
-      {/* Controls */}
-      <div className="flex items-center gap-6 mb-4">
+      {/* Status text */}
+      <p
+        className="text-xs font-medium font-orbitron tracking-wider text-accent/80 mb-4 animate-fade-in"
+        key={voiceState}
+      >
+        {STATUS_TEXT[voiceState]}
+      </p>
+
+      {/* Mic button — single, centered */}
+      <div className="mb-4 flex flex-col items-center gap-2">
         <button
           onClick={handleMicTap}
           disabled={voiceState === "thinking" || voiceState === "speaking"}
-          className={`w-16 h-16 rounded-full flex items-center justify-center transition-all duration-300 disabled:opacity-40 ${
+          className={`w-14 h-14 rounded-full flex items-center justify-center transition-all duration-300 disabled:opacity-30 ${
             voiceState === "listening"
-              ? "bg-accent shadow-lg shadow-accent/40 scale-110"
-              : "bg-primary/20 border-2 border-primary/40 active:scale-95"
+              ? "bg-accent shadow-[0_0_24px_4px] shadow-accent/40 scale-110"
+              : "bg-card/60 border border-primary/20 backdrop-blur-sm active:scale-95"
           }`}
         >
-          <Mic size={28} className={voiceState === "listening" ? "text-primary-foreground animate-pulse" : "text-primary"} />
+          <Mic
+            size={22}
+            className={
+              voiceState === "listening"
+                ? "text-primary-foreground animate-pulse"
+                : "text-accent/70"
+            }
+          />
         </button>
 
-        <button
-          onClick={handleEndCall}
-          className="w-14 h-14 rounded-full bg-destructive/20 border-2 border-destructive/40 flex items-center justify-center active:scale-95 transition-transform"
-        >
-          <PhoneOff size={24} className="text-destructive" />
-        </button>
+        {sessionMessages.length > 0 && (
+          <p className="text-[10px] text-muted-foreground/50">
+            🎙️ {sessionMessages.length} pesan
+          </p>
+        )}
       </div>
-
-      {/* Session message count */}
-      {sessionMessages.length > 0 && (
-        <p className="text-xs text-muted-foreground">
-          🎙️ {sessionMessages.length} pesan dalam sesi ini
-        </p>
-      )}
     </div>
   );
 };
