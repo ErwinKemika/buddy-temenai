@@ -39,7 +39,6 @@ const Index = () => {
   const {
     messages, buddyState,
     voiceEnabled, setVoiceEnabled,
-    autoPlayVoice, setAutoPlayVoice,
     sendMessage, injectReminderMessage, clearMessages,
     importVoiceSession,
   } = useChat();
