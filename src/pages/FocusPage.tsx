@@ -100,11 +100,11 @@ const PRIORITY_DOT: Record<string, string> = {
 const FocusPage = () => {
   const [searchParams] = useSearchParams();
   const taskIdFromUrl = searchParams.get("taskId");
+  const { tasks: allTasks, setTasks: setAllTasks, updateTask: updateTaskInDb } = useTodos();
 
   const [timerState, setTimerState] = useState<TimerState>("idle");
   const [buddyMsg, setBuddyMsg] = useState(() => pickRandom(PHRASES.idle));
   const [buddyState, setBuddyState] = useState<BuddyState>("idle");
-  const [allTasks, setAllTasks] = useState<Task[]>(() => loadTasks());
   const [activeIdx, setActiveIdx] = useState(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const nearEndFired = useRef(false);
@@ -131,20 +131,12 @@ const FocusPage = () => {
       if (idx >= 0) {
         setActiveIdx(idx);
         autoStarted.current = true;
-        // Auto-start after a brief delay
         setTimeout(() => {
           startTimerForTask(idx);
         }, 500);
       }
     }
   }, [taskIdFromUrl, focusTasks]);
-
-  // Reload tasks from storage on mount and when window refocuses
-  useEffect(() => {
-    const reload = () => setAllTasks(loadTasks());
-    window.addEventListener("focus", reload);
-    return () => window.removeEventListener("focus", reload);
-  }, []);
 
   const clearTimer = useCallback(() => {
     if (intervalRef.current) clearInterval(intervalRef.current);
