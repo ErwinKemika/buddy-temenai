@@ -54,21 +54,7 @@ function pickRandom(arr: string[]) {
 
 type TimerState = "idle" | "running" | "paused" | "finished";
 
-function loadTasks(): Task[] {
-  try {
-    const raw = JSON.parse(localStorage.getItem(TODO_STORAGE_KEY) || "[]");
-    return raw.map((t: any) => ({
-      ...t,
-      priority: t.priority || "medium",
-      status: t.status || (t.done ? "done" : "todo"),
-      recurrence: t.recurrence || "once",
-    }));
-  } catch { return []; }
-}
-
-function saveTasks(tasks: Task[]) {
-  localStorage.setItem(TODO_STORAGE_KEY, JSON.stringify(tasks));
-}
+// loadTasks/saveTasks removed — handled by useTodos hook
 
 /** Calculate duration in seconds from task startTime/endTime, fallback to 25min */
 function getTaskDuration(task: Task | null): number {
