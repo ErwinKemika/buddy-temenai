@@ -4,8 +4,7 @@ import { startOfDay, isBefore } from "date-fns";
 import { useSearchParams } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
 import { BuddyState } from "@/hooks/useChat";
-
-const TODO_STORAGE_KEY = "buddy-todos";
+import { useTodos, type Task } from "@/hooks/useTodos";
 
 interface Task {
   id: string;
