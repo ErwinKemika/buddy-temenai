@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import Index from "./pages/Index.tsx";
 import TodoPage from "./pages/TodoPage.tsx";
 import FocusPage from "./pages/FocusPage.tsx";
+import AnalyticsPage from "./pages/AnalyticsPage.tsx";
 import SettingsPage from "./pages/SettingsPage.tsx";
 import AuthPage from "./pages/AuthPage.tsx";
 import NotFound from "./pages/NotFound.tsx";
