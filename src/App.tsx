@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import Index from "./pages/Index.tsx";
 import TodoPage from "./pages/TodoPage.tsx";
 import FocusPage from "./pages/FocusPage.tsx";
+import AnalyticsPage from "./pages/AnalyticsPage.tsx";
 import SettingsPage from "./pages/SettingsPage.tsx";
 import AuthPage from "./pages/AuthPage.tsx";
 import NotFound from "./pages/NotFound.tsx";
@@ -39,6 +40,7 @@ const App = () => (
           <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
           <Route path="/todo" element={<ProtectedRoute><TodoPage /></ProtectedRoute>} />
           <Route path="/focus" element={<ProtectedRoute><FocusPage /></ProtectedRoute>} />
+          <Route path="/analytics" element={<ProtectedRoute><AnalyticsPage /></ProtectedRoute>} />
           <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
           <Route path="*" element={<NotFound />} />
         </Routes>

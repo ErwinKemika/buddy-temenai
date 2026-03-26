@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
+import { useGamification } from "./useGamification";
 
 export type Priority = "high" | "medium" | "low";
 export type Status = "todo" | "in_progress" | "done";
@@ -80,6 +81,7 @@ function taskToDb(task: Task, userId: string) {
 
 export function useTodos() {
   const { user } = useAuth();
+  const { awardXP } = useGamification();
   const [tasks, setTasks] = useState<Task[]>(loadLocal);
   const [loading, setLoading] = useState(false);
   const initialLoaded = useRef(false);
@@ -137,8 +139,13 @@ export function useTodos() {
   }, [user]);
 
   const updateTask = useCallback(async (id: string, updates: Partial<Task>) => {
+    let taskEffort: string | undefined;
     setTasks(prev =>
-      prev.map(t => (t.id === id ? { ...t, ...updates } : t))
+      prev.map(t => {
+        if (t.id !== id) return t;
+        if (updates.done === true && !t.done) taskEffort = t.effort;
+        return { ...t, ...updates };
+      })
     );
     if (user) {
       const dbUpdates: Record<string, any> = {};
@@ -156,8 +163,13 @@ export function useTodos() {
         const { error } = await supabase.from("todos").update(dbUpdates).eq("id", id);
         if (error) console.error("[useTodos] update error:", error);
       }
+
+      // Award XP when completing via updateTask (e.g. Focus timer)
+      if (updates.done === true && taskEffort !== undefined) {
+        await awardXP(taskEffort);
+      }
     }
-  }, [user]);
+  }, [user, awardXP]);
 
   const deleteTask = useCallback(async (id: string) => {
     setTasks(prev => prev.filter(t => t.id !== id));
@@ -169,10 +181,12 @@ export function useTodos() {
 
   const toggleTask = useCallback(async (id: string) => {
     let newDone = false;
+    let taskEffort: string | undefined;
     setTasks(prev =>
       prev.map(t => {
         if (t.id !== id) return t;
         newDone = !t.done;
+        taskEffort = t.effort;
         return {
           ...t,
           done: newDone,
@@ -188,8 +202,13 @@ export function useTodos() {
         .update({ completed: newDone })
         .eq("id", id);
       if (error) console.error("[useTodos] toggle error:", error);
+      
+      // Award XP when completing a task
+      if (newDone) {
+        await awardXP(taskEffort);
+      }
     }
-  }, [user]);
+  }, [user, awardXP]);
 
   const bulkUpdate = useCallback(async (updatedTasks: Task[]) => {
     setTasks(updatedTasks);

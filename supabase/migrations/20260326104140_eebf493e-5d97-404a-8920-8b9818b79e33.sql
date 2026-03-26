@@ -1,0 +1,6 @@
+ALTER TABLE public.profiles
+  ADD COLUMN IF NOT EXISTS xp integer NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS level integer NOT NULL DEFAULT 1,
+  ADD COLUMN IF NOT EXISTS streak integer NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS last_active_date date,
+  ADD COLUMN IF NOT EXISTS total_tasks_completed integer NOT NULL DEFAULT 0;
