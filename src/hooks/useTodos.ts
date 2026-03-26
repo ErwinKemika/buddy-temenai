@@ -79,18 +79,38 @@ function taskToDb(task: Task, userId: string) {
   };
 }
 
+// Module-level cache so all useTodos instances share state
+let cachedTasks: Task[] | null = null;
+let cachedUserId: string | null = null;
+
 export function useTodos() {
   const { user } = useAuth();
   const { awardXP } = useGamification();
-  const [tasks, setTasks] = useState<Task[]>(loadLocal);
+  const [tasks, setTasks] = useState<Task[]>(() => {
+    // Use cached tasks if available for this user, otherwise load from localStorage
+    if (cachedTasks && cachedUserId === user?.id) return cachedTasks;
+    return loadLocal();
+  });
   const [loading, setLoading] = useState(false);
-  const initialLoaded = useRef(false);
 
-  // Load from Supabase when user logs in
+  // Sync module cache whenever tasks change
+  useEffect(() => {
+    cachedTasks = tasks;
+    cachedUserId = user?.id || null;
+  }, [tasks, user?.id]);
+
+  // Load from Supabase only once per user session
   useEffect(() => {
     if (!user) {
-      initialLoaded.current = false;
+      cachedTasks = null;
+      cachedUserId = null;
       setTasks(loadLocal());
+      return;
+    }
+
+    // If we already have cached data for this user, skip fetch
+    if (cachedUserId === user.id && cachedTasks && cachedTasks.length > 0) {
+      setTasks(cachedTasks);
       return;
     }
 
@@ -109,7 +129,7 @@ export function useTodos() {
         const mapped = data.map(dbToTask);
         setTasks(mapped);
         saveLocal(mapped);
-      } else if (!initialLoaded.current) {
+      } else {
         // First login: push localStorage tasks to Supabase
         const local = loadLocal();
         if (local.length > 0) {
@@ -118,7 +138,6 @@ export function useTodos() {
           setTasks(local);
         }
       }
-      initialLoaded.current = true;
       setLoading(false);
     };
 
