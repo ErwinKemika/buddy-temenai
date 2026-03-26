@@ -204,6 +204,7 @@ const BuddySpeechBubble = ({ messages, buddyState }: Props) => {
       <div
         ref={scrollRef}
         className="flex-1 min-h-0 overflow-y-auto rounded-2xl bg-card/20 backdrop-blur-sm border border-border/10 shadow-lg shadow-black/10 px-3 py-3 flex flex-col gap-3"
+        style={{ touchAction: "pan-y" }}
       >
         {messages.map((msg, i) => {
           const emotion = msg.role === "assistant" ? getEmotionForAssistantMsg(messages, i) : "normal";
@@ -221,6 +222,7 @@ const BuddySpeechBubble = ({ messages, buddyState }: Props) => {
                     ? "bg-background/60 backdrop-blur-sm border border-primary/20 text-foreground rounded-2xl rounded-bl-sm"
                     : "bg-primary/20 border border-primary/30 text-foreground rounded-2xl rounded-tr-sm"
                 }`}
+                style={{ touchAction: "auto" }}
               >
                 {msg.attachment?.type === "image" && (
                   <img
@@ -248,17 +250,24 @@ const BuddySpeechBubble = ({ messages, buddyState }: Props) => {
                     {msg.source === "voice" && <span className="text-[10px] mr-1">🎙️</span>}
                     <ReactMarkdown
                       components={{
-                        a: ({ href, children }) => (
-                          <a
-                            href={href}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-accent underline underline-offset-2 hover:text-accent/80 transition-colors break-all pointer-events-auto cursor-pointer relative z-10"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            {children}
-                          </a>
-                        ),
+                        a: (props) => {
+                          const { href, children } = props;
+                          return (
+                            <a
+                              href={href}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-accent underline underline-offset-2 hover:text-accent/80 transition-colors break-all cursor-pointer"
+                              style={{ touchAction: "manipulation", pointerEvents: "auto" }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (href) window.open(href, "_blank", "noopener,noreferrer");
+                              }}
+                            >
+                              {children}
+                            </a>
+                          );
+                        },
                       }}
                     >{msg.content}</ReactMarkdown>
                   </div>
