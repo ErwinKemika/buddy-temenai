@@ -1,11 +1,13 @@
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
+import { MessageSquare, Mic } from "lucide-react";
 import BuddyHeader from "@/components/BuddyHeader";
 import BuddyRobot from "@/components/BuddyRobot";
 import BuddyControlBar from "@/components/BuddyControlBar";
 import BottomNav from "@/components/BottomNav";
 import BuddySpeechBubble from "@/components/BuddySpeechBubble";
+import VoiceMode from "@/components/VoiceMode";
 
-import { useChat } from "@/hooks/useChat";
+import { useChat, streamChat, playTTS, transcribeVoice, buildTodoContext, Message } from "@/hooks/useChat";
 import { format, isSameDay, startOfDay, isBefore } from "date-fns";
 
 const TODO_STORAGE_KEY = "buddy-todos";
@@ -31,14 +33,18 @@ function saveRemindedSet(s: Set<string>) {
   localStorage.setItem(REMINDED_KEY, JSON.stringify([...s]));
 }
 
+type ChatMode = "chat" | "voice";
+
 const Index = () => {
   const {
     messages, buddyState,
     voiceEnabled, setVoiceEnabled,
     autoPlayVoice, setAutoPlayVoice,
     sendMessage, injectReminderMessage, clearMessages,
+    importVoiceSession,
   } = useChat();
 
+  const [mode, setMode] = useState<ChatMode>("chat");
   const remindedRef = useRef(loadRemindedSet());
 
   // Check To-Do list every 10 seconds and remind user
@@ -108,31 +114,74 @@ const Index = () => {
     void sendMessage(input, attachment);
   }, [sendMessage]);
 
+  const handleEndVoiceCall = useCallback((voiceMessages: Message[]) => {
+    importVoiceSession(voiceMessages);
+    setMode("chat");
+  }, [importVoiceSession]);
+
   return (
     <div className="h-[100dvh] w-full flex flex-col buddy-gradient-bg space-stars overflow-hidden safe-area-inset relative">
-      {/* Buddy fixed in background - full opacity when no messages, faded when chatting */}
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
-        <div className={`transition-opacity duration-700 ${messages.length > 0 ? 'opacity-30' : 'opacity-100'}`}>
-          <BuddyRobot buddyState={buddyState} />
+      {/* Buddy fixed in background - only in chat mode */}
+      {mode === "chat" && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
+          <div className={`transition-opacity duration-700 ${messages.length > 0 ? 'opacity-30' : 'opacity-100'}`}>
+            <BuddyRobot buddyState={buddyState} />
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Foreground: Header + Chat + Input + Nav */}
+      {/* Foreground */}
       <div className="relative z-10 flex flex-col h-full">
         <BuddyHeader onClearChat={clearMessages} hasMessages={messages.length > 0} />
         
-
-        {/* Glass chat container */}
-        <div className="flex-1 min-h-0 flex flex-col">
-          <BuddySpeechBubble messages={messages} buddyState={buddyState} />
+        {/* Mode toggle */}
+        <div className="flex items-center justify-center gap-1 px-4 pt-2 pb-1">
+          <button
+            onClick={() => setMode("chat")}
+            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
+              mode === "chat"
+                ? "bg-primary/20 text-primary border border-primary/30"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <MessageSquare size={14} />
+            Chat
+          </button>
+          <button
+            onClick={() => setMode("voice")}
+            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
+              mode === "voice"
+                ? "bg-accent/20 text-accent border border-accent/30"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Mic size={14} />
+            Voice
+          </button>
         </div>
 
-        <BuddyControlBar
-          onSendMessage={handleSendMessage}
-          buddyState={buddyState}
-          voiceEnabled={voiceEnabled}
-          onToggleVoice={() => setVoiceEnabled(v => !v)}
-        />
+        {mode === "chat" ? (
+          <>
+            <div className="flex-1 min-h-0 flex flex-col">
+              <BuddySpeechBubble messages={messages} buddyState={buddyState} />
+            </div>
+            <BuddyControlBar
+              onSendMessage={handleSendMessage}
+              buddyState={buddyState}
+              voiceEnabled={voiceEnabled}
+              onToggleVoice={() => setVoiceEnabled(v => !v)}
+            />
+          </>
+        ) : (
+          <VoiceMode
+            onEndCall={handleEndVoiceCall}
+            streamChat={streamChat}
+            playTTS={playTTS}
+            transcribeVoice={transcribeVoice}
+            buildTodoContext={buildTodoContext}
+          />
+        )}
+
         <BottomNav />
       </div>
     </div>
