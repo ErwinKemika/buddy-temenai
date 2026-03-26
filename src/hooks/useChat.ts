@@ -288,13 +288,6 @@ export async function streamChat(
     saveMessages(messages);
   }, [messages]);
 
-  const streamChatFn = useCallback(async (
-    chatMessages: Array<{ role: string; content: any }>,
-    upsertAssistant: (chunk: string) => void,
-    todoContext?: string,
-  ) => {
-    await streamChat(chatMessages, upsertAssistant, todoContext);
-  }, []);
 
   const sendMessage = useCallback(async (input: string, attachment?: { file: File | Blob; type: "image" | "document" | "voice" }) => {
     const trimmed = input.trim();
