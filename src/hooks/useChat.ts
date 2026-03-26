@@ -394,7 +394,7 @@ export async function streamChat(
     } finally {
     setBuddyState("idle");
     }
-  }, [messages, voiceEnabled, autoPlayVoice, streamChat]);
+  }, [messages, voiceEnabled, autoPlayVoice]);
 
   const injectReminderMessage = useCallback(async (text: string, speak: boolean) => {
     setMessages(prev => [...prev, { role: "assistant", content: text }]);
