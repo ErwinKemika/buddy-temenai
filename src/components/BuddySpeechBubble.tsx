@@ -244,7 +244,7 @@ const BuddySpeechBubble = ({ messages, buddyState }: Props) => {
                 )}
 
                 {msg.content && msg.content !== "[Gambar]" && msg.content !== "[Dokumen]" && (
-                  <div className="prose prose-sm prose-invert max-w-none [&>p]:m-0">
+                  <div className="prose prose-sm prose-invert max-w-none [&>p]:mb-2 [&>p:last-child]:mb-0 [&>ul]:mb-2 [&>ol]:mb-2 [&>ul]:pl-4 [&>ol]:pl-4 [&>li]:mb-1 [&>h1]:mb-2 [&>h2]:mb-2 [&>h3]:mb-1 [&>pre]:mb-2 [&>code]:text-accent">
                     {msg.source === "voice" && <span className="text-[10px] mr-1">🎙️</span>}
                     <ReactMarkdown>{msg.content}</ReactMarkdown>
                   </div>
