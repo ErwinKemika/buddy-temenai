@@ -4,6 +4,7 @@ import BuddyRobot from "@/components/BuddyRobot";
 import BuddyControlBar from "@/components/BuddyControlBar";
 import BottomNav from "@/components/BottomNav";
 import BuddySpeechBubble from "@/components/BuddySpeechBubble";
+import StatsWidget from "@/components/StatsWidget";
 import { useChat } from "@/hooks/useChat";
 import { format, isSameDay, startOfDay, isBefore } from "date-fns";
 
