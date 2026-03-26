@@ -24,7 +24,7 @@ const AnalyticsPage = () => {
       const sevenDaysAgo = subDays(new Date(), 6).toISOString();
       const { data: todos } = await supabase
         .from("todos")
-        .select("created_at, category, completed")
+        .select("completed_at, category, completed")
         .eq("user_id", user.id)
         .eq("completed", true);
 
