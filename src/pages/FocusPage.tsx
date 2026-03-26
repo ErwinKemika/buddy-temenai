@@ -6,22 +6,7 @@ import BottomNav from "@/components/BottomNav";
 import { BuddyState } from "@/hooks/useChat";
 import { useTodos, type Task } from "@/hooks/useTodos";
 
-interface Task {
-  id: string;
-  title: string;
-  done: boolean;
-  date: string;
-  startTime?: string;
-  endTime?: string;
-  startedAt?: string;
-  completedAt?: string;
-  isRunning?: boolean;
-  priority: "high" | "medium" | "low";
-  status: "todo" | "in_progress" | "done";
-  category?: "work" | "personal" | "health" | "learning";
-  recurrence: "once" | "daily" | "weekly";
-  effort?: "quick" | "medium" | "deep";
-}
+// Task type imported from useTodos
 
 const PRIORITY_WEIGHT = { high: 3, medium: 2, low: 1 };
 
