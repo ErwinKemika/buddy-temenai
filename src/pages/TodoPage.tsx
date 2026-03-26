@@ -5,33 +5,9 @@ import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameM
 import { id as localeId } from "date-fns/locale";
 import BottomNav from "@/components/BottomNav";
 import { useBuddyVoice } from "@/hooks/useBuddyVoice";
-
-type Priority = "high" | "medium" | "low";
-type Status = "todo" | "in_progress" | "done";
-type Category = "work" | "personal" | "health" | "learning";
-type Recurrence = "once" | "daily" | "weekly";
-type Effort = "quick" | "medium" | "deep";
-
-interface Task {
-  id: string;
-  title: string;
-  done: boolean;
-  date: string;
-  startTime?: string;
-  endTime?: string;
-  startedAt?: string;
-  completedAt?: string;
-  isRunning?: boolean;
-  priority: Priority;
-  status: Status;
-  category?: Category;
-  recurrence: Recurrence;
-  effort?: Effort;
-}
+import { useTodos, type Task, type Priority, type Status, type Category, type Recurrence, type Effort } from "@/hooks/useTodos";
 
 type ViewMode = "month" | "today";
-
-const STORAGE_KEY = "buddy-todos";
 
 const PRIORITY_COLORS: Record<Priority, string> = {
   high: "bg-red-500",
