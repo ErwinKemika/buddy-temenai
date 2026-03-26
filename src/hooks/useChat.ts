@@ -16,7 +16,7 @@ interface TodoItem {
   completed: boolean;
 }
 
-function buildTodoContext(): string {
+export function buildTodoContext(): string {
   try {
     const raw = localStorage.getItem("buddy-todos");
     if (!raw) return "";
