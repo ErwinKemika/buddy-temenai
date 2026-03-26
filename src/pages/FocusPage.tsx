@@ -145,19 +145,18 @@ const FocusPage = () => {
 
   const markTaskDone = useCallback(() => {
     if (!activeTask) return;
-    const updated = allTasks.map(t =>
-      t.id === activeTask.id ? { ...t, status: "done" as const, done: true, completedAt: new Date().toISOString() } : t
-    );
-    setAllTasks(updated);
-    saveTasks(updated);
+    updateTaskInDb(activeTask.id, { done: true, status: "done" as any, completedAt: new Date().toISOString() });
     setBuddyMsg(pickRandom(PHRASES.taskDone));
     setBuddyState("speaking");
     setTimeout(() => setBuddyState("idle"), 2000);
+    const updated = allTasks.map(t =>
+      t.id === activeTask.id ? { ...t, status: "done" as const, done: true } : t
+    );
     const newFocus = getFocusTasks(updated);
     setActiveIdx(prev => Math.min(prev, Math.max(0, newFocus.length - 1)));
     setTimerState("idle");
     clearTimer();
-  }, [activeTask, allTasks, clearTimer]);
+  }, [activeTask, allTasks, clearTimer, updateTaskInDb]);
 
   const startTimerForTask = (idx?: number) => {
     const taskIdx = idx ?? activeIdx;
@@ -170,17 +169,12 @@ const FocusPage = () => {
     setSecondsLeft(startFrom);
     setTimerState("running");
 
-    // Capture the actual task ID for the timer closure
     const runningTaskId = task?.id || null;
     activeTaskIdRef.current = runningTaskId;
 
     // Set active task to in_progress
     if (task && task.status !== "in_progress") {
-      const updated = allTasks.map(t =>
-        t.id === task.id ? { ...t, status: "in_progress" as const, isRunning: true, startedAt: t.startedAt || new Date().toISOString() } : t
-      );
-      setAllTasks(updated);
-      saveTasks(updated);
+      updateTaskInDb(task.id, { status: "in_progress" as any, isRunning: true, startedAt: task.startedAt || new Date().toISOString() });
     }
 
     setBuddyMsg(task
