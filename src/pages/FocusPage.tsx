@@ -189,35 +189,17 @@ const FocusPage = () => {
         if (prev <= 1) {
           clearTimer();
           setTimerState("finished");
-          // Auto-complete using the captured task ID, not activeIdx
-          setAllTasks(current => {
-            const taskToComplete = current.find(t => t.id === runningTaskId);
-            if (taskToComplete) {
-              const updated = current.map(t =>
-                t.id === runningTaskId ? { ...t, status: "done" as const, done: true, completedAt: new Date().toISOString() } : t
-              );
-              saveTasks(updated);
-              setBuddyMsg(pickRandom(PHRASES.taskDone));
-              setBuddyState("speaking");
-              // After a delay, reset to idle and move to next task
-              setTimeout(() => {
-                setBuddyState("idle");
-                const newFocus = getFocusTasks(updated);
-                if (newFocus.length > 0) {
-                  setActiveIdx(prev => Math.min(prev, newFocus.length - 1));
-                  setBuddyMsg(pickRandom(PHRASES.idle));
-                } else {
-                  setBuddyMsg("Semua tugas beres! Istirahat dulu ya 🎉");
-                }
-                setTimerState("idle");
-              }, 3000);
-              return updated;
-            }
-            setBuddyMsg(pickRandom(PHRASES.finished));
-            setBuddyState("speaking");
-            setTimeout(() => { setBuddyState("idle"); setTimerState("idle"); }, 3000);
-            return current;
-          });
+          // Auto-complete using the captured task ID
+          if (runningTaskId) {
+            updateTaskInDb(runningTaskId, { done: true, status: "done" as any, completedAt: new Date().toISOString() });
+          }
+          setBuddyMsg(pickRandom(PHRASES.taskDone));
+          setBuddyState("speaking");
+          setTimeout(() => {
+            setBuddyState("idle");
+            setBuddyMsg(pickRandom(PHRASES.idle));
+            setTimerState("idle");
+          }, 3000);
           return 0;
         }
         if (prev === 121 && !nearEndFired.current) {
