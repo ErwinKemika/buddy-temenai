@@ -4,7 +4,7 @@ import BuddyRobot from "@/components/BuddyRobot";
 import BuddyControlBar from "@/components/BuddyControlBar";
 import BottomNav from "@/components/BottomNav";
 import BuddySpeechBubble from "@/components/BuddySpeechBubble";
-import StatsWidget from "@/components/StatsWidget";
+
 import { useChat } from "@/hooks/useChat";
 import { format, isSameDay, startOfDay, isBefore } from "date-fns";
 
@@ -120,7 +120,7 @@ const Index = () => {
       {/* Foreground: Header + Chat + Input + Nav */}
       <div className="relative z-10 flex flex-col h-full">
         <BuddyHeader onClearChat={clearMessages} hasMessages={messages.length > 0} />
-        <StatsWidget />
+        
 
         {/* Glass chat container */}
         <div className="flex-1 min-h-0 flex flex-col">
