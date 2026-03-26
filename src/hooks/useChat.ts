@@ -158,39 +158,6 @@ export async function playTTS(text: string): Promise<void> {
   });
 }
 
-/**
- * Determine if a response should be spoken aloud.
- * Only short, friendly messages (greetings, reminders, 1-2 sentences).
- */
-function shouldSpeak(text: string): boolean {
-  const clean = text.replace(/[#*_~`>\[\]()!]/g, "").trim();
-
-  // Too long → don't speak
-  if (clean.length > 200) return false;
-
-  // Count sentences (rough: split by . ! ? and filter empties)
-  const sentences = clean.split(/[.!?]+/).filter(s => s.trim().length > 3);
-  if (sentences.length > 2) return false;
-
-  // Has code blocks or lists → don't speak
-  if (/```/.test(text) || /^\s*[-*]\s/m.test(text) || /^\s*\d+\.\s/m.test(text)) return false;
-
-  return true;
-}
-
-/**
- * Extract speakable portion: first 1-2 sentences, max ~150 chars.
- */
-function extractSpeakableText(text: string): string {
-  const clean = text.replace(/[#*_~`>\[\]()!]/g, "").replace(/\n+/g, " ").trim();
-  const sentences = clean.match(/[^.!?]+[.!?]*/g) || [clean];
-  let result = "";
-  for (const s of sentences.slice(0, 2)) {
-    if ((result + s).length > 150) break;
-    result += s;
-  }
-  return result.trim() || clean.slice(0, 100);
-}
 
 const CHAT_STORAGE_KEY = "buddy-chat-messages";
 
