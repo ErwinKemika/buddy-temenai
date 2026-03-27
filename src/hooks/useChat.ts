@@ -315,6 +315,22 @@ export function useChat() {
 
     setMessages(prev => [...prev, userMsg]);
 
+    // Enrich with YouTube video details if URL detected
+    let youtubeContext = "";
+    const ytUrlMatch = resolvedText.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]{11})/);
+    if (ytUrlMatch) {
+      try {
+        const { data } = await supabase.functions.invoke("youtube-details", {
+          body: { videoId: ytUrlMatch[1] },
+        });
+        if (data?.title) {
+          youtubeContext = `[Video YouTube yang dibagikan user — Judul: ${data.title}, Channel: ${data.channelTitle}, Deskripsi: ${data.description}]\n\nPesan user: `;
+        }
+      } catch (e) {
+        console.error("[YouTube Details] Error:", e);
+      }
+    }
+
     // Build multimodal content for AI
     let userContent: any;
     if (attachmentData?.type === "image" && attachment?.file instanceof File) {
