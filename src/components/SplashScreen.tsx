@@ -168,8 +168,8 @@ const SplashScreen = ({ onMasuk, onKenalan }: SplashScreenProps) => {
             <motion.div
               className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full pointer-events-none"
               style={{
-                width: 220,
-                height: 220,
+              width: 300,
+                height: 300,
                 background: "radial-gradient(circle, rgba(0,212,255,0.25), rgba(124,58,237,0.1), transparent 70%)",
                 filter: "blur(30px)",
               }}
