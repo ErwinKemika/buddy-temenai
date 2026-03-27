@@ -206,14 +206,17 @@ const SplashScreen = ({ onMasuk, onKenalan }: SplashScreenProps) => {
             transition={{ duration: 0.5, ease: SMOOTH_EASE }}
           >
             <div className="text-center mb-8">
-              <p className="text-xl font-semibold text-white font-orbitron">
+              <p
+                className="glitch-text text-[28px] font-bold text-white font-orbitron"
+                data-text={typewriterLine1}
+              >
                 {typewriterLine1}
                 {typewriterLine2 === "" && showCursor && (
                   <span className="animate-pulse text-[#00D4FF]">|</span>
                 )}
               </p>
               {typewriterLine2 && (
-                <p className="text-lg text-gray-300 mt-1 font-poppins">
+                <p className="text-lg text-gray-300 mt-1 font-sans">
                   {typewriterLine2}
                   {showCursor && <span className="animate-pulse text-[#00D4FF]">|</span>}
                 </p>
