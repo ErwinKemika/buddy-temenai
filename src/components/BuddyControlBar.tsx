@@ -1,4 +1,5 @@
 import { Send, Volume2, VolumeX, Plus, Mic } from "lucide-react";
+import { useRef, useCallback } from "react";
 import { useState } from "react";
 import { BuddyState } from "@/hooks/useChat";
 import AttachmentMenu from "./AttachmentMenu";
@@ -18,14 +19,32 @@ const BuddyControlBar = ({
   const [input, setInput] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
   const [recording, setRecording] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const isBusy = buddyState === "thinking" || buddyState === "speaking";
+
+  const autoResize = useCallback(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = Math.min(el.scrollHeight, 120) + "px";
+  }, []);
 
   const handleSend = () => {
     const text = input.trim();
     if (!text || isBusy) return;
     onSendMessage(text);
     setInput("");
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
   };
 
   const handleFileAttach = (file: File, type: "image" | "document") => {
@@ -72,21 +91,22 @@ const BuddyControlBar = ({
 
         <form
           onSubmit={(e) => { e.preventDefault(); handleSend(); }}
-          className="flex-1 flex items-center gap-1.5 bg-muted/50 border border-border/30 rounded-full px-3 py-2 min-w-0"
+          className="flex-1 flex items-end gap-1.5 bg-muted/50 border border-border/30 rounded-2xl px-3 py-2 min-w-0"
         >
-          <input
-            type="text"
+          <textarea
+            ref={textareaRef}
+            rows={1}
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={(e) => { setInput(e.target.value); autoResize(); }}
+            onKeyDown={handleKeyDown}
             placeholder={isBusy ? "Buddy merespons..." : "Ketik pesan..."}
-            className="flex-1 bg-transparent text-[14px] text-foreground placeholder:text-muted-foreground outline-none min-w-0"
-            enterKeyHint="send"
+            className="flex-1 bg-transparent text-[14px] text-foreground placeholder:text-muted-foreground outline-none min-w-0 resize-none max-h-[120px] leading-snug py-0.5"
             disabled={isBusy}
           />
           <button
             type="submit"
             disabled={!input.trim() || isBusy}
-            className="text-primary active:text-primary/70 transition-colors shrink-0 p-1 disabled:opacity-30"
+            className="text-primary active:text-primary/70 transition-colors shrink-0 p-1 disabled:opacity-30 mb-0.5"
             aria-label="Kirim pesan"
           >
             <Send size={18} />
