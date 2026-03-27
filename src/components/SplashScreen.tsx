@@ -246,17 +246,28 @@ const SplashScreen = ({ onMasuk, onKenalan }: SplashScreenProps) => {
               {/* Kenalan button — glossy gradient with glow border */}
               <button
                 onClick={onKenalan}
-                className="group w-full relative rounded-[18px] p-[1.5px] transition-all active:scale-[0.97]"
+                className="group w-full relative rounded-[18px] p-[1.5px] cursor-pointer active:scale-[0.97]"
                 style={{
-                  background: "linear-gradient(135deg, #c084fc, #7C3AED, #3b82f6, #00D4FF)",
-                  boxShadow: "0 0 24px rgba(124,58,237,0.4), 0 0 48px rgba(0,212,255,0.2), inset 0 0 12px rgba(255,255,255,0.05)",
+                  background: "linear-gradient(135deg, rgba(139,92,246,0.4), rgba(139,92,246,0.4))",
+                  border: "none",
+                  boxShadow: "none",
+                  transition: "all 0.3s ease",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "linear-gradient(135deg, #c084fc, #7C3AED, #3b82f6, #00D4FF)";
+                  e.currentTarget.style.boxShadow = "0 0 20px rgba(139,92,246,0.6)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "linear-gradient(135deg, rgba(139,92,246,0.4), rgba(139,92,246,0.4))";
+                  e.currentTarget.style.boxShadow = "none";
                 }}
               >
                 <div
                   className="w-full py-3 md:py-2.5 rounded-[16.5px] font-bold text-sm text-white text-center relative overflow-hidden"
                   style={{
-                    background: "linear-gradient(135deg, rgba(168,85,247,0.7), rgba(99,102,241,0.6), rgba(56,189,248,0.5))",
+                    background: "transparent",
                     backdropFilter: "blur(12px)",
+                    transition: "all 0.3s ease",
                   }}
                 >
                   {/* Glass shine overlay */}
