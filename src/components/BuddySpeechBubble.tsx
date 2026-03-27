@@ -273,6 +273,10 @@ const BuddySpeechBubble = ({ messages, buddyState }: Props) => {
                     >{msg.content}</ReactMarkdown>
                   </div>
                 )}
+
+                {msg.youtubeVideos && msg.youtubeVideos.length > 0 && (
+                  <YouTubeCards videos={msg.youtubeVideos} />
+                )}
               </div>
             </div>
           );
