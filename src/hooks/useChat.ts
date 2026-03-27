@@ -307,14 +307,60 @@ export async function streamChat(
 }
 
 export function useChat() {
-  const [messages, setMessages] = useState<Message[]>(loadMessages);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [buddyState, setBuddyState] = useState<BuddyState>("idle");
   const [voiceEnabled, setVoiceEnabled] = useState(true);
+  const [currentUserId, setCurrentUserId] = useState<string | undefined>();
+
+  // Listen for auth changes: load/clear chat on login/logout
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (_event, session) => {
+        const uid = session?.user?.id;
+        setCurrentUserId(uid);
+
+        if (uid) {
+          // Login: load from Supabase, cache locally
+          const dbMessages = await loadMessagesFromDB(uid);
+          if (dbMessages.length > 0) {
+            setMessages(dbMessages);
+            saveMessagesToCache(dbMessages, uid);
+          } else {
+            const cached = loadMessagesFromCache(uid);
+            setMessages(cached);
+          }
+        } else {
+          // Logout: clear state and cache
+          setMessages([]);
+          if (currentUserId) clearChatCache(currentUserId);
+        }
+      }
+    );
+
+    // Initial load
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      const uid = session?.user?.id;
+      setCurrentUserId(uid);
+      if (uid) {
+        const cached = loadMessagesFromCache(uid);
+        if (cached.length > 0) setMessages(cached);
+        const dbMessages = await loadMessagesFromDB(uid);
+        if (dbMessages.length > 0) {
+          setMessages(dbMessages);
+          saveMessagesToCache(dbMessages, uid);
+        }
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   // Persist messages to localStorage whenever they change
   useEffect(() => {
-    saveMessages(messages);
-  }, [messages]);
+    if (currentUserId && messages.length > 0) {
+      saveMessagesToCache(messages, currentUserId);
+    }
+  }, [messages, currentUserId]);
 
 
   const sendMessage = useCallback(async (input: string, attachment?: { file: File | Blob; type: "image" | "document" | "voice" }) => {
