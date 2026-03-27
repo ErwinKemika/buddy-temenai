@@ -69,11 +69,20 @@ export type Attachment = {
   mimeType: string;
 };
 
+export interface YouTubeVideo {
+  videoId: string;
+  title: string;
+  thumbnail: string;
+  channelTitle: string;
+  url: string;
+}
+
 export type Message = {
   role: "user" | "assistant";
   content: string;
   attachment?: Attachment;
   source?: "chat" | "voice";
+  youtubeVideos?: YouTubeVideo[];
 };
 
 export type BuddyState = "idle" | "thinking" | "speaking";
