@@ -19,14 +19,32 @@ const BuddyControlBar = ({
   const [input, setInput] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
   const [recording, setRecording] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const isBusy = buddyState === "thinking" || buddyState === "speaking";
+
+  const autoResize = useCallback(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = Math.min(el.scrollHeight, 120) + "px";
+  }, []);
 
   const handleSend = () => {
     const text = input.trim();
     if (!text || isBusy) return;
     onSendMessage(text);
     setInput("");
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
   };
 
   const handleFileAttach = (file: File, type: "image" | "document") => {
