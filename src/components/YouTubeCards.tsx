@@ -39,7 +39,7 @@ const YouTubeCards = ({ videos }: Props) => {
                 </button>
                 <iframe
                   src={`https://www.youtube.com/embed/${video.videoId}?autoplay=1`}
-                  width="100%"
+                  className="w-full rounded-xl"
                   style={{ aspectRatio: "16/9", border: 0 }}
                   allowFullScreen
                   allow="accelerometer; autoplay; encrypted-media; picture-in-picture"
