@@ -1,16 +1,49 @@
+import { useEffect, useRef, useState, useCallback } from "react";
 import { BuddyState } from "@/hooks/useChat";
 
 interface BuddyRobotProps {
   buddyState: BuddyState;
+  enableEyeTracking?: boolean;
 }
 
-const BuddyRobot = ({ buddyState }: BuddyRobotProps) => {
+const BuddyRobot = ({ buddyState, enableEyeTracking = false }: BuddyRobotProps) => {
   const isTalking = buddyState === "speaking" || buddyState === "thinking";
   const isListening = false;
   const isSpeaking = buddyState === "speaking";
 
+  const [eyeOffset, setEyeOffset] = useState({ x: 0, y: 0 });
+  const robotRef = useRef<HTMLDivElement>(null);
+
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    if (!robotRef.current) return;
+    const rect = robotRef.current.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height * 0.3; // eyes are upper third
+    const dx = e.clientX - centerX;
+    const dy = e.clientY - centerY;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    const angle = Math.atan2(dy, dx);
+    const distance = Math.min(4, dist / 20);
+    setEyeOffset({
+      x: Math.cos(angle) * distance,
+      y: Math.sin(angle) * distance,
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!enableEyeTracking) return;
+    // Check for touch device — default to center
+    const isTouchDevice = "ontouchstart" in window || navigator.maxTouchPoints > 0;
+    if (isTouchDevice) {
+      setEyeOffset({ x: 0, y: 0 });
+      return;
+    }
+    window.addEventListener("mousemove", handleMouseMove);
+    return () => window.removeEventListener("mousemove", handleMouseMove);
+  }, [enableEyeTracking, handleMouseMove]);
+
   return (
-    <div className="flex-1 flex flex-col items-center justify-center relative overflow-visible">
+    <div ref={robotRef} className="flex-1 flex flex-col items-center justify-center relative overflow-visible">
       {/* Orbit rings */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
         <div className="orbit-ring w-[280px] h-[280px] animate-orbit opacity-40" />
@@ -53,8 +86,8 @@ const BuddyRobot = ({ buddyState }: BuddyRobotProps) => {
             {/* Face screen area */}
             <div className="absolute inset-3 top-5 bottom-4 rounded-[1.5rem] bg-background/40 border border-primary/10 flex items-center justify-center">
               <div className="flex gap-8">
-                <Eye buddyState={buddyState} delay={0} />
-                <Eye buddyState={buddyState} delay={0.05} />
+                <Eye buddyState={buddyState} delay={0} eyeOffset={enableEyeTracking ? eyeOffset : undefined} />
+                <Eye buddyState={buddyState} delay={0.05} eyeOffset={enableEyeTracking ? eyeOffset : undefined} />
               </div>
             </div>
 
@@ -132,7 +165,13 @@ const BuddyRobot = ({ buddyState }: BuddyRobotProps) => {
   );
 };
 
-const Eye = ({ buddyState, delay }: { buddyState: BuddyState; delay: number }) => {
+interface EyeProps {
+  buddyState: BuddyState;
+  delay: number;
+  eyeOffset?: { x: number; y: number };
+}
+
+const Eye = ({ buddyState, delay, eyeOffset }: EyeProps) => {
   const cls =
     buddyState === "speaking"
         ? "bg-gradient-to-b from-accent to-buddy-cyan-glow animate-talk"
@@ -145,7 +184,14 @@ const Eye = ({ buddyState, delay }: { buddyState: BuddyState; delay: number }) =
       className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 animate-eye-glow ${cls}`}
       style={{ animationDelay: `${delay}s` }}
     >
-      <div className="w-3 h-3 rounded-full bg-primary-foreground/90" />
+      <div
+        className="w-3 h-3 rounded-full bg-primary-foreground/90"
+        style={eyeOffset ? {
+          transform: `translate(${eyeOffset.x}px, ${eyeOffset.y}px)`,
+          transition: "transform 0.1s ease-out",
+          boxShadow: "0 0 6px #00D4FF",
+        } : undefined}
+      />
     </div>
   );
 };

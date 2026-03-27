@@ -239,7 +239,7 @@ const VoiceMode = ({ onEndCall, streamChat, playTTS, transcribeVoice, buildTodoC
         <div className={`relative scale-[1.5] origin-center transition-all duration-[600ms] ${
           voiceState === "speaking" ? "brightness-125 drop-shadow-[0_0_30px_hsl(var(--accent)/0.4)]" : ""
         }`}>
-          <BuddyRobot buddyState={buddyState} />
+          <BuddyRobot buddyState={buddyState} enableEyeTracking />
         </div>
       </div>
 
