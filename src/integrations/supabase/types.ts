@@ -58,11 +58,15 @@ export type Database = {
       }
       profiles: {
         Row: {
+          birth_date: string | null
+          buddy_role: string | null
           created_at: string
           display_name: string | null
+          full_name: string | null
           id: string
           last_active_date: string | null
           level: number
+          nickname: string | null
           streak: number
           total_tasks_completed: number
           updated_at: string
@@ -71,11 +75,15 @@ export type Database = {
           xp: number
         }
         Insert: {
+          birth_date?: string | null
+          buddy_role?: string | null
           created_at?: string
           display_name?: string | null
+          full_name?: string | null
           id?: string
           last_active_date?: string | null
           level?: number
+          nickname?: string | null
           streak?: number
           total_tasks_completed?: number
           updated_at?: string
@@ -84,11 +92,15 @@ export type Database = {
           xp?: number
         }
         Update: {
+          birth_date?: string | null
+          buddy_role?: string | null
           created_at?: string
           display_name?: string | null
+          full_name?: string | null
           id?: string
           last_active_date?: string | null
           level?: number
+          nickname?: string | null
           streak?: number
           total_tasks_completed?: number
           updated_at?: string
