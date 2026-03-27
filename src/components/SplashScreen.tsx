@@ -189,7 +189,7 @@ const SplashScreen = ({ onMasuk, onKenalan }: SplashScreenProps) => {
             />
 
             {/* Buddy Robot (the CSS-drawn purple robot) */}
-            <div className="scale-[0.9] origin-center" style={{ maxHeight: 300 }}>
+            <div className="scale-[1.25] origin-center" style={{ maxHeight: 400 }}>
               <BuddyRobot buddyState="idle" />
             </div>
           </motion.div>
@@ -205,9 +205,23 @@ const SplashScreen = ({ onMasuk, onKenalan }: SplashScreenProps) => {
             animate={{ opacity: 1 }}
             transition={{ duration: 0.5, ease: SMOOTH_EASE }}
           >
-            <div className="text-center mb-8">
+            <div className="text-center mb-8 relative">
+              {/* Teal radial glow behind text */}
+              <div
+                className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[120px] rounded-full pointer-events-none"
+                style={{
+                  background: "radial-gradient(ellipse, rgba(0,255,229,0.15), transparent 70%)",
+                  filter: "blur(20px)",
+                }}
+              />
               <p
-                className="glitch-text text-[28px] font-bold text-white font-orbitron"
+                className="glitch-text font-orbitron uppercase text-white relative"
+                style={{
+                  fontSize: "clamp(32px, 8vw, 56px)",
+                  fontWeight: 900,
+                  letterSpacing: "4px",
+                  textShadow: "0 0 20px rgba(0, 255, 229, 0.6)",
+                }}
                 data-text={typewriterLine1}
               >
                 {typewriterLine1}
