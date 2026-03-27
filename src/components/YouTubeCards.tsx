@@ -1,4 +1,5 @@
-import { ExternalLink, Play } from "lucide-react";
+import { Play, X } from "lucide-react";
+import { useState } from "react";
 
 export interface YouTubeVideo {
   videoId: string;
@@ -13,54 +14,68 @@ interface Props {
 }
 
 const YouTubeCards = ({ videos }: Props) => {
+  const [playingId, setPlayingId] = useState<string | null>(null);
+
   if (!videos.length) return null;
 
   return (
     <div className="flex flex-col gap-2 mt-2">
-      {videos.slice(0, 3).map((video) => (
-        <a
-          key={video.videoId}
-          href={video.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex gap-2.5 bg-muted/30 hover:bg-muted/50 border border-border/30 rounded-xl p-2 transition-colors cursor-pointer group"
-          style={{ touchAction: "manipulation", pointerEvents: "auto" }}
-          onClick={(e) => {
-            e.stopPropagation();
-            window.open(video.url, "_blank", "noopener,noreferrer");
-          }}
-        >
-          {/* Thumbnail */}
-          <div className="relative shrink-0 w-24 h-16 rounded-lg overflow-hidden bg-muted/50">
-            {video.thumbnail ? (
-              <img
-                src={video.thumbnail}
-                alt={video.title}
-                className="w-full h-full object-cover"
-                loading="lazy"
-              />
+      {videos.slice(0, 3).map((video) => {
+        const isPlaying = playingId === video.videoId;
+        const thumb = `https://img.youtube.com/vi/${video.videoId}/hqdefault.jpg`;
+
+        return (
+          <div
+            key={video.videoId}
+            className="bg-muted/30 border border-border/30 rounded-xl overflow-hidden"
+          >
+            {isPlaying ? (
+              <div className="relative">
+                <button
+                  onClick={() => setPlayingId(null)}
+                  className="absolute top-1.5 right-1.5 z-10 bg-black/60 hover:bg-black/80 text-white rounded-full p-1 transition-colors"
+                >
+                  <X size={14} />
+                </button>
+                <iframe
+                  src={`https://www.youtube.com/embed/${video.videoId}?autoplay=1`}
+                  width="100%"
+                  style={{ aspectRatio: "16/9", border: 0 }}
+                  allowFullScreen
+                  allow="accelerometer; autoplay; encrypted-media; picture-in-picture"
+                />
+              </div>
             ) : (
-              <div className="w-full h-full flex items-center justify-center">
-                <Play size={20} className="text-muted-foreground" />
+              <div
+                className="cursor-pointer group"
+                onClick={() => setPlayingId(video.videoId)}
+              >
+                <div className="relative w-full" style={{ aspectRatio: "16/9" }}>
+                  <img
+                    src={thumb}
+                    alt={video.title}
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover:bg-black/40 transition-colors">
+                    <div className="w-10 h-10 rounded-full bg-red-600 flex items-center justify-center shadow-lg">
+                      <Play size={18} className="text-white fill-white ml-0.5" />
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
-            <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity">
-              <Play size={18} className="text-white fill-white" />
+            <div className="px-2.5 py-2">
+              <p className="text-xs font-medium text-foreground line-clamp-2 leading-tight">
+                {decodeHTMLEntities(video.title)}
+              </p>
+              <p className="text-[10px] text-muted-foreground truncate mt-0.5">
+                {video.channelTitle}
+              </p>
             </div>
           </div>
-
-          {/* Info */}
-          <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5">
-            <p className="text-xs font-medium text-foreground line-clamp-2 leading-tight">
-              {decodeHTMLEntities(video.title)}
-            </p>
-            <p className="text-[10px] text-muted-foreground truncate flex items-center gap-1">
-              {video.channelTitle}
-              <ExternalLink size={10} className="shrink-0 opacity-50" />
-            </p>
-          </div>
-        </a>
-      ))}
+        );
+      })}
     </div>
   );
 };
