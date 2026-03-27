@@ -137,38 +137,10 @@ const AuthPage = () => {
     <div className="h-[100dvh] w-full flex flex-col bg-background buddy-gradient-bg space-stars overflow-hidden">
       {/* SPLASH */}
       {view === "splash" && (
-        <div className="flex-1 flex flex-col items-center justify-center px-6 animate-fade-in">
-          {/* Buddy Avatar */}
-          <div className="w-28 h-28 rounded-full bg-primary/20 border-2 border-primary/40 overflow-hidden mb-6 shadow-lg shadow-primary/20 animate-scale-in">
-            <img src={buddyAvatar} alt="Buddy" className="w-full h-full object-cover" />
-          </div>
-
-          {/* Typewriter text */}
-          <p className="text-lg text-foreground font-medium text-center min-h-[2rem]">
-            {typewriterText}
-            <span className="animate-pulse">|</span>
-          </p>
-
-          {/* Buttons */}
-          <div
-            className={`mt-8 w-full max-w-xs space-y-3 transition-all duration-700 ${
-              showButtons ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
-            }`}
-          >
-            <button
-              onClick={() => setView("register")}
-              className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-primary to-accent text-primary-foreground font-semibold text-sm transition-all active:scale-95 shadow-lg shadow-primary/30"
-            >
-              Kenalan, yuk! 👋
-            </button>
-            <button
-              onClick={() => setView("login")}
-              className="w-full py-3.5 rounded-2xl border border-border/60 text-foreground font-medium text-sm transition-all active:scale-95 hover:bg-card/40"
-            >
-              Masuk
-            </button>
-          </div>
-        </div>
+        <SplashScreen
+          onMasuk={() => setView("login")}
+          onKenalan={() => setView("register")}
+        />
       )}
 
       {/* LOGIN */}
