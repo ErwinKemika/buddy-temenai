@@ -230,7 +230,7 @@ const SplashScreen = ({ onMasuk, onKenalan }: SplashScreenProps) => {
                 )}
               </p>
               {typewriterLine2 && (
-                <p className="text-lg text-gray-300 mt-1 font-sans">
+                <p className="text-gray-300 mt-1 font-sans text-base">
                   {typewriterLine2}
                   {showCursor && <span className="animate-pulse text-[#00D4FF]">|</span>}
                 </p>
