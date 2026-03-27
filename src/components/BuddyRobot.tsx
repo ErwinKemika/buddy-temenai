@@ -14,13 +14,13 @@ const BuddyRobot = ({ buddyState, enableEyeTracking = false }: BuddyRobotProps) 
   const [eyeOffset, setEyeOffset] = useState({ x: 0, y: 0 });
   const robotRef = useRef<HTMLDivElement>(null);
 
-  const handleMouseMove = useCallback((e: MouseEvent) => {
+  const calcOffset = useCallback((clientX: number, clientY: number) => {
     if (!robotRef.current) return;
     const rect = robotRef.current.getBoundingClientRect();
     const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height * 0.3; // eyes are upper third
-    const dx = e.clientX - centerX;
-    const dy = e.clientY - centerY;
+    const centerY = rect.top + rect.height * 0.3;
+    const dx = clientX - centerX;
+    const dy = clientY - centerY;
     const dist = Math.sqrt(dx * dx + dy * dy);
     const angle = Math.atan2(dy, dx);
     const distance = Math.min(4, dist / 20);
@@ -32,15 +32,29 @@ const BuddyRobot = ({ buddyState, enableEyeTracking = false }: BuddyRobotProps) 
 
   useEffect(() => {
     if (!enableEyeTracking) return;
-    // Check for touch device — default to center
-    const isTouchDevice = "ontouchstart" in window || navigator.maxTouchPoints > 0;
+    const isTouchDevice = window.matchMedia("(pointer: coarse)").matches;
+
     if (isTouchDevice) {
-      setEyeOffset({ x: 0, y: 0 });
-      return;
+      const onTouchMove = (e: TouchEvent) => {
+        const t = e.touches[0];
+        if (t) calcOffset(t.clientX, t.clientY);
+      };
+      const onTouchEnd = () => setEyeOffset({ x: 0, y: 0 });
+
+      window.addEventListener("touchstart", onTouchMove, { passive: true });
+      window.addEventListener("touchmove", onTouchMove, { passive: true });
+      window.addEventListener("touchend", onTouchEnd);
+      return () => {
+        window.removeEventListener("touchstart", onTouchMove);
+        window.removeEventListener("touchmove", onTouchMove);
+        window.removeEventListener("touchend", onTouchEnd);
+      };
     }
-    window.addEventListener("mousemove", handleMouseMove);
-    return () => window.removeEventListener("mousemove", handleMouseMove);
-  }, [enableEyeTracking, handleMouseMove]);
+
+    const onMouse = (e: MouseEvent) => calcOffset(e.clientX, e.clientY);
+    window.addEventListener("mousemove", onMouse);
+    return () => window.removeEventListener("mousemove", onMouse);
+  }, [enableEyeTracking, calcOffset]);
 
   return (
     <div ref={robotRef} className="flex-1 flex flex-col items-center justify-center relative overflow-visible">
