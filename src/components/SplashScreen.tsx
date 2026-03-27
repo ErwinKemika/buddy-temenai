@@ -266,35 +266,33 @@ const SplashScreen = ({ onMasuk, onKenalan }: SplashScreenProps) => {
                 <span className="relative z-10 drop-shadow-sm">Kenalan, yuk! 👋</span>
               </button>
 
-              {/* Masuk button — dark glass with cyan border glow */}
+              {/* Masuk button — transparent default, cyan glow on hover */}
               <button
                 onClick={onMasuk}
-                className="group w-full relative rounded-[18px] p-[1.5px] transition-all active:scale-[0.97]"
+                className="group w-full rounded-[18px] py-3 md:py-2.5 font-semibold text-sm text-white/70 text-center cursor-pointer relative overflow-hidden active:scale-[0.97]"
                 style={{
-                  background: "linear-gradient(135deg, rgba(56,189,248,0.5), rgba(99,102,241,0.4), rgba(56,189,248,0.5))",
-                  boxShadow: "0 0 20px rgba(0,212,255,0.15), 0 0 40px rgba(99,102,241,0.1)",
+                  background: "transparent",
+                  border: "1.5px solid rgba(0, 212, 255, 0.3)",
+                  transition: "all 0.3s ease",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = "rgba(0, 212, 255, 0.8)";
+                  e.currentTarget.style.boxShadow = "0 0 15px rgba(0, 212, 255, 0.4)";
+                  e.currentTarget.style.color = "#ffffff";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = "rgba(0, 212, 255, 0.3)";
+                  e.currentTarget.style.boxShadow = "none";
+                  e.currentTarget.style.color = "rgba(255,255,255,0.7)";
+                }}
+                onMouseDown={(e) => {
+                  e.currentTarget.style.background = "rgba(0, 212, 255, 0.1)";
+                }}
+                onMouseUp={(e) => {
+                  e.currentTarget.style.background = "transparent";
                 }}
               >
-                <div
-                  className="w-full py-3 md:py-2.5 rounded-[16.5px] font-semibold text-sm text-white/90 text-center relative overflow-hidden"
-                  style={{
-                    background: "linear-gradient(180deg, rgba(15,23,42,0.85), rgba(15,23,42,0.95))",
-                    backdropFilter: "blur(12px)",
-                  }}
-                >
-                  {/* Subtle glass shine */}
-                  <div
-                    className="absolute inset-0 pointer-events-none"
-                    style={{
-                      background: "linear-gradient(180deg, rgba(255,255,255,0.08) 0%, transparent 35%)",
-                      borderRadius: "inherit",
-                    }}
-                  />
-                  {/* Corner sparkle accents */}
-                  <div className="absolute top-2 left-5 w-0.5 h-0.5 rounded-full bg-white/40" style={{ boxShadow: "0 0 4px 1px rgba(0,212,255,0.5)" }} />
-                  <div className="absolute bottom-2 right-8 w-0.5 h-0.5 rounded-full bg-white/30" style={{ boxShadow: "0 0 3px 1px rgba(0,212,255,0.4)" }} />
-                  <span className="relative z-10">Masuk</span>
-                </div>
+                <span className="relative z-10">Masuk</span>
               </button>
             </motion.div>
           </motion.div>
