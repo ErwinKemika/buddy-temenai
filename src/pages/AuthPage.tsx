@@ -36,9 +36,8 @@ const AuthPage = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [view, setView] = useState<View>("splash");
-  const [showButtons, setShowButtons] = useState(false);
-  const [typewriterText, setTypewriterText] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   // Login state
