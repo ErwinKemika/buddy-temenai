@@ -27,7 +27,7 @@ const YouTubeCards = ({ videos }: Props) => {
         return (
           <div
             key={video.videoId}
-            className="bg-muted/30 border border-border/30 rounded-xl overflow-hidden"
+            className="bg-muted/30 border border-border/30 rounded-xl overflow-hidden max-w-[280px]"
           >
             {isPlaying ? (
               <div className="relative">
