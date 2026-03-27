@@ -413,6 +413,8 @@ export function useChat() {
     };
 
     setMessages(prev => [...prev, userMsg]);
+    // Save user message to Supabase
+    if (currentUserId) saveMessageToDB(currentUserId, userMsg);
 
     // Enrich with YouTube video details if URL detected
     let youtubeContext = "";
