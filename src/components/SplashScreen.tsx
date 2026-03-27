@@ -217,7 +217,7 @@ const SplashScreen = ({ onMasuk, onKenalan }: SplashScreenProps) => {
               <p
                 className="glitch-text font-orbitron uppercase text-white relative"
                 style={{
-                  fontSize: "clamp(32px, 8vw, 56px)",
+                  fontSize: "clamp(22px, 5vw, 36px)",
                   fontWeight: 900,
                   letterSpacing: "4px",
                   textShadow: "0 0 20px rgba(0, 255, 229, 0.6)",
