@@ -1,4 +1,5 @@
 import { Send, Volume2, VolumeX, Plus, Mic } from "lucide-react";
+import { useRef, useCallback } from "react";
 import { useState } from "react";
 import { BuddyState } from "@/hooks/useChat";
 import AttachmentMenu from "./AttachmentMenu";
