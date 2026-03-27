@@ -161,8 +161,10 @@ const VoiceMode = ({ onEndCall, streamChat, playTTS, transcribeVoice, buildTodoC
     };
 
     const todoContext = buildTodoContext();
-    const allMessages = [...sessionMessages, userMsg];
-    const chatMsgs = allMessages.map(m => ({ role: m.role, content: m.content }));
+    // Prepend last 10 chat history messages for context
+    const historyMsgs = chatHistory.slice(-10).map(m => ({ role: m.role, content: m.content }));
+    const voiceMsgs = [...sessionMessages, userMsg].map(m => ({ role: m.role, content: m.content }));
+    const chatMsgs = [...historyMsgs, ...voiceMsgs];
 
     try {
       await streamChat(chatMsgs, upsert, todoContext);
