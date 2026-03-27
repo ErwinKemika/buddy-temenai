@@ -168,20 +168,68 @@ export async function playTTS(text: string): Promise<void> {
 }
 
 
-const CHAT_STORAGE_KEY = "buddy-chat-messages";
+function getChatStorageKey(userId?: string) {
+  return `buddy-chat-messages-${userId || "guest"}`;
+}
 
-function loadMessages(): Message[] {
+function loadMessagesFromCache(userId?: string): Message[] {
   try {
-    const raw = localStorage.getItem(CHAT_STORAGE_KEY);
+    const raw = localStorage.getItem(getChatStorageKey(userId));
     if (!raw) return [];
     return JSON.parse(raw) as Message[];
   } catch { return []; }
 }
 
-function saveMessages(msgs: Message[]) {
+function saveMessagesToCache(msgs: Message[], userId?: string) {
   try {
-    localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(msgs));
+    localStorage.setItem(getChatStorageKey(userId), JSON.stringify(msgs));
   } catch { /* ignore quota errors */ }
+}
+
+function clearChatCache(userId?: string) {
+  try {
+    localStorage.removeItem(getChatStorageKey(userId));
+  } catch { /* ignore */ }
+}
+
+async function loadMessagesFromDB(userId: string): Promise<Message[]> {
+  const { data, error } = await supabase
+    .from("messages")
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: true })
+    .limit(50);
+
+  if (error || !data) return [];
+
+  return data.map((row) => ({
+    role: row.role as "user" | "assistant",
+    content: row.content,
+    source: row.source as "chat" | "voice" | undefined,
+    ...(row.attachment_type && row.attachment_url
+      ? {
+          attachment: {
+            type: row.attachment_type as Attachment["type"],
+            url: row.attachment_url,
+            name: row.attachment_name || "",
+            mimeType: row.attachment_mime || "",
+          },
+        }
+      : {}),
+  }));
+}
+
+async function saveMessageToDB(userId: string, msg: Message) {
+  await supabase.from("messages").insert({
+    user_id: userId,
+    role: msg.role,
+    content: msg.content,
+    source: (msg as any).source || "chat",
+    attachment_type: msg.attachment?.type || null,
+    attachment_url: msg.attachment?.url || null,
+    attachment_name: msg.attachment?.name || null,
+    attachment_mime: msg.attachment?.mimeType || null,
+  });
 }
 
 export async function streamChat(
@@ -259,14 +307,60 @@ export async function streamChat(
 }
 
 export function useChat() {
-  const [messages, setMessages] = useState<Message[]>(loadMessages);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [buddyState, setBuddyState] = useState<BuddyState>("idle");
   const [voiceEnabled, setVoiceEnabled] = useState(true);
+  const [currentUserId, setCurrentUserId] = useState<string | undefined>();
+
+  // Listen for auth changes: load/clear chat on login/logout
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (_event, session) => {
+        const uid = session?.user?.id;
+        setCurrentUserId(uid);
+
+        if (uid) {
+          // Login: load from Supabase, cache locally
+          const dbMessages = await loadMessagesFromDB(uid);
+          if (dbMessages.length > 0) {
+            setMessages(dbMessages);
+            saveMessagesToCache(dbMessages, uid);
+          } else {
+            const cached = loadMessagesFromCache(uid);
+            setMessages(cached);
+          }
+        } else {
+          // Logout: clear state and cache
+          setMessages([]);
+          if (currentUserId) clearChatCache(currentUserId);
+        }
+      }
+    );
+
+    // Initial load
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      const uid = session?.user?.id;
+      setCurrentUserId(uid);
+      if (uid) {
+        const cached = loadMessagesFromCache(uid);
+        if (cached.length > 0) setMessages(cached);
+        const dbMessages = await loadMessagesFromDB(uid);
+        if (dbMessages.length > 0) {
+          setMessages(dbMessages);
+          saveMessagesToCache(dbMessages, uid);
+        }
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   // Persist messages to localStorage whenever they change
   useEffect(() => {
-    saveMessages(messages);
-  }, [messages]);
+    if (currentUserId && messages.length > 0) {
+      saveMessagesToCache(messages, currentUserId);
+    }
+  }, [messages, currentUserId]);
 
 
   const sendMessage = useCallback(async (input: string, attachment?: { file: File | Blob; type: "image" | "document" | "voice" }) => {
@@ -319,6 +413,8 @@ export function useChat() {
     };
 
     setMessages(prev => [...prev, userMsg]);
+    // Save user message to Supabase
+    if (currentUserId) saveMessageToDB(currentUserId, userMsg);
 
     // Enrich with YouTube video details if URL detected
     let youtubeContext = "";
@@ -405,9 +501,13 @@ export function useChat() {
       console.error("[Chat] Error:", e);
       upsertAssistant("Maaf, aku sedang gangguan. Coba lagi ya! 😅");
     } finally {
-    setBuddyState("idle");
+      // Save final assistant message to Supabase
+      if (currentUserId && assistantSoFar) {
+        saveMessageToDB(currentUserId, { role: "assistant", content: assistantSoFar });
+      }
+      setBuddyState("idle");
     }
-  }, [messages]);
+  }, [messages, currentUserId]);
 
   const injectReminderMessage = useCallback(async (text: string, speak: boolean) => {
     setMessages(prev => [...prev, { role: "assistant", content: text }]);
@@ -420,8 +520,8 @@ export function useChat() {
 
   const clearMessages = useCallback(() => {
     setMessages([]);
-    localStorage.removeItem(CHAT_STORAGE_KEY);
-  }, []);
+    clearChatCache(currentUserId);
+  }, [currentUserId]);
 
   const importVoiceSession = useCallback((voiceMessages: Message[]) => {
     if (voiceMessages.length === 0) return;
