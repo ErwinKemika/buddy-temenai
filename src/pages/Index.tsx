@@ -193,6 +193,7 @@ const Index = () => {
               playTTS={playTTS}
               transcribeVoice={transcribeVoice}
               buildTodoContext={buildTodoContext}
+              chatHistory={messages}
             />
           </div>
         </div>

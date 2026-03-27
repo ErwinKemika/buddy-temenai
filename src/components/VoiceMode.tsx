@@ -15,6 +15,7 @@ interface Props {
   playTTS: (text: string) => Promise<void>;
   transcribeVoice: (blob: Blob) => Promise<string>;
   buildTodoContext: () => string;
+  chatHistory?: Message[];
 }
 
 const STATUS_TEXT: Record<VoiceState, string> = {
@@ -31,7 +32,7 @@ const GLOW_CLASSES: Record<VoiceState, string> = {
   speaking: "bg-[radial-gradient(circle,hsl(190,90%,20%)_0%,transparent_70%)]",
 };
 
-const VoiceMode = ({ onEndCall, streamChat, playTTS, transcribeVoice, buildTodoContext }: Props) => {
+const VoiceMode = ({ onEndCall, streamChat, playTTS, transcribeVoice, buildTodoContext, chatHistory = [] }: Props) => {
   const [voiceState, setVoiceState] = useState<VoiceState>("idle");
   const [sessionMessages, setSessionMessages] = useState<Message[]>([]);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -160,8 +161,10 @@ const VoiceMode = ({ onEndCall, streamChat, playTTS, transcribeVoice, buildTodoC
     };
 
     const todoContext = buildTodoContext();
-    const allMessages = [...sessionMessages, userMsg];
-    const chatMsgs = allMessages.map(m => ({ role: m.role, content: m.content }));
+    // Prepend last 10 chat history messages for context
+    const historyMsgs = chatHistory.slice(-10).map(m => ({ role: m.role, content: m.content }));
+    const voiceMsgs = [...sessionMessages, userMsg].map(m => ({ role: m.role, content: m.content }));
+    const chatMsgs = [...historyMsgs, ...voiceMsgs];
 
     try {
       await streamChat(chatMsgs, upsert, todoContext);
