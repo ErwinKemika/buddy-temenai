@@ -50,7 +50,7 @@ const YouTubeCards = ({ videos }: Props) => {
                 className="cursor-pointer group"
                 onClick={() => setPlayingId(video.videoId)}
               >
-                <div className="relative w-full" style={{ aspectRatio: "16/9" }}>
+                <div className="relative w-full rounded-t-xl overflow-hidden" style={{ aspectRatio: "16/9" }}>
                   <img
                     src={thumb}
                     alt={video.title}
