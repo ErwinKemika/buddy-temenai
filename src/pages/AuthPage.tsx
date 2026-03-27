@@ -51,16 +51,12 @@ const AuthPage = () => {
   const [birthDate, setBirthDate] = useState<Date>();
   const [buddyRole, setBuddyRole] = useState<string>(BUDDY_ROLES[0]);
 
-  const fullGreeting = "Hai.. aku Buddy, temen aktivitas kamu ✨";
-
   // Redirect if already logged in
   useEffect(() => {
     if (!authLoading && user) {
       navigate("/", { replace: true });
     }
   }, [authLoading, user, navigate]);
-
-  // Removed old typewriter — now handled by SplashScreen component
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
