@@ -69,11 +69,20 @@ export type Attachment = {
   mimeType: string;
 };
 
+export interface YouTubeVideo {
+  videoId: string;
+  title: string;
+  thumbnail: string;
+  channelTitle: string;
+  url: string;
+}
+
 export type Message = {
   role: "user" | "assistant";
   content: string;
   attachment?: Attachment;
   source?: "chat" | "voice";
+  youtubeVideos?: YouTubeVideo[];
 };
 
 export type BuddyState = "idle" | "thinking" | "speaking";
@@ -347,6 +356,29 @@ export function useChat() {
 
     try {
       await streamChat(chatMessages, upsertAssistant, todoContext);
+
+      // Check for YouTube search marker in the final response
+      const ytMatch = assistantSoFar.match(/\[YOUTUBE_SEARCH:\s*"([^"]+)"\]/);
+      if (ytMatch) {
+        const query = ytMatch[1];
+        try {
+          const { data } = await supabase.functions.invoke("youtube-search", {
+            body: { query, maxResults: 3 },
+          });
+          if (data?.results?.length) {
+            const cleanContent = assistantSoFar.replace(/\[YOUTUBE_SEARCH:\s*"[^"]+"\]/, "").trim();
+            setMessages(prev =>
+              prev.map((m, i) =>
+                i === prev.length - 1 && m.role === "assistant"
+                  ? { ...m, content: cleanContent, youtubeVideos: data.results }
+                  : m
+              )
+            );
+          }
+        } catch (e) {
+          console.error("[YouTube Search] Error:", e);
+        }
+      }
 
     } catch (e) {
       console.error("[Chat] Error:", e);

@@ -2,6 +2,7 @@ import ReactMarkdown from "react-markdown";
 import { Message, BuddyState } from "@/hooks/useChat";
 import { useRef, useEffect } from "react";
 import { FileText } from "lucide-react";
+import YouTubeCards from "./YouTubeCards";
 
 interface Props {
   messages: Message[];
@@ -271,6 +272,10 @@ const BuddySpeechBubble = ({ messages, buddyState }: Props) => {
                       }}
                     >{msg.content}</ReactMarkdown>
                   </div>
+                )}
+
+                {msg.youtubeVideos && msg.youtubeVideos.length > 0 && (
+                  <YouTubeCards videos={msg.youtubeVideos} />
                 )}
               </div>
             </div>
