@@ -345,9 +345,9 @@ export function useChat() {
         userContent = resolvedText || "Aku mengirim gambar tapi gagal diproses.";
       }
     } else if (attachmentData?.type === "document") {
-      userContent = resolvedText || `Aku mengirim dokumen: ${attachmentData.name}`;
+      userContent = youtubeContext + (resolvedText || `Aku mengirim dokumen: ${attachmentData.name}`);
     } else {
-      userContent = resolvedText;
+      userContent = youtubeContext + resolvedText;
     }
 
     // Build todo context for Buddy
