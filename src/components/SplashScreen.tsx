@@ -253,7 +253,7 @@ const SplashScreen = ({ onMasuk, onKenalan }: SplashScreenProps) => {
                 }}
               >
                 <div
-                  className="w-full py-4 rounded-[16.5px] font-bold text-base text-white text-center relative overflow-hidden"
+                  className="w-full py-3 md:py-2.5 rounded-[16.5px] font-bold text-sm text-white text-center relative overflow-hidden"
                   style={{
                     background: "linear-gradient(135deg, rgba(168,85,247,0.7), rgba(99,102,241,0.6), rgba(56,189,248,0.5))",
                     backdropFilter: "blur(12px)",
