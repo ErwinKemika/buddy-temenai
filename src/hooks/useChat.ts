@@ -516,8 +516,8 @@ export function useChat() {
 
   const clearMessages = useCallback(() => {
     setMessages([]);
-    localStorage.removeItem(CHAT_STORAGE_KEY);
-  }, []);
+    clearChatCache(currentUserId);
+  }, [currentUserId]);
 
   const importVoiceSession = useCallback((voiceMessages: Message[]) => {
     if (voiceMessages.length === 0) return;
