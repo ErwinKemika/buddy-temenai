@@ -62,20 +62,7 @@ const AuthPage = () => {
     }
   }, [authLoading, user, navigate]);
 
-  // Typewriter effect
-  useEffect(() => {
-    if (view !== "splash") return;
-    let i = 0;
-    const interval = setInterval(() => {
-      i++;
-      setTypewriterText(fullGreeting.slice(0, i));
-      if (i >= fullGreeting.length) {
-        clearInterval(interval);
-        setTimeout(() => setShowButtons(true), 600);
-      }
-    }, 60);
-    return () => clearInterval(interval);
-  }, [view]);
+  // Removed old typewriter — now handled by SplashScreen component
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
