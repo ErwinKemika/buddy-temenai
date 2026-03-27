@@ -238,7 +238,7 @@ const SplashScreen = ({ onMasuk, onKenalan }: SplashScreenProps) => {
             </div>
 
             <motion.div
-              className="w-full max-w-xs space-y-4"
+              className="w-full max-w-[280px] md:max-w-[240px] lg:max-w-[200px] space-y-4"
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 1.2, ease: SMOOTH_EASE }}
