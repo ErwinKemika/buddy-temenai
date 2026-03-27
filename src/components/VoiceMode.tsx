@@ -15,6 +15,7 @@ interface Props {
   playTTS: (text: string) => Promise<void>;
   transcribeVoice: (blob: Blob) => Promise<string>;
   buildTodoContext: () => string;
+  chatHistory?: Message[];
 }
 
 const STATUS_TEXT: Record<VoiceState, string> = {
