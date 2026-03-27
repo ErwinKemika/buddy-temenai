@@ -189,7 +189,7 @@ const SplashScreen = ({ onMasuk, onKenalan }: SplashScreenProps) => {
             />
 
             {/* Buddy Robot (the CSS-drawn purple robot) */}
-            <div className="scale-[0.9] origin-center" style={{ maxHeight: 300 }}>
+            <div className="scale-[1.25] origin-center" style={{ maxHeight: 400 }}>
               <BuddyRobot buddyState="idle" />
             </div>
           </motion.div>
