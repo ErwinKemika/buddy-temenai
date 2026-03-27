@@ -20,14 +20,14 @@ const YouTubeCards = ({ videos }: Props) => {
 
   return (
     <div className="flex flex-col gap-2 mt-2">
-      {videos.slice(0, 3).map((video) => {
+      {videos.slice(0, 1).map((video) => {
         const isPlaying = playingId === video.videoId;
         const thumb = `https://img.youtube.com/vi/${video.videoId}/hqdefault.jpg`;
 
         return (
           <div
             key={video.videoId}
-            className="bg-muted/30 border border-border/30 rounded-xl overflow-hidden"
+            className="bg-muted/30 border border-border/30 rounded-xl overflow-hidden max-w-[280px]"
           >
             {isPlaying ? (
               <div className="relative">
@@ -39,7 +39,7 @@ const YouTubeCards = ({ videos }: Props) => {
                 </button>
                 <iframe
                   src={`https://www.youtube.com/embed/${video.videoId}?autoplay=1`}
-                  width="100%"
+                  className="w-full rounded-xl"
                   style={{ aspectRatio: "16/9", border: 0 }}
                   allowFullScreen
                   allow="accelerometer; autoplay; encrypted-media; picture-in-picture"
@@ -50,7 +50,7 @@ const YouTubeCards = ({ videos }: Props) => {
                 className="cursor-pointer group"
                 onClick={() => setPlayingId(video.videoId)}
               >
-                <div className="relative w-full" style={{ aspectRatio: "16/9" }}>
+                <div className="relative w-full rounded-t-xl overflow-hidden" style={{ aspectRatio: "16/9" }}>
                   <img
                     src={thumb}
                     alt={video.title}

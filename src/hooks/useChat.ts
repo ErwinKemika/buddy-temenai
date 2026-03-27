@@ -379,7 +379,7 @@ export function useChat() {
         const query = ytMatch[1];
         try {
           const { data } = await supabase.functions.invoke("youtube-search", {
-            body: { query, maxResults: 3 },
+            body: { query, maxResults: 1 },
           });
           if (data?.results?.length) {
             const cleanContent = assistantSoFar.replace(/\[YOUTUBE_SEARCH:\s*"[^"]+"\]/, "").trim();
