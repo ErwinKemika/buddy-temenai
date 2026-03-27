@@ -20,7 +20,7 @@ const YouTubeCards = ({ videos }: Props) => {
 
   return (
     <div className="flex flex-col gap-2 mt-2">
-      {videos.slice(0, 3).map((video) => {
+      {videos.slice(0, 1).map((video) => {
         const isPlaying = playingId === video.videoId;
         const thumb = `https://img.youtube.com/vi/${video.videoId}/hqdefault.jpg`;
 
