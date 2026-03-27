@@ -202,7 +202,9 @@ const Eye = ({ buddyState, delay, eyeOffset }: EyeProps) => {
         className="w-3 h-3 rounded-full bg-primary-foreground/90"
         style={eyeOffset ? {
           transform: `translate(${eyeOffset.x}px, ${eyeOffset.y}px)`,
-          transition: "transform 0.1s ease-out",
+          transition: eyeOffset.x === 0 && eyeOffset.y === 0
+            ? "transform 0.5s ease-out"
+            : "transform 0.1s ease-out",
           boxShadow: "0 0 6px #00D4FF",
         } : undefined}
       />
