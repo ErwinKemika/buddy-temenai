@@ -2,6 +2,7 @@ import ReactMarkdown from "react-markdown";
 import { Message, BuddyState } from "@/hooks/useChat";
 import { useRef, useEffect } from "react";
 import { FileText } from "lucide-react";
+import YouTubeCards from "./YouTubeCards";
 
 interface Props {
   messages: Message[];
