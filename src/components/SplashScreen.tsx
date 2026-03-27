@@ -189,7 +189,7 @@ const SplashScreen = ({ onMasuk, onKenalan }: SplashScreenProps) => {
             />
 
             {/* Buddy Robot (the CSS-drawn purple robot) */}
-            <div className="scale-[1.25] origin-center" style={{ maxHeight: 400 }}>
+            <div className="w-[180px] md:w-[220px] lg:w-[260px] origin-center" style={{ maxHeight: 400 }}>
               <BuddyRobot buddyState="idle" enableEyeTracking />
             </div>
           </motion.div>
@@ -217,7 +217,7 @@ const SplashScreen = ({ onMasuk, onKenalan }: SplashScreenProps) => {
               <p
                 className="glitch-text font-orbitron uppercase text-white relative"
                 style={{
-                  fontSize: "clamp(32px, 8vw, 56px)",
+                  fontSize: "clamp(22px, 5vw, 36px)",
                   fontWeight: 900,
                   letterSpacing: "4px",
                   textShadow: "0 0 20px rgba(0, 255, 229, 0.6)",
@@ -238,7 +238,7 @@ const SplashScreen = ({ onMasuk, onKenalan }: SplashScreenProps) => {
             </div>
 
             <motion.div
-              className="w-full max-w-xs space-y-4"
+              className="w-full max-w-[280px] md:max-w-[240px] lg:max-w-[200px] space-y-4"
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 1.2, ease: SMOOTH_EASE }}
@@ -253,7 +253,7 @@ const SplashScreen = ({ onMasuk, onKenalan }: SplashScreenProps) => {
                 }}
               >
                 <div
-                  className="w-full py-4 rounded-[16.5px] font-bold text-base text-white text-center relative overflow-hidden"
+                  className="w-full py-3 md:py-2.5 rounded-[16.5px] font-bold text-sm text-white text-center relative overflow-hidden"
                   style={{
                     background: "linear-gradient(135deg, rgba(168,85,247,0.7), rgba(99,102,241,0.6), rgba(56,189,248,0.5))",
                     backdropFilter: "blur(12px)",
@@ -284,7 +284,7 @@ const SplashScreen = ({ onMasuk, onKenalan }: SplashScreenProps) => {
                 }}
               >
                 <div
-                  className="w-full py-4 rounded-[16.5px] font-semibold text-base text-white/90 text-center relative overflow-hidden"
+                  className="w-full py-3 md:py-2.5 rounded-[16.5px] font-semibold text-sm text-white/90 text-center relative overflow-hidden"
                   style={{
                     background: "linear-gradient(180deg, rgba(15,23,42,0.85), rgba(15,23,42,0.95))",
                     backdropFilter: "blur(12px)",
