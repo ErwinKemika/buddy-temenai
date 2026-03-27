@@ -501,7 +501,11 @@ export function useChat() {
       console.error("[Chat] Error:", e);
       upsertAssistant("Maaf, aku sedang gangguan. Coba lagi ya! 😅");
     } finally {
-    setBuddyState("idle");
+      // Save final assistant message to Supabase
+      if (currentUserId && assistantSoFar) {
+        saveMessageToDB(currentUserId, { role: "assistant", content: assistantSoFar });
+      }
+      setBuddyState("idle");
     }
   }, [messages]);
 
