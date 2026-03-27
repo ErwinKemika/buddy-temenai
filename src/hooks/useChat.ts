@@ -168,20 +168,68 @@ export async function playTTS(text: string): Promise<void> {
 }
 
 
-const CHAT_STORAGE_KEY = "buddy-chat-messages";
+function getChatStorageKey(userId?: string) {
+  return `buddy-chat-messages-${userId || "guest"}`;
+}
 
-function loadMessages(): Message[] {
+function loadMessagesFromCache(userId?: string): Message[] {
   try {
-    const raw = localStorage.getItem(CHAT_STORAGE_KEY);
+    const raw = localStorage.getItem(getChatStorageKey(userId));
     if (!raw) return [];
     return JSON.parse(raw) as Message[];
   } catch { return []; }
 }
 
-function saveMessages(msgs: Message[]) {
+function saveMessagesToCache(msgs: Message[], userId?: string) {
   try {
-    localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(msgs));
+    localStorage.setItem(getChatStorageKey(userId), JSON.stringify(msgs));
   } catch { /* ignore quota errors */ }
+}
+
+function clearChatCache(userId?: string) {
+  try {
+    localStorage.removeItem(getChatStorageKey(userId));
+  } catch { /* ignore */ }
+}
+
+async function loadMessagesFromDB(userId: string): Promise<Message[]> {
+  const { data, error } = await supabase
+    .from("messages")
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: true })
+    .limit(50);
+
+  if (error || !data) return [];
+
+  return data.map((row) => ({
+    role: row.role as "user" | "assistant",
+    content: row.content,
+    source: row.source as "chat" | "voice" | undefined,
+    ...(row.attachment_type && row.attachment_url
+      ? {
+          attachment: {
+            type: row.attachment_type as Attachment["type"],
+            url: row.attachment_url,
+            name: row.attachment_name || "",
+            mimeType: row.attachment_mime || "",
+          },
+        }
+      : {}),
+  }));
+}
+
+async function saveMessageToDB(userId: string, msg: Message) {
+  await supabase.from("messages").insert({
+    user_id: userId,
+    role: msg.role,
+    content: msg.content,
+    source: (msg as any).source || "chat",
+    attachment_type: msg.attachment?.type || null,
+    attachment_url: msg.attachment?.url || null,
+    attachment_name: msg.attachment?.name || null,
+    attachment_mime: msg.attachment?.mimeType || null,
+  });
 }
 
 export async function streamChat(
