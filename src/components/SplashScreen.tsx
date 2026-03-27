@@ -168,8 +168,8 @@ const SplashScreen = ({ onMasuk, onKenalan }: SplashScreenProps) => {
             <motion.div
               className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full pointer-events-none"
               style={{
-                width: 220,
-                height: 220,
+              width: 300,
+                height: 300,
                 background: "radial-gradient(circle, rgba(0,212,255,0.25), rgba(124,58,237,0.1), transparent 70%)",
                 filter: "blur(30px)",
               }}
@@ -189,7 +189,7 @@ const SplashScreen = ({ onMasuk, onKenalan }: SplashScreenProps) => {
             />
 
             {/* Buddy Robot (the CSS-drawn purple robot) */}
-            <div className="scale-[0.65] origin-center" style={{ maxHeight: 220 }}>
+            <div className="scale-[0.9] origin-center" style={{ maxHeight: 300 }}>
               <BuddyRobot buddyState="idle" />
             </div>
           </motion.div>
@@ -206,14 +206,17 @@ const SplashScreen = ({ onMasuk, onKenalan }: SplashScreenProps) => {
             transition={{ duration: 0.5, ease: SMOOTH_EASE }}
           >
             <div className="text-center mb-8">
-              <p className="text-xl font-semibold text-white font-orbitron">
+              <p
+                className="glitch-text text-[28px] font-bold text-white font-orbitron"
+                data-text={typewriterLine1}
+              >
                 {typewriterLine1}
                 {typewriterLine2 === "" && showCursor && (
                   <span className="animate-pulse text-[#00D4FF]">|</span>
                 )}
               </p>
               {typewriterLine2 && (
-                <p className="text-lg text-gray-300 mt-1 font-poppins">
+                <p className="text-lg text-gray-300 mt-1 font-sans">
                   {typewriterLine2}
                   {showCursor && <span className="animate-pulse text-[#00D4FF]">|</span>}
                 </p>
