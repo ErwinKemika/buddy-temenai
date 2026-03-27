@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -12,6 +13,53 @@ serve(async (req) => {
     const { messages, todoContext } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+
+    // Fetch user profile for personalization
+    let nickname = "";
+    let buddyRole = "";
+    const authHeader = req.headers.get("Authorization");
+    if (authHeader) {
+      try {
+        const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+        const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+        const supabase = createClient(supabaseUrl, supabaseKey);
+        
+        // Decode JWT to get user ID
+        const token = authHeader.replace("Bearer ", "");
+        const payload = JSON.parse(atob(token.split(".")[1]));
+        const userId = payload.sub;
+        
+        if (userId) {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("nickname, buddy_role")
+            .eq("user_id", userId)
+            .single();
+          
+          if (profile) {
+            nickname = profile.nickname || "";
+            buddyRole = profile.buddy_role || "";
+          }
+        }
+      } catch (e) {
+        console.error("Profile fetch error:", e);
+      }
+    }
+
+    // Build personalization context
+    let personalization = "";
+    if (nickname) {
+      personalization += `\n\nNama panggilan user: ${nickname}. Selalu panggil user dengan nama ini.`;
+    }
+    if (buddyRole) {
+      const roleInstructions: Record<string, string> = {
+        "Teman Belajar": "User memilih kamu sebagai Teman Belajar. Fokus bantu belajar, jelaskan materi, bantu bikin jadwal belajar, kasih quiz, dan semangati saat belajar.",
+        "Teman Kerja": "User memilih kamu sebagai Teman Kerja. Fokus bantu produktivitas, manajemen waktu, prioritas tugas, brainstorming ide, dan tips karir.",
+        "Teman Curhat": "User memilih kamu sebagai Teman Curhat. Fokus jadi pendengar yang baik, empati, validasi perasaan user, kasih perspektif baru, dan support mental health.",
+        "Teman Hiburan": "User memilih kamu sebagai Teman Hiburan. Fokus rekomendasi hiburan, ngobrol santai, humor, trivia, dan bikin suasana fun.",
+      };
+      personalization += `\nPeran kamu: ${buddyRole}. ${roleInstructions[buddyRole] || ""}`;
+    }
 
     // Use vision-capable model when images are present
     const hasImages = messages.some((m: any) =>
@@ -30,7 +78,7 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: `Kamu adalah Buddy, robot AI teman personal yang cerdas, hangat, dan asyik diajak ngobrol. Bicara Bahasa Indonesia, gaya santai seperti sahabat dekat yang peduli.
+            content: `Kamu adalah Buddy, robot AI teman personal yang cerdas, hangat, dan asyik diajak ngobrol. Bicara Bahasa Indonesia, gaya santai seperti sahabat dekat yang peduli.${personalization}
 
 CARA BICARA:
 - Jawab langsung ke intinya dulu, baru tambahan jika perlu.
