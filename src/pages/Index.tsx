@@ -121,6 +121,7 @@ const Index = () => {
             saveRemindedSet(reminded);
             const msg = `Eh, kamu punya tugas yang belum selesai: ${task.title}. Yuk dikerjain! 📝`;
             void injectReminderMessage(msg, voiceEnabled);
+            void sendWhatsAppReminder(msg);
           }
         }
       }
