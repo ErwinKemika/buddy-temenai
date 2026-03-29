@@ -181,6 +181,19 @@ const UpgradePage = () => {
                   ))}
                 </ul>
 
+                {p.id === "free" && isOnboarding && (
+                  <Button
+                    variant="secondary"
+                    className="w-full"
+                    onClick={() => {
+                      localStorage.removeItem("buddy-new-user");
+                      navigate("/", { replace: true });
+                    }}
+                  >
+                    Mulai Gratis →
+                  </Button>
+                )}
+
                 {p.id !== "free" && !isCurrent && (
                   <Button
                     className="w-full"
