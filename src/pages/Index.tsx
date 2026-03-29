@@ -55,8 +55,6 @@ const Index = () => {
     buddyState,
     voiceEnabled,
     setVoiceEnabled,
-    autoPlayVoice,
-    setAutoPlayVoice,
     sendMessage,
     injectReminderMessage,
     clearMessages,
