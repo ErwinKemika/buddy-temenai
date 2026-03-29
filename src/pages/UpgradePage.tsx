@@ -118,7 +118,7 @@ const UpgradePage = () => {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => navigate(-1)}
+            onClick={() => isOnboarding ? navigate("/", { replace: true }) : navigate(-1)}
             className="text-muted-foreground"
           >
             <ArrowLeft className="w-5 h-5" />
