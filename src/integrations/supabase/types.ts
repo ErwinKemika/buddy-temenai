@@ -67,8 +67,13 @@ export type Database = {
           last_active_date: string | null
           level: number
           nickname: string | null
+          plan: string
+          pro_expires_at: string | null
+          pro_since: string | null
           streak: number
           total_tasks_completed: number
+          trial_expires_at: string | null
+          trial_started_at: string | null
           updated_at: string
           user_id: string
           whatsapp_number: string | null
@@ -84,8 +89,13 @@ export type Database = {
           last_active_date?: string | null
           level?: number
           nickname?: string | null
+          plan?: string
+          pro_expires_at?: string | null
+          pro_since?: string | null
           streak?: number
           total_tasks_completed?: number
+          trial_expires_at?: string | null
+          trial_started_at?: string | null
           updated_at?: string
           user_id: string
           whatsapp_number?: string | null
@@ -101,8 +111,13 @@ export type Database = {
           last_active_date?: string | null
           level?: number
           nickname?: string | null
+          plan?: string
+          pro_expires_at?: string | null
+          pro_since?: string | null
           streak?: number
           total_tasks_completed?: number
+          trial_expires_at?: string | null
+          trial_started_at?: string | null
           updated_at?: string
           user_id?: string
           whatsapp_number?: string | null
