@@ -11,6 +11,7 @@ import AnalyticsPage from "./pages/AnalyticsPage.tsx";
 import SettingsPage from "./pages/SettingsPage.tsx";
 import AuthPage from "./pages/AuthPage.tsx";
 import NotFound from "./pages/NotFound.tsx";
+import UpgradePage from "./pages/UpgradePage.tsx";
 
 const queryClient = new QueryClient();
 
