@@ -54,6 +54,7 @@ const UpgradePage = () => {
   const { toast } = useToast();
   const { user } = useAuth();
   const { plan: currentPlan, isTrial, daysLeftTrial, loading } = useSubscription();
+  const isOnboarding = searchParams.get("onboarding") === "true";
 
   useEffect(() => {
     const status = searchParams.get("status");
