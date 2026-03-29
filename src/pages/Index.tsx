@@ -1,4 +1,5 @@
 import { useEffect, useRef, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import BuddyHeader from "@/components/BuddyHeader";
 import BuddyRobot from "@/components/BuddyRobot";
 import BuddyControlBar from "@/components/BuddyControlBar";
