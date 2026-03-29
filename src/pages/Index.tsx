@@ -8,6 +8,7 @@ import BuddySpeechBubble from "@/components/BuddySpeechBubble";
 import VoiceMode from "@/components/VoiceMode";
 
 import { useChat, streamChat, playTTS, transcribeVoice, buildTodoContext, Message } from "@/hooks/useChat";
+import { supabase } from "@/integrations/supabase/client";
 import { format, isSameDay, startOfDay, isBefore } from "date-fns";
 
 const TODO_STORAGE_KEY = "buddy-todos";
