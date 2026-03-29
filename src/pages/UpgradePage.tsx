@@ -54,10 +54,12 @@ const UpgradePage = () => {
   const { toast } = useToast();
   const { user } = useAuth();
   const { plan: currentPlan, isTrial, daysLeftTrial, loading } = useSubscription();
+  const isOnboarding = searchParams.get("onboarding") === "true";
 
   useEffect(() => {
     const status = searchParams.get("status");
     if (status === "success") {
+      localStorage.removeItem("buddy-new-user");
       toast({
         title: "Pembayaran berhasil! 🎉",
         description: "Akun kamu sudah di-upgrade. Nikmati fitur premium!",
@@ -116,7 +118,7 @@ const UpgradePage = () => {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => navigate(-1)}
+            onClick={() => isOnboarding ? navigate("/", { replace: true }) : navigate(-1)}
             className="text-muted-foreground"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -124,7 +126,13 @@ const UpgradePage = () => {
           <h1 className="text-xl font-bold font-orbitron">Upgrade Plan</h1>
         </div>
 
-        {isTrial && (
+        {isOnboarding && (
+          <div className="mb-6 p-4 rounded-lg bg-primary/10 border border-primary/20 text-sm text-foreground text-center">
+            Selamat datang di Buddy! 🎉 Pilih plan yang sesuai untukmu.
+          </div>
+        )}
+
+        {isTrial && !isOnboarding && (
           <div className="mb-6 p-3 rounded-lg bg-accent/10 border border-accent/20 text-sm text-accent">
             ⏳ Trial kamu tersisa <strong>{daysLeftTrial} hari</strong> lagi.
             Upgrade sekarang untuk akses penuh!
@@ -172,6 +180,19 @@ const UpgradePage = () => {
                     </li>
                   ))}
                 </ul>
+
+                {p.id === "free" && isOnboarding && (
+                  <Button
+                    variant="secondary"
+                    className="w-full"
+                    onClick={() => {
+                      localStorage.removeItem("buddy-new-user");
+                      navigate("/", { replace: true });
+                    }}
+                  >
+                    Mulai Gratis →
+                  </Button>
+                )}
 
                 {p.id !== "free" && !isCurrent && (
                   <Button
