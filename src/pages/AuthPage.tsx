@@ -88,6 +88,7 @@ const AuthPage = () => {
         password: regPassword,
       });
       if (error) throw error;
+      localStorage.setItem("buddy-new-user", "true");
 
       const userId = data.user?.id;
       if (userId) {

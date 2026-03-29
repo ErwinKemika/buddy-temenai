@@ -178,6 +178,18 @@ const SettingsPage = () => {
           </span>
         </button>
 
+        {/* Upgrade Plan */}
+        <button
+          onClick={() => navigate("/upgrade")}
+          className="w-full flex items-center justify-between bg-primary/10 border border-primary/30 rounded-2xl p-4 active:bg-primary/20 transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <Crown size={20} className="text-primary" />
+            <span className="text-sm font-medium text-foreground">Upgrade Plan</span>
+          </div>
+          <span className="text-xs text-primary font-semibold">Lihat Plan →</span>
+        </button>
+
         {/* Logout */}
         <button
           onClick={handleLogout}
