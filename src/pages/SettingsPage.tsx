@@ -1,4 +1,4 @@
-import { Moon, Sun, Volume2, VolumeX, Play, Pause, ArrowLeft, LogOut, Phone } from "lucide-react";
+import { Moon, Sun, Volume2, VolumeX, Play, Pause, ArrowLeft, LogOut, Phone, Crown } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
