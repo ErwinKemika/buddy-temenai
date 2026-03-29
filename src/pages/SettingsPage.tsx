@@ -54,8 +54,10 @@ const SettingsPage = () => {
     try {
       const { error } = await supabase
         .from("profiles")
-        .update({ whatsapp_number: whatsappNumber, updated_at: new Date().toISOString() })
-        .eq("user_id", user.id);
+        .upsert(
+          { user_id: user.id, whatsapp_number: whatsappNumber, updated_at: new Date().toISOString() },
+          { onConflict: "user_id" },
+        );
       if (error) throw error;
       toast.success("Nomor WhatsApp tersimpan! ✅");
       setWhatsappEditing(false);
@@ -119,17 +121,12 @@ const SettingsPage = () => {
           ) : (
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">{whatsappNumber}</span>
-              <button
-                onClick={() => setWhatsappEditing(true)}
-                className="text-xs text-accent hover:underline"
-              >
+              <button onClick={() => setWhatsappEditing(true)} className="text-xs text-accent hover:underline">
                 Ubah
               </button>
             </div>
           )}
-          <p className="text-[10px] text-muted-foreground">
-            Buddy akan mengirim reminder ke nomor ini via WhatsApp
-          </p>
+          <p className="text-[10px] text-muted-foreground">Buddy akan mengirim reminder ke nomor ini via WhatsApp</p>
         </div>
 
         {/* Theme */}
@@ -138,7 +135,11 @@ const SettingsPage = () => {
           className="w-full flex items-center justify-between bg-card/60 backdrop-blur-sm border border-border/40 rounded-2xl p-4 active:bg-muted transition-colors"
         >
           <div className="flex items-center gap-3">
-            {theme === "dark" ? <Moon size={20} className="text-primary" /> : <Sun size={20} className="text-primary" />}
+            {theme === "dark" ? (
+              <Moon size={20} className="text-primary" />
+            ) : (
+              <Sun size={20} className="text-primary" />
+            )}
             <span className="text-sm font-medium text-foreground">Tema</span>
           </div>
           <span className="text-xs text-muted-foreground">{theme === "dark" ? "Gelap" : "Terang"}</span>
@@ -150,10 +151,16 @@ const SettingsPage = () => {
           className="w-full flex items-center justify-between bg-card/60 backdrop-blur-sm border border-border/40 rounded-2xl p-4 active:bg-muted transition-colors"
         >
           <div className="flex items-center gap-3">
-            {voiceEnabled ? <Volume2 size={20} className="text-primary" /> : <VolumeX size={20} className="text-primary" />}
+            {voiceEnabled ? (
+              <Volume2 size={20} className="text-primary" />
+            ) : (
+              <VolumeX size={20} className="text-primary" />
+            )}
             <span className="text-sm font-medium text-foreground">Suara Buddy</span>
           </div>
-          <span className={`text-xs font-semibold ${voiceEnabled ? "text-accent" : "text-muted-foreground"}`}>{voiceEnabled ? "ON" : "OFF"}</span>
+          <span className={`text-xs font-semibold ${voiceEnabled ? "text-accent" : "text-muted-foreground"}`}>
+            {voiceEnabled ? "ON" : "OFF"}
+          </span>
         </button>
 
         {/* Auto-play */}
@@ -166,7 +173,9 @@ const SettingsPage = () => {
             {autoPlayVoice ? <Play size={20} className="text-primary" /> : <Pause size={20} className="text-primary" />}
             <span className="text-sm font-medium text-foreground">Auto-play Suara</span>
           </div>
-          <span className={`text-xs font-semibold ${autoPlayVoice ? "text-accent" : "text-muted-foreground"}`}>{autoPlayVoice ? "ON" : "OFF"}</span>
+          <span className={`text-xs font-semibold ${autoPlayVoice ? "text-accent" : "text-muted-foreground"}`}>
+            {autoPlayVoice ? "ON" : "OFF"}
+          </span>
         </button>
 
         {/* Logout */}
