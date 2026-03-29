@@ -1,4 +1,5 @@
 import { useEffect, useRef, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import BuddyHeader from "@/components/BuddyHeader";
 import BuddyRobot from "@/components/BuddyRobot";
 import BuddyControlBar from "@/components/BuddyControlBar";
@@ -50,6 +51,7 @@ async function sendWhatsAppReminder(message: string) {
 }
 
 const Index = () => {
+  const navigate = useNavigate();
   const {
     messages,
     buddyState,
@@ -61,6 +63,13 @@ const Index = () => {
   } = useChat();
 
   const remindedRef = useRef(loadRemindedSet());
+
+  // Redirect new users to onboarding upgrade page
+  useEffect(() => {
+    if (localStorage.getItem("buddy-new-user") === "true") {
+      navigate("/upgrade?onboarding=true", { replace: true });
+    }
+  }, [navigate]);
 
   // Check To-Do list every 10 seconds and remind user
   useEffect(() => {
