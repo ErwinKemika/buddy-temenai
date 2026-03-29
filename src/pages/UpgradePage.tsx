@@ -126,7 +126,13 @@ const UpgradePage = () => {
           <h1 className="text-xl font-bold font-orbitron">Upgrade Plan</h1>
         </div>
 
-        {isTrial && (
+        {isOnboarding && (
+          <div className="mb-6 p-4 rounded-lg bg-primary/10 border border-primary/20 text-sm text-foreground text-center">
+            Selamat datang di Buddy! 🎉 Pilih plan yang sesuai untukmu.
+          </div>
+        )}
+
+        {isTrial && !isOnboarding && (
           <div className="mb-6 p-3 rounded-lg bg-accent/10 border border-accent/20 text-sm text-accent">
             ⏳ Trial kamu tersisa <strong>{daysLeftTrial} hari</strong> lagi.
             Upgrade sekarang untuk akses penuh!
