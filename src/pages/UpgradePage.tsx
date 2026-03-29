@@ -59,6 +59,7 @@ const UpgradePage = () => {
   useEffect(() => {
     const status = searchParams.get("status");
     if (status === "success") {
+      localStorage.removeItem("buddy-new-user");
       toast({
         title: "Pembayaran berhasil! 🎉",
         description: "Akun kamu sudah di-upgrade. Nikmati fitur premium!",
