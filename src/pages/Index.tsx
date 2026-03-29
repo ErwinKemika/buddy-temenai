@@ -47,6 +47,25 @@ const Index = () => {
   const [mode, setMode] = useState<ChatMode>("chat");
   const remindedRef = useRef(loadRemindedSet());
 
+  // Send WhatsApp reminder via edge function
+  const sendWhatsAppReminder = useCallback(async (message: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("whatsapp_number")
+        .eq("user_id", user.id)
+        .single();
+      if (!profile?.whatsapp_number) return;
+      await supabase.functions.invoke("send-whatsapp", {
+        body: { to: profile.whatsapp_number, message },
+      });
+    } catch (err) {
+      console.error("WhatsApp reminder failed:", err);
+    }
+  }, []);
+
   // Check To-Do list every 10 seconds and remind user
   useEffect(() => {
     const check = () => {
@@ -82,6 +101,7 @@ const Index = () => {
             saveRemindedSet(reminded);
             const msg = `Halo, ${diff} menit lagi kamu ada tugas: ${task.title}. Siap-siap ya! ⏰`;
             void injectReminderMessage(msg, voiceEnabled);
+            void sendWhatsAppReminder(msg);
           }
 
           const exactKey = `exact-${task.id}-${todayStr}`;
@@ -90,6 +110,7 @@ const Index = () => {
             saveRemindedSet(reminded);
             const msg = `Halo, sekarang waktunya ${task.title}. Semangat ya! 💪`;
             void injectReminderMessage(msg, voiceEnabled);
+            void sendWhatsAppReminder(msg);
           }
         }
 
