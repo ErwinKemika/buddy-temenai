@@ -16,7 +16,7 @@ const StatsWidget = () => {
       .from("todos")
       .select("*", { count: "exact", head: true })
       .eq("user_id", user.id)
-      .eq("completed", true)
+      .eq("done", true)
       .gte("created_at", `${today}T00:00:00`)
       .then(({ count }) => setTodayCount(count || 0));
   }, [user?.id, profile.total_tasks_completed]);

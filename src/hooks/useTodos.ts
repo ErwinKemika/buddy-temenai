@@ -50,16 +50,18 @@ function dbToTask(row: any): Task {
   return {
     id: row.id,
     title: row.title,
-    done: row.completed,
-    date: row.deadline || "",
+    done: row.done ?? false,
+    date: row.date || "",
     startTime: row.start_time || undefined,
     endTime: row.end_time || undefined,
+    startedAt: row.started_at || undefined,
+    completedAt: row.completed_at || undefined,
+    isRunning: row.is_running ?? false,
     priority: (row.priority || "medium") as Priority,
-    status: row.completed ? "done" : "todo",
+    status: (row.status || (row.done ? "done" : "todo")) as Status,
     category: row.category as Category | undefined,
     recurrence: (row.recurrence || "once") as Recurrence,
     effort: row.effort as Effort | undefined,
-    completedAt: row.completed_at || undefined,
   };
 }
 
@@ -68,14 +70,18 @@ function taskToDb(task: Task, userId: string) {
     id: task.id,
     user_id: userId,
     title: task.title,
-    deadline: task.date || null,
+    done: task.done,
+    date: task.date || null,
     start_time: task.startTime || null,
     end_time: task.endTime || null,
+    started_at: task.startedAt || null,
+    completed_at: task.completedAt || null,
+    is_running: task.isRunning ?? false,
     priority: task.priority,
+    status: task.status,
     category: task.category || null,
     recurrence: task.recurrence,
     effort: task.effort || null,
-    completed: task.done,
   };
 }
 
@@ -169,17 +175,22 @@ export function useTodos() {
     if (user) {
       const dbUpdates: Record<string, any> = {};
       if (updates.title !== undefined) dbUpdates.title = updates.title;
-      if (updates.date !== undefined) dbUpdates.deadline = updates.date || null;
+      if (updates.date !== undefined) dbUpdates.date = updates.date || null;
       if (updates.startTime !== undefined) dbUpdates.start_time = updates.startTime || null;
       if (updates.endTime !== undefined) dbUpdates.end_time = updates.endTime || null;
+      if (updates.startedAt !== undefined) dbUpdates.started_at = updates.startedAt || null;
+      if (updates.isRunning !== undefined) dbUpdates.is_running = updates.isRunning;
       if (updates.priority !== undefined) dbUpdates.priority = updates.priority;
+      if (updates.status !== undefined) dbUpdates.status = updates.status;
       if (updates.category !== undefined) dbUpdates.category = updates.category || null;
       if (updates.recurrence !== undefined) dbUpdates.recurrence = updates.recurrence;
       if (updates.effort !== undefined) dbUpdates.effort = updates.effort || null;
       if (updates.done !== undefined) {
-        dbUpdates.completed = updates.done;
+        dbUpdates.done = updates.done;
         dbUpdates.completed_at = updates.done ? new Date().toISOString() : null;
+        dbUpdates.status = updates.done ? 'done' : 'todo';
       }
+      dbUpdates.updated_at = new Date().toISOString();
 
       if (Object.keys(dbUpdates).length > 0) {
         const { error } = await supabase.from("todos").update(dbUpdates).eq("id", id);
@@ -221,7 +232,7 @@ export function useTodos() {
     if (user) {
       const { error } = await supabase
         .from("todos")
-        .update({ completed: newDone, completed_at: newDone ? new Date().toISOString() : null })
+        .update({ done: newDone, status: newDone ? 'done' : 'todo', completed_at: newDone ? new Date().toISOString() : null, updated_at: new Date().toISOString() })
         .eq("id", id);
       if (error) console.error("[useTodos] toggle error:", error);
       

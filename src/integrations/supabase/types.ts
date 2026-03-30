@@ -125,50 +125,94 @@ export type Database = {
         }
         Relationships: []
       }
+      reminder_logs: {
+        Row: {
+          id: string
+          reminder_type: string
+          sent_at: string | null
+          sent_date: string
+          todo_id: string | null
+        }
+        Insert: {
+          id?: string
+          reminder_type: string
+          sent_at?: string | null
+          sent_date: string
+          todo_id?: string | null
+        }
+        Update: {
+          id?: string
+          reminder_type?: string
+          sent_at?: string | null
+          sent_date?: string
+          todo_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reminder_logs_todo_id_fkey"
+            columns: ["todo_id"]
+            isOneToOne: false
+            referencedRelation: "todos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       todos: {
         Row: {
           category: string | null
-          completed: boolean
           completed_at: string | null
-          created_at: string
-          deadline: string | null
+          created_at: string | null
+          date: string
+          done: boolean | null
           effort: string | null
           end_time: string | null
           id: string
-          priority: string
+          is_running: boolean | null
+          priority: string | null
           recurrence: string | null
           start_time: string | null
+          started_at: string | null
+          status: string | null
           title: string
+          updated_at: string | null
           user_id: string
         }
         Insert: {
           category?: string | null
-          completed?: boolean
           completed_at?: string | null
-          created_at?: string
-          deadline?: string | null
+          created_at?: string | null
+          date: string
+          done?: boolean | null
           effort?: string | null
           end_time?: string | null
           id?: string
-          priority?: string
+          is_running?: boolean | null
+          priority?: string | null
           recurrence?: string | null
           start_time?: string | null
+          started_at?: string | null
+          status?: string | null
           title: string
+          updated_at?: string | null
           user_id: string
         }
         Update: {
           category?: string | null
-          completed?: boolean
           completed_at?: string | null
-          created_at?: string
-          deadline?: string | null
+          created_at?: string | null
+          date?: string
+          done?: boolean | null
           effort?: string | null
           end_time?: string | null
           id?: string
-          priority?: string
+          is_running?: boolean | null
+          priority?: string | null
           recurrence?: string | null
           start_time?: string | null
+          started_at?: string | null
+          status?: string | null
           title?: string
+          updated_at?: string | null
           user_id?: string
         }
         Relationships: []

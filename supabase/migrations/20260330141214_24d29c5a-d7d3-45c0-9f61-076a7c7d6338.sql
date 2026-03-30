@@ -1,0 +1,1 @@
+ALTER TABLE public.reminder_logs ENABLE ROW LEVEL SECURITY;

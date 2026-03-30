@@ -99,7 +99,7 @@ export function useGamification() {
         .from("todos")
         .select("*", { count: "exact", head: true })
         .eq("user_id", user.id)
-        .eq("completed", true)
+        .eq("done", true)
         .in("effort", ["deep", "high"]);
 
       setHighEffortCount(count || 0);
