@@ -175,17 +175,22 @@ export function useTodos() {
     if (user) {
       const dbUpdates: Record<string, any> = {};
       if (updates.title !== undefined) dbUpdates.title = updates.title;
-      if (updates.date !== undefined) dbUpdates.deadline = updates.date || null;
+      if (updates.date !== undefined) dbUpdates.date = updates.date || null;
       if (updates.startTime !== undefined) dbUpdates.start_time = updates.startTime || null;
       if (updates.endTime !== undefined) dbUpdates.end_time = updates.endTime || null;
+      if (updates.startedAt !== undefined) dbUpdates.started_at = updates.startedAt || null;
+      if (updates.isRunning !== undefined) dbUpdates.is_running = updates.isRunning;
       if (updates.priority !== undefined) dbUpdates.priority = updates.priority;
+      if (updates.status !== undefined) dbUpdates.status = updates.status;
       if (updates.category !== undefined) dbUpdates.category = updates.category || null;
       if (updates.recurrence !== undefined) dbUpdates.recurrence = updates.recurrence;
       if (updates.effort !== undefined) dbUpdates.effort = updates.effort || null;
       if (updates.done !== undefined) {
-        dbUpdates.completed = updates.done;
+        dbUpdates.done = updates.done;
         dbUpdates.completed_at = updates.done ? new Date().toISOString() : null;
+        dbUpdates.status = updates.done ? 'done' : 'todo';
       }
+      dbUpdates.updated_at = new Date().toISOString();
 
       if (Object.keys(dbUpdates).length > 0) {
         const { error } = await supabase.from("todos").update(dbUpdates).eq("id", id);
