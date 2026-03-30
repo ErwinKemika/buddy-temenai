@@ -50,16 +50,18 @@ function dbToTask(row: any): Task {
   return {
     id: row.id,
     title: row.title,
-    done: row.completed,
-    date: row.deadline || "",
+    done: row.done ?? false,
+    date: row.date || "",
     startTime: row.start_time || undefined,
     endTime: row.end_time || undefined,
+    startedAt: row.started_at || undefined,
+    completedAt: row.completed_at || undefined,
+    isRunning: row.is_running ?? false,
     priority: (row.priority || "medium") as Priority,
-    status: row.completed ? "done" : "todo",
+    status: (row.status || (row.done ? "done" : "todo")) as Status,
     category: row.category as Category | undefined,
     recurrence: (row.recurrence || "once") as Recurrence,
     effort: row.effort as Effort | undefined,
-    completedAt: row.completed_at || undefined,
   };
 }
 
@@ -68,14 +70,18 @@ function taskToDb(task: Task, userId: string) {
     id: task.id,
     user_id: userId,
     title: task.title,
-    deadline: task.date || null,
+    done: task.done,
+    date: task.date || null,
     start_time: task.startTime || null,
     end_time: task.endTime || null,
+    started_at: task.startedAt || null,
+    completed_at: task.completedAt || null,
+    is_running: task.isRunning ?? false,
     priority: task.priority,
+    status: task.status,
     category: task.category || null,
     recurrence: task.recurrence,
     effort: task.effort || null,
-    completed: task.done,
   };
 }
 
