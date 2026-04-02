@@ -16,13 +16,14 @@ serve(async (req) => {
 
   const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
-  const now = new Date();
-  const todayStr = now.toISOString().slice(0, 10); // YYYY-MM-DD
-  const currentDow = now.getDay(); // 0=Sun
+  // Convert UTC to WIB (UTC+7)
+  const now = new Date(Date.now() + 7 * 60 * 60 * 1000);
+  const todayStr = now.toISOString().slice(0, 10); // YYYY-MM-DD in WIB
+  const currentDow = now.getUTCDay(); // day of week in WIB
   const dowMap: Record<number, string> = { 0: 'sunday', 1: 'monday', 2: 'tuesday', 3: 'wednesday', 4: 'thursday', 5: 'friday', 6: 'saturday' };
   const todayDow = dowMap[currentDow];
 
-  // Current time in HH:MM format (UTC)
+  // Current time in HH:MM format (WIB)
   const nowMinutes = now.getUTCHours() * 60 + now.getUTCMinutes();
 
   try {
