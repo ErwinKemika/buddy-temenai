@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { encode as base64Encode } from "https://deno.land/std@0.168.0/encoding/base64.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -11,12 +10,10 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const ACCOUNT_SID = Deno.env.get('TWILIO_ACCOUNT_SID');
-  const AUTH_TOKEN = Deno.env.get('TWILIO_AUTH_TOKEN');
-  const FROM_NUMBER = Deno.env.get('TWILIO_WHATSAPP_FROM') || '+14155238886';
+  const FONNTE_TOKEN = Deno.env.get('FONNTE_TOKEN');
 
-  if (!ACCOUNT_SID || !AUTH_TOKEN) {
-    return new Response(JSON.stringify({ error: 'Twilio credentials not configured' }), {
+  if (!FONNTE_TOKEN) {
+    return new Response(JSON.stringify({ error: 'Fonnte token not configured' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
@@ -32,34 +29,25 @@ serve(async (req) => {
       });
     }
 
-    const whatsappTo = to.startsWith('whatsapp:') ? to : `whatsapp:${to}`;
-    const whatsappFrom = FROM_NUMBER.startsWith('whatsapp:') ? FROM_NUMBER : `whatsapp:${FROM_NUMBER}`;
+    console.log(`[send-whatsapp] Sending to ${to} via Fonnte`);
 
-    // Direct Twilio REST API call
-    const url = `https://api.twilio.com/2010-04-01/Accounts/${ACCOUNT_SID}/Messages.json`;
-    const credentials = base64Encode(`${ACCOUNT_SID}:${AUTH_TOKEN}`);
-
-    const response = await fetch(url, {
+    const response = await fetch('https://api.fonnte.com/send', {
       method: 'POST',
       headers: {
-        'Authorization': `Basic ${credentials}`,
-        'Content-Type': 'application/x-www-form-urlencoded',
+        'Authorization': FONNTE_TOKEN,
+        'Content-Type': 'application/json',
       },
-      body: new URLSearchParams({
-        To: whatsappTo,
-        From: whatsappFrom,
-        Body: message,
-      }),
+      body: JSON.stringify({ target: to, message }),
     });
 
     const data = await response.json();
 
     if (!response.ok) {
-      console.error('Twilio API error:', JSON.stringify(data));
-      throw new Error(`Twilio API error [${response.status}]: ${data.message || JSON.stringify(data)}`);
+      console.error('Fonnte API error:', JSON.stringify(data));
+      throw new Error(`Fonnte API error [${response.status}]: ${JSON.stringify(data)}`);
     }
 
-    return new Response(JSON.stringify({ success: true, sid: data.sid }), {
+    return new Response(JSON.stringify({ success: true, data }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
