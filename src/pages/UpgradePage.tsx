@@ -129,7 +129,7 @@ const UpgradePage = () => {
 
         {isOnboarding && (
           <div className="mb-6 p-4 rounded-lg bg-primary/10 border border-primary/20 text-sm text-foreground text-center">
-            Selamat datang di Buddy! 🎉 Pilih plan yang sesuai untukmu.
+            Selamat datang di Buddy! 🎉 Coba SEMUA fitur gratis selama 3 hari, lalu pilih plan yang sesuai.
           </div>
         )}
 
