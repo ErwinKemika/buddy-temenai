@@ -129,7 +129,7 @@ const UpgradePage = () => {
 
         {isOnboarding && (
           <div className="mb-6 p-4 rounded-lg bg-primary/10 border border-primary/20 text-sm text-foreground text-center">
-            Selamat datang di Buddy! 🎉 Pilih plan yang sesuai untukmu.
+            Selamat datang di Buddy! 🎉 Coba SEMUA fitur gratis selama 3 hari, lalu pilih plan yang sesuai.
           </div>
         )}
 
@@ -172,6 +172,12 @@ const UpgradePage = () => {
                     <span className="text-muted-foreground text-sm">{p.period}</span>
                   )}
                 </div>
+
+                {p.id === "free" && isOnboarding && (
+                  <p className="text-sm text-primary font-medium text-center mb-2">
+                    ✨ Termasuk trial 3 hari akses penuh
+                  </p>
+                )}
 
                 <ul className="space-y-2 mb-4">
                   {p.features.map((f) => (
