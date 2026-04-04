@@ -102,6 +102,9 @@ const PRIORITY_DOT: Record<string, string> = {
 
 const FocusPage = () => {
   const [searchParams] = useSearchParams();
+  const { isPro, isMax, isTrial } = useSubscription();
+  const hasProAccess = isPro || isMax || isTrial;
+  const hasMaxAccess = isMax || isTrial;
   const taskIdFromUrl = searchParams.get("taskId");
   const { tasks: allTasks, setTasks: setAllTasks, updateTask: updateTaskInDb } = useTodos();
 
