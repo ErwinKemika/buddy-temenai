@@ -161,14 +161,6 @@ const Index = () => {
   );
 
   const handleNgobrolTap = () => {
-    if (!hasProAccess) {
-      toast({
-        title: "Mode Ngobrol tersedia di plan Pro ke atas",
-        description: "Upgrade untuk akses fitur ini.",
-      });
-      navigate("/upgrade");
-      return;
-    }
     setMode("ngobrol");
   };
 
