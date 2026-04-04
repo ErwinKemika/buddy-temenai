@@ -53,6 +53,7 @@ async function sendWhatsAppReminder(message: string) {
 
 const Index = () => {
   const navigate = useNavigate();
+  const [showVoiceMode, setShowVoiceMode] = useState(false);
   const {
     messages,
     buddyState,
@@ -62,6 +63,7 @@ const Index = () => {
     injectReminderMessage,
     clearMessages,
   } = useChat();
+
 
   const remindedRef = useRef(loadRemindedSet());
 
