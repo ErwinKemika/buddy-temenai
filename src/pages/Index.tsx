@@ -217,9 +217,7 @@ const Index = () => {
           </button>
           <button
             onClick={handleNgobrolTap}
-            className={mode === "ngobrol"
-              ? "rounded-full px-4 py-1.5 text-xs font-semibold bg-primary text-primary-foreground"
-              : "rounded-full px-4 py-1.5 text-xs font-semibold bg-card/40 border border-border/30 text-muted-foreground"}
+            className="rounded-full px-4 py-1.5 text-xs font-semibold bg-card/40 border border-border/30 text-muted-foreground"
           >
             🎙️ Ngobrol
           </button>
