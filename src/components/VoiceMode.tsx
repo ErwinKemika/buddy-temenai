@@ -211,6 +211,29 @@ const VoiceMode = ({ onEndCall, streamChat, playTTS, transcribeVoice, buildTodoC
     onEndCall(sessionMessages);
   }, [sessionMessages, onEndCall]);
 
+  // Session timer
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setElapsed(prev => {
+        const next = prev + 1;
+        if (sessionLimit) {
+          const remaining = sessionLimit - next;
+          if (remaining === 60 && !hasWarnedRef.current && sessionLimit > 60) {
+            hasWarnedRef.current = true;
+            toast({ title: "⏰ Sisa 1 menit", description: "Sesi ngobrol akan segera berakhir." });
+          }
+          if (next >= sessionLimit) {
+            clearInterval(interval);
+            toast({ title: "Sesi berakhir", description: "Waktu ngobrol kamu sudah habis untuk sesi ini." });
+            handleEnd();
+          }
+        }
+        return next;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [sessionLimit, toast, handleEnd]);
+
   const buddyState: BuddyState =
     voiceState === "thinking" ? "thinking"
     : voiceState === "speaking" ? "speaking"
