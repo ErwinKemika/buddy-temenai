@@ -7,6 +7,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import BottomNav from "@/components/BottomNav";
+import LockedFeature from "@/components/LockedFeature";
+import { useSubscription } from "@/hooks/useSubscription";
 import buddyAvatar from "@/assets/buddy-avatar.png";
 
 const SettingsPage = () => {
