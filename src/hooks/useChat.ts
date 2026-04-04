@@ -334,6 +334,9 @@ export function useChat() {
   const [buddyState, setBuddyState] = useState<BuddyState>("idle");
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | undefined>();
+  const { isFree } = useSubscription();
+  const { toast } = useToast();
+  const [todayMsgCount, setTodayMsgCount] = useState(() => getTodayMsgCount());
 
   // Listen for auth changes: load/clear chat on login/logout
   useEffect(() => {
