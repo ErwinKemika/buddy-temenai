@@ -3,9 +3,11 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pi
 import { format, subDays } from "date-fns";
 import { id } from "date-fns/locale";
 import BottomNav from "@/components/BottomNav";
+import LockedFeature from "@/components/LockedFeature";
 import { Progress } from "@/components/ui/progress";
 import { useGamification, getLevelProgress, ACHIEVEMENTS } from "@/hooks/useGamification";
 import { useAuth } from "@/hooks/useAuth";
+import { useSubscription } from "@/hooks/useSubscription";
 import { supabase } from "@/integrations/supabase/client";
 
 const CATEGORY_COLORS = ["hsl(250,80%,65%)", "hsl(200,90%,55%)", "hsl(40,90%,55%)", "hsl(340,70%,55%)", "hsl(160,60%,45%)"];
