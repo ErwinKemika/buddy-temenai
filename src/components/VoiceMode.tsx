@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { Mic } from "lucide-react";
 import BuddyRobot from "./BuddyRobot";
 import { BuddyState, Message } from "@/hooks/useChat";
+import { useToast } from "@/hooks/use-toast";
 
 type VoiceState = "idle" | "listening" | "thinking" | "speaking";
 
@@ -16,6 +17,13 @@ interface Props {
   transcribeVoice: (blob: Blob) => Promise<string>;
   buildTodoContext: () => string;
   chatHistory?: Message[];
+  sessionLimit?: number;
+}
+
+function formatSeconds(s: number): string {
+  const m = Math.floor(s / 60).toString().padStart(2, "0");
+  const sec = (s % 60).toString().padStart(2, "0");
+  return `${m}:${sec}`;
 }
 
 const STATUS_TEXT: Record<VoiceState, string> = {
@@ -32,9 +40,12 @@ const GLOW_CLASSES: Record<VoiceState, string> = {
   speaking: "bg-[radial-gradient(circle,hsl(190,90%,20%)_0%,transparent_70%)]",
 };
 
-const VoiceMode = ({ onEndCall, streamChat, playTTS, transcribeVoice, buildTodoContext, chatHistory = [] }: Props) => {
+const VoiceMode = ({ onEndCall, streamChat, playTTS, transcribeVoice, buildTodoContext, chatHistory = [], sessionLimit }: Props) => {
+  const { toast } = useToast();
   const [voiceState, setVoiceState] = useState<VoiceState>("idle");
   const [sessionMessages, setSessionMessages] = useState<Message[]>([]);
+  const [elapsed, setElapsed] = useState(0);
+  const hasWarnedRef = useRef(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
@@ -200,6 +211,29 @@ const VoiceMode = ({ onEndCall, streamChat, playTTS, transcribeVoice, buildTodoC
     onEndCall(sessionMessages);
   }, [sessionMessages, onEndCall]);
 
+  // Session timer
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setElapsed(prev => {
+        const next = prev + 1;
+        if (sessionLimit) {
+          const remaining = sessionLimit - next;
+          if (remaining === 60 && !hasWarnedRef.current && sessionLimit > 60) {
+            hasWarnedRef.current = true;
+            toast({ title: "⏰ Sisa 1 menit", description: "Sesi ngobrol akan segera berakhir." });
+          }
+          if (next >= sessionLimit) {
+            clearInterval(interval);
+            toast({ title: "Sesi berakhir", description: "Waktu ngobrol kamu sudah habis untuk sesi ini." });
+            handleEnd();
+          }
+        }
+        return next;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [sessionLimit, toast, handleEnd]);
+
   const buddyState: BuddyState =
     voiceState === "thinking" ? "thinking"
     : voiceState === "speaking" ? "speaking"
@@ -253,11 +287,20 @@ const VoiceMode = ({ onEndCall, streamChat, playTTS, transcribeVoice, buildTodoC
 
       {/* Status text */}
       <p
-        className="text-xs font-medium font-orbitron tracking-wider text-accent/80 mb-4 animate-fade-in relative z-10"
+        className="text-xs font-medium font-orbitron tracking-wider text-accent/80 mb-2 animate-fade-in relative z-10"
         key={voiceState}
       >
         {STATUS_TEXT[voiceState]}
       </p>
+
+      {/* Session timer */}
+      {sessionLimit && (
+        <div className="mb-3 relative z-10">
+          <span className="text-[11px] font-mono text-muted-foreground/70">
+            {formatSeconds(elapsed)} / {formatSeconds(sessionLimit)}
+          </span>
+        </div>
+      )}
 
       {/* Mic button */}
       <div className="mb-6 flex flex-col items-center gap-2 relative z-10">
