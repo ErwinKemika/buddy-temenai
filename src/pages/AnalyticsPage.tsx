@@ -71,6 +71,8 @@ const AnalyticsPage = () => {
     );
   }
 
+  if (!hasProAccess) return <LockedFeature featureName="Analytics & Gamification" requiredPlan="pro" />;
+
   return (
     <div className="h-[100dvh] w-full flex flex-col bg-background buddy-gradient-bg space-stars overflow-hidden">
       <div className="flex-1 overflow-y-auto px-4 pt-6 pb-4">

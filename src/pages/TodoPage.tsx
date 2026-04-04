@@ -298,6 +298,8 @@ const TodoPage = () => {
 
   const startDayOfWeek = startOfMonth(calMonth).getDay();
 
+  if (!hasProAccess) return <LockedFeature featureName="To-Do List & Reminder" requiredPlan="pro" />;
+
   return (
     <div className="h-[100dvh] w-full flex flex-col buddy-gradient-bg space-stars overflow-hidden safe-area-inset">
       {/* Mini Buddy header */}

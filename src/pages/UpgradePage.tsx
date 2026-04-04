@@ -43,6 +43,7 @@ const plans = [
       "Google Calendar sync",
       "Prioritas response",
       "Custom Buddy persona",
+      "🎵 Ambience Sound (Rain, White Noise, Brown Noise, Cafe)",
     ],
     icon: Crown,
   },

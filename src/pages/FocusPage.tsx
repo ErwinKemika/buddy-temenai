@@ -374,6 +374,11 @@ const FocusPage = () => {
           </div>
         </div>
 
+        {/* Ambience Sound */}
+        <div className="w-full max-w-[320px] mb-2">
+          {hasMaxAccess ? <AmbientPlayer /> : <LockedFeature featureName="Ambience Sound" requiredPlan="max" variant="inline" />}
+        </div>
+
         {/* Timer - responsive size */}
         <div className="relative mb-2 sm:mb-3">
           <div className="w-20 h-20 sm:w-28 sm:h-28 relative">
