@@ -58,7 +58,7 @@ const Index = () => {
   const { toast } = useToast();
   const [mode, setMode] = useState<"chat" | "ngobrol">("chat");
   const { isPro, isMax, isTrial } = useSubscription();
-  const hasProAccess = isPro || isMax || isTrial;
+  
 
   const {
     messages,
@@ -161,14 +161,6 @@ const Index = () => {
   );
 
   const handleNgobrolTap = () => {
-    if (!hasProAccess) {
-      toast({
-        title: "Mode Ngobrol tersedia di plan Pro ke atas",
-        description: "Upgrade untuk akses fitur ini.",
-      });
-      navigate("/upgrade");
-      return;
-    }
     setMode("ngobrol");
   };
 
