@@ -58,7 +58,7 @@ const Index = () => {
   const { toast } = useToast();
   const [mode, setMode] = useState<"chat" | "ngobrol">("chat");
   const { isPro, isMax, isTrial } = useSubscription();
-  const hasProAccess = isPro || isMax || isTrial;
+  
 
   const {
     messages,
