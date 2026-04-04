@@ -173,6 +173,12 @@ const UpgradePage = () => {
                   )}
                 </div>
 
+                {p.id === "free" && isOnboarding && (
+                  <p className="text-sm text-primary font-medium text-center mb-2">
+                    ✨ Termasuk trial 3 hari akses penuh
+                  </p>
+                )}
+
                 <ul className="space-y-2 mb-4">
                   {p.features.map((f) => (
                     <li key={f} className="flex items-center gap-2 text-sm text-muted-foreground">
