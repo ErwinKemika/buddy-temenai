@@ -14,6 +14,8 @@ const CATEGORY_COLORS = ["hsl(250,80%,65%)", "hsl(200,90%,55%)", "hsl(40,90%,55%
 
 const AnalyticsPage = () => {
   const { user } = useAuth();
+  const { isPro, isMax, isTrial } = useSubscription();
+  const hasProAccess = isPro || isMax || isTrial;
   const { profile, highEffortCount, loading } = useGamification();
   const [dailyData, setDailyData] = useState<{ day: string; count: number }[]>([]);
   const [categoryData, setCategoryData] = useState<{ name: string; value: number }[]>([]);
