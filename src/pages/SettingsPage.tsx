@@ -14,6 +14,9 @@ import buddyAvatar from "@/assets/buddy-avatar.png";
 const SettingsPage = () => {
   const { theme, toggleTheme } = useTheme();
   const { user, signOut } = useAuth();
+  const { isPro, isMax, isTrial } = useSubscription();
+  const hasProAccess = isPro || isMax || isTrial;
+  const hasMaxAccess = isMax || isTrial;
   const navigate = useNavigate();
   const [voiceEnabled, setVoiceEnabled] = useState(() => {
     const saved = localStorage.getItem("buddy-voice-enabled");
