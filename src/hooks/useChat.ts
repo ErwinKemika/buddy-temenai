@@ -546,7 +546,7 @@ export function useChat() {
       }
       setBuddyState("idle");
     }
-  }, [messages, currentUserId]);
+  }, [messages, currentUserId, isFree, toast]);
 
   const injectReminderMessage = useCallback(async (text: string, speak: boolean) => {
     setMessages(prev => [...prev, { role: "assistant", content: text }]);
