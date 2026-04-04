@@ -264,11 +264,20 @@ const VoiceMode = ({ onEndCall, streamChat, playTTS, transcribeVoice, buildTodoC
 
       {/* Status text */}
       <p
-        className="text-xs font-medium font-orbitron tracking-wider text-accent/80 mb-4 animate-fade-in relative z-10"
+        className="text-xs font-medium font-orbitron tracking-wider text-accent/80 mb-2 animate-fade-in relative z-10"
         key={voiceState}
       >
         {STATUS_TEXT[voiceState]}
       </p>
+
+      {/* Session timer */}
+      {sessionLimit && (
+        <div className="mb-3 relative z-10">
+          <span className="text-[11px] font-mono text-muted-foreground/70">
+            {formatSeconds(elapsed)} / {formatSeconds(sessionLimit)}
+          </span>
+        </div>
+      )}
 
       {/* Mic button */}
       <div className="mb-6 flex flex-col items-center gap-2 relative z-10">
