@@ -450,6 +450,8 @@ export function useChat() {
     };
 
     setMessages(prev => [...prev, userMsg]);
+    const newCount = incrementMsgCount();
+    setTodayMsgCount(newCount);
     // Save user message to Supabase
     if (currentUserId) saveMessageToDB(currentUserId, userMsg);
 
