@@ -472,3 +472,9 @@
 .animate-eq-bar1 { animation: eq-bar1 0.8s ease-in-out infinite; }
 .animate-eq-bar2 { animation: eq-bar2 0.6s ease-in-out infinite; }
 .animate-eq-bar3 { animation: eq-bar3 0.7s ease-in-out infinite; }
+
+/* Fix react-day-picker dropdown selects invisible on light backgrounds */
+.rdp-caption_dropdowns select {
+  color: hsl(0, 0%, 10%);
+  background-color: hsl(0, 0%, 100%);
+}
