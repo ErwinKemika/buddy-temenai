@@ -259,6 +259,8 @@ const FocusPage = () => {
     return `${m}m`;
   };
 
+  if (!hasProAccess) return <LockedFeature featureName="Focus Timer" requiredPlan="pro" />;
+
   return (
     <div className="h-[100dvh] w-full flex flex-col bg-background overflow-hidden relative">
       {/* Space background */}
