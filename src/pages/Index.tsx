@@ -7,6 +7,8 @@ import BottomNav from "@/components/BottomNav";
 import BuddySpeechBubble from "@/components/BuddySpeechBubble";
 import VoiceMode from "@/components/VoiceMode";
 import { useChat, streamChat, playTTS, transcribeVoice, buildTodoContext, Message } from "@/hooks/useChat";
+import { useSubscription } from "@/hooks/useSubscription";
+import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { format, isSameDay, startOfDay, isBefore } from "date-fns";
 
@@ -53,7 +55,11 @@ async function sendWhatsAppReminder(message: string) {
 
 const Index = () => {
   const navigate = useNavigate();
-  const [showVoiceMode, setShowVoiceMode] = useState(false);
+  const { toast } = useToast();
+  const [mode, setMode] = useState<"chat" | "ngobrol">("chat");
+  const { isPro, isMax, isTrial } = useSubscription();
+  const hasProAccess = isPro || isMax || isTrial;
+
   const {
     messages,
     buddyState,
@@ -63,7 +69,6 @@ const Index = () => {
     injectReminderMessage,
     clearMessages,
   } = useChat();
-
 
   const remindedRef = useRef(loadRemindedSet());
 
@@ -153,11 +158,23 @@ const Index = () => {
     [sendMessage],
   );
 
+  const handleNgobrolTap = () => {
+    if (!hasProAccess) {
+      toast({
+        title: "Mode Ngobrol tersedia di plan Pro ke atas",
+        description: "Upgrade untuk akses fitur ini.",
+      });
+      navigate("/upgrade");
+      return;
+    }
+    setMode("ngobrol");
+  };
+
   const handleEndVoiceCall = useCallback((voiceMessages: Message[]) => {
-    setShowVoiceMode(false);
+    setMode("chat");
   }, []);
 
-  if (showVoiceMode) {
+  if (mode === "ngobrol") {
     return (
       <div className="h-[100dvh] w-full flex flex-col buddy-gradient-bg space-stars overflow-hidden safe-area-inset">
         <VoiceMode
@@ -186,8 +203,25 @@ const Index = () => {
         <BuddyHeader
           onClearChat={clearMessages}
           hasMessages={messages.length > 0}
-          onOpenVoiceMode={() => setShowVoiceMode(true)}
         />
+
+        {/* Mode toggle */}
+        <div className="flex justify-center gap-2 py-2">
+          <button
+            onClick={() => setMode("chat")}
+            className={mode === "chat"
+              ? "rounded-full px-4 py-1.5 text-xs font-semibold bg-primary text-primary-foreground"
+              : "rounded-full px-4 py-1.5 text-xs font-semibold bg-card/40 border border-border/30 text-muted-foreground"}
+          >
+            💬 Chat
+          </button>
+          <button
+            onClick={handleNgobrolTap}
+            className="rounded-full px-4 py-1.5 text-xs font-semibold bg-card/40 border border-border/30 text-muted-foreground"
+          >
+            🎙️ Ngobrol
+          </button>
+        </div>
 
         <div className="flex-1 min-h-0 flex flex-col">
           <BuddySpeechBubble messages={messages} buddyState={buddyState} />
