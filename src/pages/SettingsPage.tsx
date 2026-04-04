@@ -7,11 +7,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import BottomNav from "@/components/BottomNav";
+import LockedFeature from "@/components/LockedFeature";
+import { useSubscription } from "@/hooks/useSubscription";
 import buddyAvatar from "@/assets/buddy-avatar.png";
 
 const SettingsPage = () => {
   const { theme, toggleTheme } = useTheme();
   const { user, signOut } = useAuth();
+  const { isPro, isMax, isTrial } = useSubscription();
+  const hasProAccess = isPro || isMax || isTrial;
+  const hasMaxAccess = isMax || isTrial;
   const navigate = useNavigate();
   const [voiceEnabled, setVoiceEnabled] = useState(() => {
     const saved = localStorage.getItem("buddy-voice-enabled");
@@ -96,38 +101,42 @@ const SettingsPage = () => {
         </div>
 
         {/* WhatsApp Number */}
-        <div className="bg-card/60 backdrop-blur-sm border border-border/40 rounded-2xl p-4 space-y-3">
-          <div className="flex items-center gap-3">
-            <Phone size={20} className="text-green-500" />
-            <span className="text-sm font-medium text-foreground">Nomor WhatsApp</span>
+        {hasMaxAccess ? (
+          <div className="bg-card/60 backdrop-blur-sm border border-border/40 rounded-2xl p-4 space-y-3">
+            <div className="flex items-center gap-3">
+              <Phone size={20} className="text-green-500" />
+              <span className="text-sm font-medium text-foreground">Nomor WhatsApp</span>
+            </div>
+            {whatsappEditing || !whatsappNumber ? (
+              <div className="flex gap-2">
+                <Input
+                  type="tel"
+                  placeholder="+628xxxxxxxxxx"
+                  value={whatsappNumber}
+                  onChange={(e) => setWhatsappNumber(e.target.value)}
+                  className="flex-1 bg-background/60 border-border/40 text-foreground text-sm"
+                />
+                <button
+                  onClick={saveWhatsappNumber}
+                  disabled={whatsappSaving || !whatsappNumber.trim()}
+                  className="px-4 py-2 rounded-xl bg-green-600 text-white text-xs font-semibold disabled:opacity-50 active:scale-95 transition-all"
+                >
+                  {whatsappSaving ? "..." : "Simpan"}
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">{whatsappNumber}</span>
+                <button onClick={() => setWhatsappEditing(true)} className="text-xs text-accent hover:underline">
+                  Ubah
+                </button>
+              </div>
+            )}
+            <p className="text-[10px] text-muted-foreground">Buddy akan mengirim reminder ke nomor ini via WhatsApp</p>
           </div>
-          {whatsappEditing || !whatsappNumber ? (
-            <div className="flex gap-2">
-              <Input
-                type="tel"
-                placeholder="+628xxxxxxxxxx"
-                value={whatsappNumber}
-                onChange={(e) => setWhatsappNumber(e.target.value)}
-                className="flex-1 bg-background/60 border-border/40 text-foreground text-sm"
-              />
-              <button
-                onClick={saveWhatsappNumber}
-                disabled={whatsappSaving || !whatsappNumber.trim()}
-                className="px-4 py-2 rounded-xl bg-green-600 text-white text-xs font-semibold disabled:opacity-50 active:scale-95 transition-all"
-              >
-                {whatsappSaving ? "..." : "Simpan"}
-              </button>
-            </div>
-          ) : (
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">{whatsappNumber}</span>
-              <button onClick={() => setWhatsappEditing(true)} className="text-xs text-accent hover:underline">
-                Ubah
-              </button>
-            </div>
-          )}
-          <p className="text-[10px] text-muted-foreground">Buddy akan mengirim reminder ke nomor ini via WhatsApp</p>
-        </div>
+        ) : (
+          <LockedFeature featureName="WhatsApp Reminder" requiredPlan="max" variant="inline" />
+        )}
 
         {/* Theme */}
         <button

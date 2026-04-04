@@ -4,7 +4,9 @@ import { useNavigate } from "react-router-dom";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, isToday, addMonths, subMonths, isBefore, startOfDay } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import BottomNav from "@/components/BottomNav";
+import LockedFeature from "@/components/LockedFeature";
 import { useBuddyVoice } from "@/hooks/useBuddyVoice";
+import { useSubscription } from "@/hooks/useSubscription";
 import { useTodos, type Task, type Priority, type Status, type Category, type Recurrence, type Effort } from "@/hooks/useTodos";
 
 type ViewMode = "month" | "today";
@@ -59,6 +61,8 @@ const getDeadlineState = (dateStr: string): { label: string; className: string }
 
 const TodoPage = () => {
   const navigate = useNavigate();
+  const { isPro, isMax, isTrial } = useSubscription();
+  const hasProAccess = isPro || isMax || isTrial;
   const { tasks, setTasks: bulkSetTasks, addTask: addTaskToDb, updateTask, deleteTask: deleteTaskFromDb, toggleTask: toggleTaskInDb } = useTodos();
   const setTasks = bulkSetTasks;
   const { voiceEnabled, toggleVoice, speak } = useBuddyVoice();
@@ -293,6 +297,8 @@ const TodoPage = () => {
   };
 
   const startDayOfWeek = startOfMonth(calMonth).getDay();
+
+  if (!hasProAccess) return <LockedFeature featureName="To-Do List & Reminder" requiredPlan="pro" />;
 
   return (
     <div className="h-[100dvh] w-full flex flex-col buddy-gradient-bg space-stars overflow-hidden safe-area-inset">

@@ -3,7 +3,10 @@ import { Pause, Play, Square, RotateCcw, CheckCircle2 } from "lucide-react";
 import { startOfDay, isBefore } from "date-fns";
 import { useSearchParams } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
+import LockedFeature from "@/components/LockedFeature";
+import AmbientPlayer from "@/components/AmbientPlayer";
 import { BuddyState } from "@/hooks/useChat";
+import { useSubscription } from "@/hooks/useSubscription";
 import { useTodos, type Task } from "@/hooks/useTodos";
 
 // Task type imported from useTodos
@@ -99,6 +102,9 @@ const PRIORITY_DOT: Record<string, string> = {
 
 const FocusPage = () => {
   const [searchParams] = useSearchParams();
+  const { isPro, isMax, isTrial } = useSubscription();
+  const hasProAccess = isPro || isMax || isTrial;
+  const hasMaxAccess = isMax || isTrial;
   const taskIdFromUrl = searchParams.get("taskId");
   const { tasks: allTasks, setTasks: setAllTasks, updateTask: updateTaskInDb } = useTodos();
 
@@ -253,6 +259,8 @@ const FocusPage = () => {
     return `${m}m`;
   };
 
+  if (!hasProAccess) return <LockedFeature featureName="Focus Timer" requiredPlan="pro" />;
+
   return (
     <div className="h-[100dvh] w-full flex flex-col bg-background overflow-hidden relative">
       {/* Space background */}
@@ -364,6 +372,11 @@ const FocusPage = () => {
               {buddyMsg}
             </p>
           </div>
+        </div>
+
+        {/* Ambience Sound */}
+        <div className="w-full max-w-[320px] mb-2">
+          {hasMaxAccess ? <AmbientPlayer /> : <LockedFeature featureName="Ambience Sound" requiredPlan="max" variant="inline" />}
         </div>
 
         {/* Timer - responsive size */}
