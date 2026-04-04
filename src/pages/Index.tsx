@@ -68,6 +68,8 @@ const Index = () => {
     sendMessage,
     injectReminderMessage,
     clearMessages,
+    todayMsgCount,
+    msgLimit,
   } = useChat();
 
   const remindedRef = useRef(loadRemindedSet());
