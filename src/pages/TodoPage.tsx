@@ -61,6 +61,8 @@ const getDeadlineState = (dateStr: string): { label: string; className: string }
 
 const TodoPage = () => {
   const navigate = useNavigate();
+  const { isPro, isMax, isTrial } = useSubscription();
+  const hasProAccess = isPro || isMax || isTrial;
   const { tasks, setTasks: bulkSetTasks, addTask: addTaskToDb, updateTask, deleteTask: deleteTaskFromDb, toggleTask: toggleTaskInDb } = useTodos();
   const setTasks = bulkSetTasks;
   const { voiceEnabled, toggleVoice, speak } = useBuddyVoice();
