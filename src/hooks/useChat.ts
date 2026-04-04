@@ -393,6 +393,17 @@ export function useChat() {
     const trimmed = input.trim();
     if (!trimmed && !attachment) return;
 
+    if (isFree) {
+      const count = getTodayMsgCount();
+      if (count >= MSG_LIMIT_FREE) {
+        toast({
+          title: "Kuota harian habis 😔",
+          description: `Kamu sudah mengirim ${MSG_LIMIT_FREE} pesan hari ini. Upgrade ke Pro untuk chat unlimited, atau kembali besok.`,
+        });
+        return;
+      }
+    }
+
     setBuddyState("thinking");
 
     let attachmentData: Attachment | undefined;
