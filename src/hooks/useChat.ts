@@ -2,6 +2,29 @@ import { useState, useCallback, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { format, addDays, startOfWeek, endOfWeek, isToday, isTomorrow, isPast, parseISO } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
+import { useSubscription } from "@/hooks/useSubscription";
+import { useToast } from "@/hooks/use-toast";
+
+const MSG_LIMIT_FREE = 20;
+
+function getMsgCountKey(): string {
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, "0");
+  const dd = String(today.getDate()).padStart(2, "0");
+  return `buddy-msg-count-${yyyy}-${mm}-${dd}`;
+}
+
+function getTodayMsgCount(): number {
+  return parseInt(localStorage.getItem(getMsgCountKey()) || "0", 10);
+}
+
+function incrementMsgCount(): number {
+  const key = getMsgCountKey();
+  const next = parseInt(localStorage.getItem(key) || "0", 10) + 1;
+  localStorage.setItem(key, String(next));
+  return next;
+}
 
 interface TodoItem {
   id: string;
@@ -311,6 +334,9 @@ export function useChat() {
   const [buddyState, setBuddyState] = useState<BuddyState>("idle");
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | undefined>();
+  const { isFree } = useSubscription();
+  const { toast } = useToast();
+  const [todayMsgCount, setTodayMsgCount] = useState(() => getTodayMsgCount());
 
   // Listen for auth changes: load/clear chat on login/logout
   useEffect(() => {
@@ -367,6 +393,17 @@ export function useChat() {
     const trimmed = input.trim();
     if (!trimmed && !attachment) return;
 
+    if (isFree) {
+      const count = getTodayMsgCount();
+      if (count >= MSG_LIMIT_FREE) {
+        toast({
+          title: "Kuota harian habis 😔",
+          description: `Kamu sudah mengirim ${MSG_LIMIT_FREE} pesan hari ini. Upgrade ke Pro untuk chat unlimited, atau kembali besok.`,
+        });
+        return;
+      }
+    }
+
     setBuddyState("thinking");
 
     let attachmentData: Attachment | undefined;
@@ -413,6 +450,8 @@ export function useChat() {
     };
 
     setMessages(prev => [...prev, userMsg]);
+    const newCount = incrementMsgCount();
+    setTodayMsgCount(newCount);
     // Save user message to Supabase
     if (currentUserId) saveMessageToDB(currentUserId, userMsg);
 
@@ -507,7 +546,7 @@ export function useChat() {
       }
       setBuddyState("idle");
     }
-  }, [messages, currentUserId]);
+  }, [messages, currentUserId, isFree, toast]);
 
   const injectReminderMessage = useCallback(async (text: string, speak: boolean) => {
     setMessages(prev => [...prev, { role: "assistant", content: text }]);
@@ -534,5 +573,5 @@ export function useChat() {
     setMessages(prev => [...prev, separator, ...tagged]);
   }, []);
 
-  return { messages, buddyState, voiceEnabled, setVoiceEnabled, sendMessage, injectReminderMessage, clearMessages, importVoiceSession };
+  return { messages, buddyState, voiceEnabled, setVoiceEnabled, sendMessage, injectReminderMessage, clearMessages, importVoiceSession, todayMsgCount, msgLimit: isFree ? MSG_LIMIT_FREE : null };
 }

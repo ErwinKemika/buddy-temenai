@@ -68,6 +68,8 @@ const Index = () => {
     sendMessage,
     injectReminderMessage,
     clearMessages,
+    todayMsgCount,
+    msgLimit,
   } = useChat();
 
   const remindedRef = useRef(loadRemindedSet());
@@ -222,6 +224,14 @@ const Index = () => {
             🎙️ Ngobrol
           </button>
         </div>
+
+        {msgLimit !== null && (
+          <div className="flex justify-center">
+            <span className="text-[10px] text-muted-foreground/70 bg-card/30 rounded-full px-3 py-0.5">
+              {todayMsgCount}/{msgLimit} pesan hari ini
+            </span>
+          </div>
+        )}
 
         <div className="flex-1 min-h-0 flex flex-col">
           <BuddySpeechBubble messages={messages} buddyState={buddyState} />
