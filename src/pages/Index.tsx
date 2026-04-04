@@ -153,20 +153,42 @@ const Index = () => {
     [sendMessage],
   );
 
+  const handleEndVoiceCall = useCallback((voiceMessages: Message[]) => {
+    setShowVoiceMode(false);
+  }, []);
+
+  if (showVoiceMode) {
+    return (
+      <div className="h-[100dvh] w-full flex flex-col buddy-gradient-bg space-stars overflow-hidden safe-area-inset">
+        <VoiceMode
+          onEndCall={handleEndVoiceCall}
+          streamChat={streamChat}
+          playTTS={playTTS}
+          transcribeVoice={transcribeVoice}
+          buildTodoContext={buildTodoContext}
+          chatHistory={messages}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="h-[100dvh] w-full flex flex-col buddy-gradient-bg space-stars overflow-hidden safe-area-inset relative">
-      {/* Buddy fixed in background - full opacity when no messages, faded when chatting */}
+      {/* Buddy fixed in background */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
         <div className={`transition-opacity duration-700 ${messages.length > 0 ? "opacity-30" : "opacity-100"}`}>
           <BuddyRobot buddyState={buddyState} />
         </div>
       </div>
 
-      {/* Foreground: Header + Chat + Input + Nav */}
+      {/* Foreground */}
       <div className="relative z-10 flex flex-col h-full">
-        <BuddyHeader onClearChat={clearMessages} hasMessages={messages.length > 0} />
+        <BuddyHeader
+          onClearChat={clearMessages}
+          hasMessages={messages.length > 0}
+          onOpenVoiceMode={() => setShowVoiceMode(true)}
+        />
 
-        {/* Glass chat container */}
         <div className="flex-1 min-h-0 flex flex-col">
           <BuddySpeechBubble messages={messages} buddyState={buddyState} />
         </div>
