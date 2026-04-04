@@ -1,13 +1,12 @@
 import buddyAvatar from "@/assets/buddy-avatar.png";
-import { Trash2, Mic } from "lucide-react";
+import { Trash2 } from "lucide-react";
 
 interface Props {
   onClearChat?: () => void;
   hasMessages?: boolean;
-  onOpenVoiceMode?: () => void;
 }
 
-const BuddyHeader = ({ onClearChat, hasMessages, onOpenVoiceMode }: Props) => {
+const BuddyHeader = ({ onClearChat, hasMessages }: Props) => {
   return (
     <header className="flex items-center justify-between px-3 pt-2 pb-1.5 bg-card/40 backdrop-blur-md border-b border-border/30">
       <div className="flex items-center gap-2">
@@ -23,15 +22,6 @@ const BuddyHeader = ({ onClearChat, hasMessages, onOpenVoiceMode }: Props) => {
         </div>
       </div>
       <div className="flex items-center gap-1">
-        {onOpenVoiceMode && (
-          <button
-            onClick={onOpenVoiceMode}
-            className="p-2 rounded-full hover:bg-primary/20 text-muted-foreground hover:text-primary transition-colors"
-            title="Ngobrol (Voice Mode)"
-          >
-            <Mic className="w-4 h-4" />
-          </button>
-        )}
         {hasMessages && onClearChat && (
           <button
             onClick={onClearChat}
