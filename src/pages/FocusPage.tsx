@@ -3,7 +3,10 @@ import { Pause, Play, Square, RotateCcw, CheckCircle2 } from "lucide-react";
 import { startOfDay, isBefore } from "date-fns";
 import { useSearchParams } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
+import LockedFeature from "@/components/LockedFeature";
+import AmbientPlayer from "@/components/AmbientPlayer";
 import { BuddyState } from "@/hooks/useChat";
+import { useSubscription } from "@/hooks/useSubscription";
 import { useTodos, type Task } from "@/hooks/useTodos";
 
 // Task type imported from useTodos
