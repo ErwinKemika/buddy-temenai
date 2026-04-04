@@ -1,11 +1,12 @@
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import BuddyHeader from "@/components/BuddyHeader";
 import BuddyRobot from "@/components/BuddyRobot";
 import BuddyControlBar from "@/components/BuddyControlBar";
 import BottomNav from "@/components/BottomNav";
 import BuddySpeechBubble from "@/components/BuddySpeechBubble";
-import { useChat } from "@/hooks/useChat";
+import VoiceMode from "@/components/VoiceMode";
+import { useChat, streamChat, playTTS, transcribeVoice, buildTodoContext, Message } from "@/hooks/useChat";
 import { supabase } from "@/integrations/supabase/client";
 import { format, isSameDay, startOfDay, isBefore } from "date-fns";
 
