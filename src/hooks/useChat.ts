@@ -2,6 +2,29 @@ import { useState, useCallback, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { format, addDays, startOfWeek, endOfWeek, isToday, isTomorrow, isPast, parseISO } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
+import { useSubscription } from "@/hooks/useSubscription";
+import { useToast } from "@/hooks/use-toast";
+
+const MSG_LIMIT_FREE = 20;
+
+function getMsgCountKey(): string {
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, "0");
+  const dd = String(today.getDate()).padStart(2, "0");
+  return `buddy-msg-count-${yyyy}-${mm}-${dd}`;
+}
+
+function getTodayMsgCount(): number {
+  return parseInt(localStorage.getItem(getMsgCountKey()) || "0", 10);
+}
+
+function incrementMsgCount(): number {
+  const key = getMsgCountKey();
+  const next = parseInt(localStorage.getItem(key) || "0", 10) + 1;
+  localStorage.setItem(key, String(next));
+  return next;
+}
 
 interface TodoItem {
   id: string;
