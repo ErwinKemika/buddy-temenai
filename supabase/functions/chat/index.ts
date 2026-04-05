@@ -11,12 +11,11 @@ serve(async (req) => {
 
   try {
     const { messages, todoContext } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    // Fetch user profile for personalization
+    // Fetch user profile for personalization + plan
     let nickname = "";
     let buddyRole = "";
+    let userPlan = "free";
     const authHeader = req.headers.get("Authorization");
     if (authHeader) {
       try {
@@ -24,7 +23,6 @@ serve(async (req) => {
         const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
         const supabase = createClient(supabaseUrl, supabaseKey);
         
-        // Decode JWT to get user ID
         const token = authHeader.replace("Bearer ", "");
         const payload = JSON.parse(atob(token.split(".")[1]));
         const userId = payload.sub;
@@ -32,13 +30,21 @@ serve(async (req) => {
         if (userId) {
           const { data: profile } = await supabase
             .from("profiles")
-            .select("nickname, buddy_role")
+            .select("nickname, buddy_role, plan, trial_expires_at")
             .eq("user_id", userId)
             .single();
           
           if (profile) {
             nickname = profile.nickname || "";
             buddyRole = profile.buddy_role || "";
+
+            const plan = profile.plan || "free";
+            const trialExpires = profile.trial_expires_at ? new Date(profile.trial_expires_at) : null;
+            if (plan === "trial") {
+              userPlan = trialExpires && trialExpires > new Date() ? "max" : "free";
+            } else {
+              userPlan = plan;
+            }
           }
         }
       } catch (e) {
@@ -61,24 +67,11 @@ serve(async (req) => {
       personalization += `\nPeran kamu: ${buddyRole}. ${roleInstructions[buddyRole] || ""}`;
     }
 
-    // Use vision-capable model when images are present
     const hasImages = messages.some((m: any) =>
       Array.isArray(m.content) && m.content.some((c: any) => c.type === "image_url")
     );
-    const model = hasImages ? "google/gemini-2.5-flash" : "google/gemini-3-flash-preview";
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model,
-        messages: [
-          {
-            role: "system",
-            content: `Kamu adalah Buddy, robot AI teman personal yang cerdas, hangat, dan asyik diajak ngobrol. Bicara Bahasa Indonesia, gaya santai seperti sahabat dekat yang peduli.${personalization}
+    const systemPrompt = `Kamu adalah Buddy, robot AI teman personal yang cerdas, hangat, dan asyik diajak ngobrol. Bicara Bahasa Indonesia, gaya santai seperti sahabat dekat yang peduli.${personalization}
 
 CARA BICARA:
 - Jawab langsung ke intinya dulu, baru tambahan jika perlu.
@@ -121,35 +114,152 @@ PENTING - SOAL LINK & URL:
   ❌ https://react.dev
   Jangan pernah tulis URL mentah tanpa judul. Selalu bungkus dengan [judul yang jelas](url).
 
-KEMAMPUAN JADWAL: Kamu punya akses ke to-do list user. Jika user bertanya soal jadwal, kegiatan, atau tugas, gunakan data di bawah untuk menjawab. Jawab ringkas, urutkan berdasarkan waktu terdekat, prioritas tinggi duluan. Jika ada tugas overdue, ingatkan dengan nada supportif, bukan menghakimi.${todoContext || "\n\nUser belum punya tugas di to-do list."}`
-          },
-          ...messages,
-        ],
-        stream: true,
-      }),
-    });
+KEMAMPUAN JADWAL: Kamu punya akses ke to-do list user. Jika user bertanya soal jadwal, kegiatan, atau tugas, gunakan data di bawah untuk menjawab. Jawab ringkas, urutkan berdasarkan waktu terdekat, prioritas tinggi duluan. Jika ada tugas overdue, ingatkan dengan nada supportif, bukan menghakimi.${todoContext || "\n\nUser belum punya tugas di to-do list."}`;
 
-    if (!response.ok) {
-      if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Buddy sedang sibuk, coba lagi nanti ya!" }), {
-          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    if (!hasImages && userPlan === "max") {
+      // === ANTHROPIC ===
+      const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
+      if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY not configured");
+
+      const anthropicMessages = messages.filter((m: any) => m.role !== "system");
+
+      const anthropicResp = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "x-api-key": ANTHROPIC_API_KEY,
+          "anthropic-version": "2023-06-01",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-6",
+          max_tokens: 1024,
+          system: systemPrompt,
+          messages: anthropicMessages,
+          stream: true,
+        }),
+      });
+
+      if (!anthropicResp.ok) {
+        const t = await anthropicResp.text();
+        console.error("Anthropic error:", anthropicResp.status, t);
+        return new Response(JSON.stringify({ error: "AI error" }), {
+          status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "Kredit habis, silakan tambah di Settings." }), {
-          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
+
+      // Transform Anthropic SSE → OpenAI SSE format
+      const transformedStream = new ReadableStream({
+        async start(controller) {
+          const reader = anthropicResp.body!.getReader();
+          const decoder = new TextDecoder();
+          const encoder = new TextEncoder();
+          let buffer = "";
+
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+
+            const lines = buffer.split("\n");
+            buffer = lines.pop() || "";
+
+            for (const line of lines) {
+              if (!line.startsWith("data: ")) continue;
+              const jsonStr = line.slice(6).trim();
+              if (!jsonStr || jsonStr === "[DONE]") continue;
+
+              try {
+                const event = JSON.parse(jsonStr);
+                if (event.type === "content_block_delta" && event.delta?.type === "text_delta") {
+                  const out = JSON.stringify({ choices: [{ delta: { content: event.delta.text } }] });
+                  controller.enqueue(encoder.encode(`data: ${out}\n\n`));
+                }
+                if (event.type === "message_stop") {
+                  controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+                }
+              } catch { /* ignore */ }
+            }
+          }
+          controller.close();
+        },
+      });
+
+      return new Response(transformedStream, {
+        headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+      });
+
+    } else if (!hasImages && userPlan === "pro") {
+      // === OPENAI ===
+      const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+      if (!OPENAI_API_KEY) throw new Error("OPENAI_API_KEY not configured");
+
+      const openaiResp = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${OPENAI_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "gpt-4o-mini",
+          messages: [{ role: "system", content: systemPrompt }, ...messages],
+          stream: true,
+        }),
+      });
+
+      if (!openaiResp.ok) {
+        const t = await openaiResp.text();
+        console.error("OpenAI error:", openaiResp.status, t);
+        return new Response(JSON.stringify({ error: "AI error" }), {
+          status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      const t = await response.text();
-      console.error("AI gateway error:", response.status, t);
-      return new Response(JSON.stringify({ error: "AI gateway error" }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+
+      return new Response(openaiResp.body, {
+        headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+      });
+
+    } else {
+      // === LOVABLE GATEWAY (Free + semua image requests) ===
+      const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+      if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+
+      const model = hasImages ? "google/gemini-2.5-flash" : "google/gemini-3-flash-preview";
+
+      const lovableResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model,
+          messages: [{ role: "system", content: systemPrompt }, ...messages],
+          stream: true,
+        }),
+      });
+
+      if (!lovableResp.ok) {
+        if (lovableResp.status === 429) {
+          return new Response(JSON.stringify({ error: "Buddy sedang sibuk, coba lagi nanti ya!" }), {
+            status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        if (lovableResp.status === 402) {
+          return new Response(JSON.stringify({ error: "Kredit habis, silakan tambah di Settings." }), {
+            status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        const t = await lovableResp.text();
+        console.error("Lovable gateway error:", lovableResp.status, t);
+        return new Response(JSON.stringify({ error: "AI gateway error" }), {
+          status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      return new Response(lovableResp.body, {
+        headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
       });
     }
-
-    return new Response(response.body, {
-      headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
-    });
   } catch (e) {
     console.error("chat error:", e);
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
