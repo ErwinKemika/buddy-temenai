@@ -13,16 +13,15 @@ serve(async (req) => {
   }
 
   try {
-    // Token verification temporarily disabled for testing
-    // const callbackToken = req.headers.get("x-callback-token");
-    // const expectedToken = Deno.env.get("XENDIT_WEBHOOK_TOKEN");
-    // if (!expectedToken || callbackToken !== expectedToken) {
-    //   console.error("Invalid webhook token");
-    //   return new Response(
-    //     JSON.stringify({ error: "Unauthorized" }),
-    //     { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    //   );
-    // }
+    const callbackToken = req.headers.get("x-callback-token");
+    const expectedToken = Deno.env.get("XENDIT_WEBHOOK_TOKEN");
+    if (!expectedToken || callbackToken !== expectedToken) {
+      console.error("Invalid webhook token");
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     const payload = await req.json();
     console.log("[Xendit Webhook] Received:", JSON.stringify(payload));
