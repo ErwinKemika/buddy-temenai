@@ -116,82 +116,12 @@ PENTING - SOAL LINK & URL:
 
 KEMAMPUAN JADWAL: Kamu punya akses ke to-do list user. Jika user bertanya soal jadwal, kegiatan, atau tugas, gunakan data di bawah untuk menjawab. Jawab ringkas, urutkan berdasarkan waktu terdekat, prioritas tinggi duluan. Jika ada tugas overdue, ingatkan dengan nada supportif, bukan menghakimi.${todoContext || "\n\nUser belum punya tugas di to-do list."}`;
 
-    if (!hasImages && userPlan === "max") {
-      // === ANTHROPIC ===
-      const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY");
-      if (!ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY not configured");
-
-      const anthropicMessages = messages.filter((m: any) => m.role !== "system");
-
-      const anthropicResp = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: {
-          "x-api-key": ANTHROPIC_API_KEY,
-          "anthropic-version": "2023-06-01",
-          "content-type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-6",
-          max_tokens: 1024,
-          system: systemPrompt,
-          messages: anthropicMessages,
-          stream: true,
-        }),
-      });
-
-      if (!anthropicResp.ok) {
-        const t = await anthropicResp.text();
-        console.error("Anthropic error:", anthropicResp.status, t);
-        return new Response(JSON.stringify({ error: "AI error" }), {
-          status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      // Transform Anthropic SSE → OpenAI SSE format
-      const transformedStream = new ReadableStream({
-        async start(controller) {
-          const reader = anthropicResp.body!.getReader();
-          const decoder = new TextDecoder();
-          const encoder = new TextEncoder();
-          let buffer = "";
-
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            buffer += decoder.decode(value, { stream: true });
-
-            const lines = buffer.split("\n");
-            buffer = lines.pop() || "";
-
-            for (const line of lines) {
-              if (!line.startsWith("data: ")) continue;
-              const jsonStr = line.slice(6).trim();
-              if (!jsonStr || jsonStr === "[DONE]") continue;
-
-              try {
-                const event = JSON.parse(jsonStr);
-                if (event.type === "content_block_delta" && event.delta?.type === "text_delta") {
-                  const out = JSON.stringify({ choices: [{ delta: { content: event.delta.text } }] });
-                  controller.enqueue(encoder.encode(`data: ${out}\n\n`));
-                }
-                if (event.type === "message_stop") {
-                  controller.enqueue(encoder.encode("data: [DONE]\n\n"));
-                }
-              } catch { /* ignore */ }
-            }
-          }
-          controller.close();
-        },
-      });
-
-      return new Response(transformedStream, {
-        headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
-      });
-
-    } else if (!hasImages && userPlan === "pro") {
+    if (!hasImages && (userPlan === "pro" || userPlan === "max")) {
       // === OPENAI ===
       const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
       if (!OPENAI_API_KEY) throw new Error("OPENAI_API_KEY not configured");
+
+      const openaiModel = userPlan === "max" ? "gpt-4o" : "gpt-4o-mini";
 
       const openaiResp = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
@@ -200,7 +130,7 @@ KEMAMPUAN JADWAL: Kamu punya akses ke to-do list user. Jika user bertanya soal j
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "gpt-4o-mini",
+          model: openaiModel,
           messages: [{ role: "system", content: systemPrompt }, ...messages],
           stream: true,
         }),
