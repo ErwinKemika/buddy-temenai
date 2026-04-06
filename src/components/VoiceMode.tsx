@@ -232,7 +232,7 @@ const VoiceMode = ({ onEndCall, streamChat, playTTS, transcribeVoice, buildTodoC
       });
     }, 1000);
     return () => clearInterval(interval);
-  }, [sessionLimit, toast, handleEnd]);
+  }, [sessionLimit, handleEnd]);
 
   const buddyState: BuddyState =
     voiceState === "thinking" ? "thinking"
