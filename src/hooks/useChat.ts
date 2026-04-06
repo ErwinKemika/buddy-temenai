@@ -170,7 +170,7 @@ export async function playTTS(text: string): Promise<void> {
       apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
       Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
     },
-    body: JSON.stringify({ text: cleanText.slice(0, 500), voiceId: "SCDJ1Fy4al0KS1awS6H9" }),
+    body: JSON.stringify({ text: cleanText.slice(0, 500), voiceId: "Lo6JZOZvGYBxVhTFszLx" }),
   });
 
   if (!response.ok) throw new Error(`TTS failed: ${response.status}`);
