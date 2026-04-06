@@ -1,8 +1,10 @@
 import ReactMarkdown from "react-markdown";
 import { Message, BuddyState } from "@/hooks/useChat";
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import { FileText } from "lucide-react";
 import YouTubeCards from "./YouTubeCards";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 interface Props {
   messages: Message[];
@@ -171,9 +173,32 @@ const BuddyMiniHead = ({ buddyState, emotion }: { buddyState: BuddyState; emotio
   );
 };
 
+/** Small user avatar for user message bubbles */
+const UserMiniAvatar = ({ avatarUrl, nickname, email }: { avatarUrl?: string | null; nickname?: string | null; email?: string | null }) => {
+  const initial = (nickname?.[0] || email?.[0] || "U").toUpperCase();
+
+  return (
+    <div className="shrink-0 self-end mb-1 w-6 h-6 rounded-full overflow-hidden bg-primary/20 border border-primary/30 flex items-center justify-center">
+      {avatarUrl ? (
+        <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
+      ) : (
+        <span className="text-[10px] font-semibold text-primary">{initial}</span>
+      )}
+    </div>
+  );
+};
+
 const BuddySpeechBubble = ({ messages, buddyState }: Props) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const isLoading = buddyState === "thinking";
+  const { user } = useAuth();
+  const [userProfile, setUserProfile] = useState<{ avatar_url?: string | null; nickname?: string | null }>({});
+
+  useEffect(() => {
+    if (!user) return;
+    supabase.from("profiles").select("avatar_url, nickname").eq("user_id", user.id).single()
+      .then(({ data }) => { if (data) setUserProfile(data); });
+  }, [user]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -211,9 +236,9 @@ const BuddySpeechBubble = ({ messages, buddyState }: Props) => {
           const emotion = msg.role === "assistant" ? getEmotionForAssistantMsg(messages, i) : "normal";
 
           return (
-            <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+            <div key={i} className={`flex items-end gap-2 ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
               {msg.role === "assistant" && (
-                <div className="mr-2">
+                <div className="shrink-0">
                   <BuddyMiniHead buddyState={buddyState} emotion={emotion} />
                 </div>
               )}
@@ -278,6 +303,11 @@ const BuddySpeechBubble = ({ messages, buddyState }: Props) => {
                   <YouTubeCards videos={msg.youtubeVideos} />
                 )}
               </div>
+              {msg.role === "user" && (
+                <div className="shrink-0">
+                  <UserMiniAvatar avatarUrl={userProfile.avatar_url} nickname={userProfile.nickname} email={user?.email} />
+                </div>
+              )}
             </div>
           );
         })}
