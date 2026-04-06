@@ -224,7 +224,7 @@ const VoiceMode = ({ onEndCall, streamChat, playTTS, transcribeVoice, buildTodoC
           }
           if (next >= sessionLimit) {
             clearInterval(interval);
-            toast({ title: "Sesi berakhir", description: "Waktu ngobrol kamu sudah habis untuk sesi ini." });
+            toast("Sesi berakhir", { description: "Waktu ngobrol kamu sudah habis untuk sesi ini." });
             handleEnd();
           }
         }
