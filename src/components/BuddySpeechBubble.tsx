@@ -236,9 +236,9 @@ const BuddySpeechBubble = ({ messages, buddyState }: Props) => {
           const emotion = msg.role === "assistant" ? getEmotionForAssistantMsg(messages, i) : "normal";
 
           return (
-            <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+            <div key={i} className={`flex items-end gap-2 ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
               {msg.role === "assistant" && (
-                <div className="mr-2">
+                <div className="shrink-0">
                   <BuddyMiniHead buddyState={buddyState} emotion={emotion} />
                 </div>
               )}
