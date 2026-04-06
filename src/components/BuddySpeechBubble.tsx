@@ -173,9 +173,32 @@ const BuddyMiniHead = ({ buddyState, emotion }: { buddyState: BuddyState; emotio
   );
 };
 
+/** Small user avatar for user message bubbles */
+const UserMiniAvatar = ({ avatarUrl, nickname, email }: { avatarUrl?: string | null; nickname?: string | null; email?: string | null }) => {
+  const initial = (nickname?.[0] || email?.[0] || "U").toUpperCase();
+
+  return (
+    <div className="shrink-0 self-end mb-1 w-6 h-6 rounded-full overflow-hidden bg-primary/20 border border-primary/30 flex items-center justify-center">
+      {avatarUrl ? (
+        <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
+      ) : (
+        <span className="text-[10px] font-semibold text-primary">{initial}</span>
+      )}
+    </div>
+  );
+};
+
 const BuddySpeechBubble = ({ messages, buddyState }: Props) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const isLoading = buddyState === "thinking";
+  const { user } = useAuth();
+  const [userProfile, setUserProfile] = useState<{ avatar_url?: string | null; nickname?: string | null }>({});
+
+  useEffect(() => {
+    if (!user) return;
+    supabase.from("profiles").select("avatar_url, nickname").eq("user_id", user.id).single()
+      .then(({ data }) => { if (data) setUserProfile(data); });
+  }, [user]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
