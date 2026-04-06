@@ -190,6 +190,7 @@ const VoiceMode = ({ onEndCall, streamChat, playTTS, transcribeVoice, buildTodoC
       await playTTS(assistantText);
     } catch (e) {
       console.error("[VoiceMode] TTS failed:", e);
+      toast("Suara tidak tersedia untuk respons ini", { duration: 3000 });
     }
 
     setVoiceState("idle");

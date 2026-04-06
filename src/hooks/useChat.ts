@@ -177,7 +177,7 @@ export async function playTTS(text: string): Promise<void> {
 
   const rawBlob = await response.blob();
   const audioBlob = new Blob([rawBlob], { type: "audio/mpeg" });
-  if (audioBlob.size < 100) throw new Error("TTS returned invalid audio");
+  if (audioBlob.size < 50) throw new Error("TTS returned invalid audio");
 
   const audioUrl = URL.createObjectURL(audioBlob);
   const audio = new Audio(audioUrl);
