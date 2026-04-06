@@ -259,6 +259,7 @@ export async function streamChat(
   chatMessages: Array<{ role: string; content: any }>,
   upsertAssistant: (chunk: string) => void,
   todoContext?: string,
+  profileContext?: { nickname?: string; buddyRole?: string; userPlan?: string; llmBooster?: boolean },
 ) {
   // Use user's session token so edge function can identify the user
   const { data: { session } } = await supabase.auth.getSession();
@@ -273,7 +274,14 @@ export async function streamChat(
         Authorization: `Bearer ${token}`,
         apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
       },
-      body: JSON.stringify({ messages: chatMessages, todoContext }),
+      body: JSON.stringify({
+        messages: chatMessages,
+        todoContext,
+        nickname: profileContext?.nickname,
+        buddyRole: profileContext?.buddyRole,
+        userPlan: profileContext?.userPlan,
+        llmBooster: profileContext?.llmBooster,
+      }),
     }
   );
 
@@ -334,9 +342,10 @@ export function useChat() {
   const [buddyState, setBuddyState] = useState<BuddyState>("idle");
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | undefined>();
-  const { isFree } = useSubscription();
+  const { isFree, plan, isTrial } = useSubscription();
   const { toast } = useToast();
   const [todayMsgCount, setTodayMsgCount] = useState(() => getTodayMsgCount());
+  const [profileContext, setProfileContext] = useState<{ nickname?: string; buddyRole?: string; userPlan?: string; llmBooster?: boolean }>({});
 
   // Listen for auth changes: load/clear chat on login/logout
   useEffect(() => {
@@ -380,6 +389,34 @@ export function useChat() {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  // Load profile context for chat edge function (avoids per-message DB fetch)
+  useEffect(() => {
+    if (!currentUserId) return;
+    const loadProfile = async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("nickname, buddy_role, plan, trial_expires_at, llm_booster")
+        .eq("user_id", currentUserId)
+        .single();
+      if (data) {
+        const p = data as any;
+        const planVal = p.plan || "free";
+        const trialExp = p.trial_expires_at ? new Date(p.trial_expires_at) : null;
+        let effectivePlan = planVal;
+        if (planVal === "trial") {
+          effectivePlan = trialExp && trialExp > new Date() ? "max" : "free";
+        }
+        setProfileContext({
+          nickname: p.nickname || "",
+          buddyRole: p.buddy_role || "",
+          userPlan: effectivePlan,
+          llmBooster: p.llm_booster === true,
+        });
+      }
+    };
+    loadProfile();
+  }, [currentUserId]);
 
   // Persist messages to localStorage whenever they change
   useEffect(() => {
@@ -511,7 +548,7 @@ export function useChat() {
     };
 
     try {
-      await streamChat(chatMessages, upsertAssistant, todoContext);
+      await streamChat(chatMessages, upsertAssistant, todoContext, profileContext);
 
       // Check for YouTube search marker in the final response
       const ytMatch = assistantSoFar.match(/\[YOUTUBE_SEARCH:\s*"([^"]+)"\]/);
@@ -546,7 +583,7 @@ export function useChat() {
       }
       setBuddyState("idle");
     }
-  }, [messages, currentUserId, isFree, toast]);
+  }, [messages, currentUserId, isFree, toast, profileContext]);
 
   const injectReminderMessage = useCallback(async (text: string, speak: boolean) => {
     setMessages(prev => [...prev, { role: "assistant", content: text }]);
