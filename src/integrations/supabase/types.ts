@@ -58,6 +58,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          avatar_url: string | null
           birth_date: string | null
           buddy_role: string | null
           created_at: string
@@ -81,6 +82,7 @@ export type Database = {
           xp: number
         }
         Insert: {
+          avatar_url?: string | null
           birth_date?: string | null
           buddy_role?: string | null
           created_at?: string
@@ -104,6 +106,7 @@ export type Database = {
           xp?: number
         }
         Update: {
+          avatar_url?: string | null
           birth_date?: string | null
           buddy_role?: string | null
           created_at?: string
