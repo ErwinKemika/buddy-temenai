@@ -10,49 +10,14 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { messages, todoContext } = await req.json();
+    const body = await req.json();
+    const { messages, todoContext } = body;
 
-    // Fetch user profile for personalization + plan
-    let nickname = "";
-    let buddyRole = "";
-    let userPlan = "free";
-    let llmBooster = false;
-    const authHeader = req.headers.get("Authorization");
-    if (authHeader) {
-      try {
-        const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-        const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-        const supabase = createClient(supabaseUrl, supabaseKey);
-        
-        const token = authHeader.replace("Bearer ", "");
-        const payload = JSON.parse(atob(token.split(".")[1]));
-        const userId = payload.sub;
-        
-        if (userId) {
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("nickname, buddy_role, plan, trial_expires_at, llm_booster")
-            .eq("user_id", userId)
-            .single();
-          
-          if (profile) {
-            nickname = profile.nickname || "";
-            buddyRole = profile.buddy_role || "";
-            llmBooster = profile.llm_booster === true;
-
-            const plan = profile.plan || "free";
-            const trialExpires = profile.trial_expires_at ? new Date(profile.trial_expires_at) : null;
-            if (plan === "trial") {
-              userPlan = trialExpires && trialExpires > new Date() ? "max" : "free";
-            } else {
-              userPlan = plan;
-            }
-          }
-        }
-      } catch (e) {
-        console.error("Profile fetch error:", e);
-      }
-    }
+    // Read profile fields from request body (sent by frontend)
+    const nickname = body.nickname || "";
+    const buddyRole = body.buddyRole || "";
+    const userPlan = body.userPlan || "free";
+    const llmBooster = body.llmBooster === true;
 
     // Build personalization context
     let personalization = "";

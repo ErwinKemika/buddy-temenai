@@ -259,6 +259,7 @@ export async function streamChat(
   chatMessages: Array<{ role: string; content: any }>,
   upsertAssistant: (chunk: string) => void,
   todoContext?: string,
+  profileContext?: { nickname?: string; buddyRole?: string; userPlan?: string; llmBooster?: boolean },
 ) {
   // Use user's session token so edge function can identify the user
   const { data: { session } } = await supabase.auth.getSession();
@@ -273,7 +274,14 @@ export async function streamChat(
         Authorization: `Bearer ${token}`,
         apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
       },
-      body: JSON.stringify({ messages: chatMessages, todoContext }),
+      body: JSON.stringify({
+        messages: chatMessages,
+        todoContext,
+        nickname: profileContext?.nickname,
+        buddyRole: profileContext?.buddyRole,
+        userPlan: profileContext?.userPlan,
+        llmBooster: profileContext?.llmBooster,
+      }),
     }
   );
 
