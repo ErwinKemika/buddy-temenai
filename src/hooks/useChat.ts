@@ -548,7 +548,7 @@ export function useChat() {
     };
 
     try {
-      await streamChat(chatMessages, upsertAssistant, todoContext);
+      await streamChat(chatMessages, upsertAssistant, todoContext, profileContext);
 
       // Check for YouTube search marker in the final response
       const ytMatch = assistantSoFar.match(/\[YOUTUBE_SEARCH:\s*"([^"]+)"\]/);
