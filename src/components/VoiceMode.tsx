@@ -2,7 +2,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { Mic } from "lucide-react";
 import BuddyRobot from "./BuddyRobot";
 import { BuddyState, Message } from "@/hooks/useChat";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 type VoiceState = "idle" | "listening" | "thinking" | "speaking";
 
