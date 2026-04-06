@@ -1,0 +1,1 @@
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS llm_booster boolean NOT NULL DEFAULT false;
