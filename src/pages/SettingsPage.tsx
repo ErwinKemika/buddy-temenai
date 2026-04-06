@@ -24,7 +24,7 @@ import {
 const SettingsPage = () => {
   const { theme, toggleTheme } = useTheme();
   const { user, signOut } = useAuth();
-  const { isPro, isMax, isTrial } = useSubscription();
+  const { isPro, isMax, isTrial, isFree, plan, daysLeftTrial } = useSubscription();
   const hasProAccess = isPro || isMax || isTrial;
   const hasMaxAccess = isMax || isTrial;
   const navigate = useNavigate();
