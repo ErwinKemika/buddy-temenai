@@ -41,7 +41,6 @@ const GLOW_CLASSES: Record<VoiceState, string> = {
 };
 
 const VoiceMode = ({ onEndCall, streamChat, playTTS, transcribeVoice, buildTodoContext, chatHistory = [], sessionLimit }: Props) => {
-  const { toast } = useToast();
   const [voiceState, setVoiceState] = useState<VoiceState>("idle");
   const [sessionMessages, setSessionMessages] = useState<Message[]>([]);
   const [elapsed, setElapsed] = useState(0);
