@@ -347,6 +347,15 @@ export function useChat() {
   const [todayMsgCount, setTodayMsgCount] = useState(() => getTodayMsgCount());
   const [profileContext, setProfileContext] = useState<{ nickname?: string; buddyRole?: string; userPlan?: string; llmBooster?: boolean }>({});
 
+  // Keep-alive: prevent edge function cold starts
+  useEffect(() => {
+    const chatUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
+    const ping = () => fetch(chatUrl, { method: "OPTIONS" }).catch(() => {});
+    ping();
+    const interval = setInterval(ping, 4 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, []);
+
   // Listen for auth changes: load/clear chat on login/logout
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
