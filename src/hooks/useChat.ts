@@ -159,7 +159,7 @@ export async function transcribeVoice(blob: Blob): Promise<string> {
 }
 
 export async function playTTS(text: string): Promise<void> {
-  const cleanText = text.replace(/[#*_~`>\[\]()!]/g, "").replace(/\n+/g, " ").trim();
+  const cleanText = text.replace(/[#*_~`>\[\]()!\u201C\u201D\u2018\u2019""'']/g, "").replace(/\n+/g, " ").trim();
   if (!cleanText || cleanText.length < 2) return;
 
   const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/tts`;
