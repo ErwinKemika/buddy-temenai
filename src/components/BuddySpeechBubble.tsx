@@ -1,8 +1,10 @@
 import ReactMarkdown from "react-markdown";
 import { Message, BuddyState } from "@/hooks/useChat";
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import { FileText } from "lucide-react";
 import YouTubeCards from "./YouTubeCards";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 interface Props {
   messages: Message[];
