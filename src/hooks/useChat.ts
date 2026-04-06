@@ -390,6 +390,34 @@ export function useChat() {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Load profile context for chat edge function (avoids per-message DB fetch)
+  useEffect(() => {
+    if (!currentUserId) return;
+    const loadProfile = async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("nickname, buddy_role, plan, trial_expires_at, llm_booster")
+        .eq("user_id", currentUserId)
+        .single();
+      if (data) {
+        const p = data as any;
+        const planVal = p.plan || "free";
+        const trialExp = p.trial_expires_at ? new Date(p.trial_expires_at) : null;
+        let effectivePlan = planVal;
+        if (planVal === "trial") {
+          effectivePlan = trialExp && trialExp > new Date() ? "max" : "free";
+        }
+        setProfileContext({
+          nickname: p.nickname || "",
+          buddyRole: p.buddy_role || "",
+          userPlan: effectivePlan,
+          llmBooster: p.llm_booster === true,
+        });
+      }
+    };
+    loadProfile();
+  }, [currentUserId]);
+
   // Persist messages to localStorage whenever they change
   useEffect(() => {
     if (currentUserId && messages.length > 0) {
