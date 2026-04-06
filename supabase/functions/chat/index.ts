@@ -199,7 +199,7 @@ KEMAMPUAN JADWAL: Kamu punya akses ke to-do list user. Jika user bertanya soal j
       if (hasImages) {
         model = "google/gemini-2.5-flash";
       } else if (userPlan === "max") {
-        model = "openai/gpt-5";
+        model = "openai/gpt-5-mini";
       } else if (userPlan === "pro") {
         model = "openai/gpt-5-mini";
       } else {
