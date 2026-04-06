@@ -557,9 +557,12 @@ export function useChat() {
     }
   }, []);
 
-  const clearMessages = useCallback(() => {
+  const clearMessages = useCallback(async () => {
     setMessages([]);
     clearChatCache(currentUserId);
+    if (currentUserId) {
+      await supabase.from("messages").delete().eq("user_id", currentUserId);
+    }
   }, [currentUserId]);
 
   const importVoiceSession = useCallback((voiceMessages: Message[]) => {
