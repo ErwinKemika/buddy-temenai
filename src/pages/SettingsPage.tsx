@@ -1,8 +1,8 @@
-import { Moon, Sun, Volume2, VolumeX, Play, Pause, ArrowLeft, LogOut, Phone, Crown, Zap } from "lucide-react";
+import { Moon, Sun, Volume2, VolumeX, Play, Pause, ArrowLeft, LogOut, Phone, Crown, Zap, Camera } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
@@ -28,6 +28,7 @@ const SettingsPage = () => {
   const hasProAccess = isPro || isMax || isTrial;
   const hasMaxAccess = isMax || isTrial;
   const navigate = useNavigate();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [voiceEnabled, setVoiceEnabled] = useState(() => {
     const saved = localStorage.getItem("buddy-voice-enabled");
     return saved !== null ? JSON.parse(saved) : true;
@@ -41,6 +42,11 @@ const SettingsPage = () => {
   const [whatsappEditing, setWhatsappEditing] = useState(false);
   const [llmBooster, setLlmBooster] = useState(false);
   const [showBoosterDialog, setShowBoosterDialog] = useState(false);
+  const [nickname, setNickname] = useState("");
+  const [editingNickname, setEditingNickname] = useState(false);
+  const [nicknameInput, setNicknameInput] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   useEffect(() => {
     localStorage.setItem("buddy-voice-enabled", JSON.stringify(voiceEnabled));
@@ -50,12 +56,12 @@ const SettingsPage = () => {
     localStorage.setItem("buddy-autoplay-voice", JSON.stringify(autoPlayVoice));
   }, [autoPlayVoice]);
 
-  // Load WhatsApp number + llm_booster from profile
+  // Load profile data
   useEffect(() => {
     if (!user) return;
     supabase
       .from("profiles")
-      .select("whatsapp_number, llm_booster")
+      .select("whatsapp_number, llm_booster, nickname, avatar_url")
       .eq("user_id", user.id)
       .single()
       .then(({ data }) => {
@@ -64,6 +70,12 @@ const SettingsPage = () => {
         }
         if ((data as any)?.llm_booster === true) {
           setLlmBooster(true);
+        }
+        if ((data as any)?.nickname) {
+          setNickname((data as any).nickname);
+        }
+        if ((data as any)?.avatar_url) {
+          setAvatarUrl((data as any).avatar_url);
         }
       });
   }, [user]);
@@ -91,10 +103,8 @@ const SettingsPage = () => {
   const handleBoosterToggle = async () => {
     if (!user) return;
     if (!llmBooster) {
-      // Trying to enable → show confirmation dialog instead of saving
       setShowBoosterDialog(true);
     } else {
-      // Disabling → save immediately
       try {
         await supabase
           .from("profiles")
@@ -105,6 +115,50 @@ const SettingsPage = () => {
       } catch {
         toast.error("Gagal menyimpan pengaturan");
       }
+    }
+  };
+
+  const handleNicknameSave = async () => {
+    if (!user) return;
+    const trimmed = nicknameInput.trim();
+    try {
+      await supabase
+        .from("profiles")
+        .update({ nickname: trimmed || null, updated_at: new Date().toISOString() } as any)
+        .eq("user_id", user.id);
+      setNickname(trimmed);
+      setEditingNickname(false);
+      toast.success("Nama tersimpan! ✅");
+    } catch {
+      toast.error("Gagal menyimpan nama");
+    }
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    setUploadingAvatar(true);
+    try {
+      const path = `${user.id}/avatar.jpg`;
+      const { error: uploadError } = await supabase.storage
+        .from("avatars")
+        .upload(path, file, { upsert: true, contentType: file.type });
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
+      const publicUrl = `${urlData.publicUrl}?t=${Date.now()}`;
+
+      await supabase
+        .from("profiles")
+        .update({ avatar_url: publicUrl, updated_at: new Date().toISOString() } as any)
+        .eq("user_id", user.id);
+
+      setAvatarUrl(publicUrl);
+      toast.success("Foto profil diperbarui! 📸");
+    } catch (err: any) {
+      toast.error(err.message || "Gagal upload foto");
+    } finally {
+      setUploadingAvatar(false);
     }
   };
 
@@ -126,12 +180,60 @@ const SettingsPage = () => {
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
         {/* Profile section */}
         <div className="flex items-center gap-3 bg-card/60 backdrop-blur-sm border border-border/40 rounded-2xl p-4">
-          <div className="w-14 h-14 rounded-full bg-primary/20 border border-primary/30 overflow-hidden">
-            <img src={buddyAvatar} alt="Buddy" className="w-full h-full object-cover" />
-          </div>
-          <div>
-            <p className="text-base font-bold font-orbitron text-foreground">Buddy</p>
-            <p className="text-xs text-accent">{user?.email || "Asisten Produktivitasmu"}</p>
+          {/* Avatar with upload */}
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploadingAvatar}
+            className="relative w-14 h-14 rounded-full bg-primary/20 border border-primary/30 overflow-hidden shrink-0 group"
+          >
+            <img
+              src={avatarUrl || buddyAvatar}
+              alt="Avatar"
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-opacity">
+              <Camera size={16} className="text-white" />
+            </div>
+            {uploadingAvatar && (
+              <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              </div>
+            )}
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleAvatarUpload}
+          />
+
+          {/* Nickname + email */}
+          <div className="flex-1 min-w-0">
+            {editingNickname ? (
+              <Input
+                autoFocus
+                value={nicknameInput}
+                onChange={(e) => setNicknameInput(e.target.value)}
+                onBlur={handleNicknameSave}
+                onKeyDown={(e) => e.key === "Enter" && handleNicknameSave()}
+                placeholder="Masukkan nama"
+                className="h-7 text-sm font-bold bg-background/60 border-border/40 px-2 py-0"
+              />
+            ) : (
+              <button
+                onClick={() => {
+                  setNicknameInput(nickname);
+                  setEditingNickname(true);
+                }}
+                className="text-left w-full"
+              >
+                <p className={`text-base font-bold font-orbitron ${nickname ? "text-foreground" : "text-muted-foreground"}`}>
+                  {nickname || "Tap untuk isi nama"}
+                </p>
+              </button>
+            )}
+            <p className="text-xs text-accent truncate">{user?.email || "Asisten Produktivitasmu"}</p>
           </div>
         </div>
 
