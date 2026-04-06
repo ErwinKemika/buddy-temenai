@@ -2,7 +2,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { Mic } from "lucide-react";
 import BuddyRobot from "./BuddyRobot";
 import { BuddyState, Message } from "@/hooks/useChat";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 type VoiceState = "idle" | "listening" | "thinking" | "speaking";
 
@@ -41,7 +41,6 @@ const GLOW_CLASSES: Record<VoiceState, string> = {
 };
 
 const VoiceMode = ({ onEndCall, streamChat, playTTS, transcribeVoice, buildTodoContext, chatHistory = [], sessionLimit }: Props) => {
-  const { toast } = useToast();
   const [voiceState, setVoiceState] = useState<VoiceState>("idle");
   const [sessionMessages, setSessionMessages] = useState<Message[]>([]);
   const [elapsed, setElapsed] = useState(0);
@@ -191,6 +190,7 @@ const VoiceMode = ({ onEndCall, streamChat, playTTS, transcribeVoice, buildTodoC
       await playTTS(assistantText);
     } catch (e) {
       console.error("[VoiceMode] TTS failed:", e);
+      toast("Suara tidak tersedia untuk respons ini", { duration: 3000 });
     }
 
     setVoiceState("idle");
@@ -220,11 +220,11 @@ const VoiceMode = ({ onEndCall, streamChat, playTTS, transcribeVoice, buildTodoC
           const remaining = sessionLimit - next;
           if (remaining === 60 && !hasWarnedRef.current && sessionLimit > 60) {
             hasWarnedRef.current = true;
-            toast({ title: "⏰ Sisa 1 menit", description: "Sesi ngobrol akan segera berakhir." });
+            toast("⏰ Sisa 1 menit", { description: "Sesi ngobrol akan segera berakhir." });
           }
           if (next >= sessionLimit) {
             clearInterval(interval);
-            toast({ title: "Sesi berakhir", description: "Waktu ngobrol kamu sudah habis untuk sesi ini." });
+            toast("Sesi berakhir", { description: "Waktu ngobrol kamu sudah habis untuk sesi ini." });
             handleEnd();
           }
         }
@@ -232,7 +232,7 @@ const VoiceMode = ({ onEndCall, streamChat, playTTS, transcribeVoice, buildTodoC
       });
     }, 1000);
     return () => clearInterval(interval);
-  }, [sessionLimit, toast, handleEnd]);
+  }, [sessionLimit, handleEnd]);
 
   const buddyState: BuddyState =
     voiceState === "thinking" ? "thinking"
