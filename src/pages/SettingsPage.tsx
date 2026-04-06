@@ -177,12 +177,15 @@ const SettingsPage = () => {
         {hasProAccess && (
           <button
             onClick={handleBoosterToggle}
-            className="w-full flex items-center justify-between bg-card/60 backdrop-blur-sm border border-border/40 rounded-2xl p-4 active:bg-muted transition-colors"
+            className="w-full flex items-center justify-between bg-orange-500/5 backdrop-blur-sm border border-border/40 border-l-2 border-l-orange-400 rounded-2xl p-4 active:bg-muted transition-colors"
           >
             <div className="flex items-center gap-3">
-              <Zap size={20} className="text-primary" />
+              <Zap size={20} className="text-orange-400" />
               <div className="text-left">
-                <span className="text-sm font-medium text-foreground block">LLM Booster — Claude Sonnet 4.6</span>
+                <span className="text-sm font-medium text-foreground block flex items-center gap-1.5">
+                  LLM Booster — Claude Sonnet 4.6
+                  <span className="text-[10px] bg-orange-500/20 text-orange-400 px-1.5 py-0.5 rounded-full font-semibold">NEW</span>
+                </span>
                 <span className="text-[10px] text-muted-foreground">Aktifkan untuk jawaban lebih cerdas dengan Claude AI (+Rp 49.000/bln)</span>
               </div>
             </div>
