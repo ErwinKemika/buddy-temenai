@@ -66,6 +66,7 @@ export type Database = {
           id: string
           last_active_date: string | null
           level: number
+          llm_booster: boolean
           nickname: string | null
           plan: string
           pro_expires_at: string | null
@@ -88,6 +89,7 @@ export type Database = {
           id?: string
           last_active_date?: string | null
           level?: number
+          llm_booster?: boolean
           nickname?: string | null
           plan?: string
           pro_expires_at?: string | null
@@ -110,6 +112,7 @@ export type Database = {
           id?: string
           last_active_date?: string | null
           level?: number
+          llm_booster?: boolean
           nickname?: string | null
           plan?: string
           pro_expires_at?: string | null

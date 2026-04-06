@@ -1,4 +1,4 @@
-import { Moon, Sun, Volume2, VolumeX, Play, Pause, ArrowLeft, LogOut, Phone, Crown } from "lucide-react";
+import { Moon, Sun, Volume2, VolumeX, Play, Pause, ArrowLeft, LogOut, Phone, Crown, Zap } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
@@ -10,6 +10,16 @@ import BottomNav from "@/components/BottomNav";
 import LockedFeature from "@/components/LockedFeature";
 import { useSubscription } from "@/hooks/useSubscription";
 import buddyAvatar from "@/assets/buddy-avatar.png";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const SettingsPage = () => {
   const { theme, toggleTheme } = useTheme();
@@ -29,6 +39,8 @@ const SettingsPage = () => {
   const [whatsappNumber, setWhatsappNumber] = useState("");
   const [whatsappSaving, setWhatsappSaving] = useState(false);
   const [whatsappEditing, setWhatsappEditing] = useState(false);
+  const [llmBooster, setLlmBooster] = useState(false);
+  const [showBoosterDialog, setShowBoosterDialog] = useState(false);
 
   useEffect(() => {
     localStorage.setItem("buddy-voice-enabled", JSON.stringify(voiceEnabled));
@@ -38,17 +50,20 @@ const SettingsPage = () => {
     localStorage.setItem("buddy-autoplay-voice", JSON.stringify(autoPlayVoice));
   }, [autoPlayVoice]);
 
-  // Load WhatsApp number from profile
+  // Load WhatsApp number + llm_booster from profile
   useEffect(() => {
     if (!user) return;
     supabase
       .from("profiles")
-      .select("whatsapp_number")
+      .select("whatsapp_number, llm_booster")
       .eq("user_id", user.id)
       .single()
       .then(({ data }) => {
         if (data?.whatsapp_number) {
           setWhatsappNumber(data.whatsapp_number);
+        }
+        if ((data as any)?.llm_booster === true) {
+          setLlmBooster(true);
         }
       });
   }, [user]);
@@ -70,6 +85,26 @@ const SettingsPage = () => {
       toast.error(err.message || "Gagal menyimpan nomor");
     } finally {
       setWhatsappSaving(false);
+    }
+  };
+
+  const handleBoosterToggle = async () => {
+    if (!user) return;
+    if (!llmBooster) {
+      // Trying to enable → show confirmation dialog instead of saving
+      setShowBoosterDialog(true);
+    } else {
+      // Disabling → save immediately
+      try {
+        await supabase
+          .from("profiles")
+          .update({ llm_booster: false, updated_at: new Date().toISOString() } as any)
+          .eq("user_id", user.id);
+        setLlmBooster(false);
+        toast.success("LLM Booster dinonaktifkan");
+      } catch {
+        toast.error("Gagal menyimpan pengaturan");
+      }
     }
   };
 
@@ -136,6 +171,25 @@ const SettingsPage = () => {
           </div>
         ) : (
           <LockedFeature featureName="WhatsApp Reminder" requiredPlan="max" variant="inline" />
+        )}
+
+        {/* LLM Booster — only for Pro and Max */}
+        {hasProAccess && (
+          <button
+            onClick={handleBoosterToggle}
+            className="w-full flex items-center justify-between bg-card/60 backdrop-blur-sm border border-border/40 rounded-2xl p-4 active:bg-muted transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <Zap size={20} className="text-primary" />
+              <div className="text-left">
+                <span className="text-sm font-medium text-foreground block">LLM Booster — Claude Sonnet 4.6</span>
+                <span className="text-[10px] text-muted-foreground">Aktifkan untuk jawaban lebih cerdas dengan Claude AI (+Rp 49.000/bln)</span>
+              </div>
+            </div>
+            <span className={`text-xs font-semibold ${llmBooster ? "text-accent" : "text-muted-foreground"}`}>
+              {llmBooster ? "ON" : "OFF"}
+            </span>
+          </button>
         )}
 
         {/* Theme */}
@@ -208,6 +262,22 @@ const SettingsPage = () => {
           <span className="text-sm font-medium text-destructive">Keluar</span>
         </button>
       </div>
+
+      {/* Booster confirmation dialog */}
+      <AlertDialog open={showBoosterDialog} onOpenChange={setShowBoosterDialog}>
+        <AlertDialogContent className="max-w-[90vw] rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Aktivasi LLM Booster</AlertDialogTitle>
+            <AlertDialogDescription>
+              Fitur ini akan ditagihkan terpisah. Hubungi support untuk aktivasi.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction onClick={() => setShowBoosterDialog(false)}>Mengerti</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <BottomNav />
     </div>
