@@ -235,6 +235,21 @@ const SettingsPage = () => {
             )}
             <p className="text-xs text-accent truncate">{user?.email || "Asisten Produktivitasmu"}</p>
           </div>
+
+          {/* Plan badge */}
+          <span
+            className={`ml-auto text-[10px] font-bold font-orbitron px-2 py-0.5 rounded-full shrink-0 ${
+              isMax
+                ? "bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-400 border border-amber-500/30"
+                : isPro
+                ? "bg-blue-500/20 text-blue-400 border border-blue-500/30"
+                : isTrial
+                ? "bg-violet-500/20 text-violet-400 border border-violet-500/30"
+                : "bg-white/10 text-muted-foreground border border-white/10"
+            }`}
+          >
+            {isMax ? "MAX" : isPro ? "PRO" : isTrial ? "TRIAL" : "FREE"}
+          </span>
         </div>
 
         {/* WhatsApp Number */}
