@@ -303,6 +303,11 @@ const BuddySpeechBubble = ({ messages, buddyState }: Props) => {
                   <YouTubeCards videos={msg.youtubeVideos} />
                 )}
               </div>
+              {msg.role === "user" && (
+                <div className="shrink-0">
+                  <UserMiniAvatar avatarUrl={userProfile.avatar_url} nickname={userProfile.nickname} email={user?.email} />
+                </div>
+              )}
             </div>
           );
         })}
