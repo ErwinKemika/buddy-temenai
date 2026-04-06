@@ -220,7 +220,7 @@ const VoiceMode = ({ onEndCall, streamChat, playTTS, transcribeVoice, buildTodoC
           const remaining = sessionLimit - next;
           if (remaining === 60 && !hasWarnedRef.current && sessionLimit > 60) {
             hasWarnedRef.current = true;
-            toast({ title: "⏰ Sisa 1 menit", description: "Sesi ngobrol akan segera berakhir." });
+            toast("⏰ Sisa 1 menit", { description: "Sesi ngobrol akan segera berakhir." });
           }
           if (next >= sessionLimit) {
             clearInterval(interval);
