@@ -58,6 +58,7 @@ const Index = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [mode, setMode] = useState<"chat" | "ngobrol">("chat");
+  const [showVoiceMode, setShowVoiceMode] = useState(false);
   const { isPro, isMax, isTrial } = useSubscription();
   
 
@@ -69,6 +70,7 @@ const Index = () => {
     sendMessage,
     injectReminderMessage,
     clearMessages,
+    importVoiceSession,
     todayMsgCount,
     msgLimit,
   } = useChat();
