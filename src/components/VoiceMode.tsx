@@ -42,7 +42,7 @@ const GLOW_CLASSES: Record<VoiceState, string> = {
   speaking: "bg-[radial-gradient(circle,hsl(190,90%,20%)_0%,transparent_70%)]",
 };
 
-const VoiceMode = ({ onEndCall, streamChat, playTTS, transcribeVoice, buildTodoContext, chatHistory = [], sessionLimit }: Props) => {
+const VoiceMode = ({ onEndCall, streamChat, playTTS, transcribeVoice, buildTodoContext, chatHistory = [], sessionLimit, profileContext }: Props) => {
   const [voiceState, setVoiceState] = useState<VoiceState>("idle");
   const [sessionMessages, setSessionMessages] = useState<Message[]>([]);
   const [elapsed, setElapsed] = useState(0);
