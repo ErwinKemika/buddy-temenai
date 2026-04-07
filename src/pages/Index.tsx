@@ -70,6 +70,7 @@ const Index = () => {
     clearMessages,
     todayMsgCount,
     msgLimit,
+    profileContext,
   } = useChat();
 
   const remindedRef = useRef(loadRemindedSet());
@@ -179,6 +180,7 @@ const Index = () => {
           buildTodoContext={buildTodoContext}
           chatHistory={messages}
           sessionLimit={(isMax || isTrial) ? 10 * 60 : isPro ? 5 * 60 : 1 * 60}
+          profileContext={profileContext}
         />
       </div>
     );

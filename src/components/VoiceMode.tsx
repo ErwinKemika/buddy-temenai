@@ -12,12 +12,14 @@ interface Props {
     chatMessages: Array<{ role: string; content: any }>,
     upsertAssistant: (chunk: string) => void,
     todoContext?: string,
+    profileContext?: { nickname?: string; buddyRole?: string; userPlan?: string; llmBooster?: boolean },
   ) => Promise<void>;
   playTTS: (text: string) => Promise<void>;
   transcribeVoice: (blob: Blob) => Promise<string>;
   buildTodoContext: () => string;
   chatHistory?: Message[];
   sessionLimit?: number;
+  profileContext?: { nickname?: string; buddyRole?: string; userPlan?: string; llmBooster?: boolean };
 }
 
 function formatSeconds(s: number): string {
@@ -40,7 +42,7 @@ const GLOW_CLASSES: Record<VoiceState, string> = {
   speaking: "bg-[radial-gradient(circle,hsl(190,90%,20%)_0%,transparent_70%)]",
 };
 
-const VoiceMode = ({ onEndCall, streamChat, playTTS, transcribeVoice, buildTodoContext, chatHistory = [], sessionLimit }: Props) => {
+const VoiceMode = ({ onEndCall, streamChat, playTTS, transcribeVoice, buildTodoContext, chatHistory = [], sessionLimit, profileContext }: Props) => {
   const [voiceState, setVoiceState] = useState<VoiceState>("idle");
   const [sessionMessages, setSessionMessages] = useState<Message[]>([]);
   const [elapsed, setElapsed] = useState(0);
@@ -177,7 +179,7 @@ const VoiceMode = ({ onEndCall, streamChat, playTTS, transcribeVoice, buildTodoC
     const chatMsgs = [...historyMsgs, ...voiceMsgs];
 
     try {
-      await streamChat(chatMsgs, upsert, todoContext);
+      await streamChat(chatMsgs, upsert, todoContext, profileContext);
     } catch {
       assistantText = "Maaf, aku sedang gangguan. Coba lagi ya! 😅";
     }
@@ -194,7 +196,7 @@ const VoiceMode = ({ onEndCall, streamChat, playTTS, transcribeVoice, buildTodoC
     }
 
     setVoiceState("idle");
-  }, [voiceState, sessionMessages, streamChat, playTTS, transcribeVoice, buildTodoContext]);
+  }, [voiceState, sessionMessages, streamChat, playTTS, transcribeVoice, buildTodoContext, profileContext]);
 
   const handleMicTap = useCallback(() => {
     if (voiceState === "idle") {
