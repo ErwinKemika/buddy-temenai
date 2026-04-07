@@ -7,7 +7,6 @@ import BottomNav from "@/components/BottomNav";
 import BuddySpeechBubble from "@/components/BuddySpeechBubble";
 import VoiceMode from "@/components/VoiceMode";
 import { useChat, streamChat, playTTS, transcribeVoice, buildTodoContext, Message } from "@/hooks/useChat";
-import { Phone } from "lucide-react";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -58,7 +57,6 @@ const Index = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [mode, setMode] = useState<"chat" | "ngobrol">("chat");
-  const [showVoiceMode, setShowVoiceMode] = useState(false);
   const { isPro, isMax, isTrial } = useSubscription();
   
 
@@ -70,7 +68,6 @@ const Index = () => {
     sendMessage,
     injectReminderMessage,
     clearMessages,
-    importVoiceSession,
     todayMsgCount,
     msgLimit,
   } = useChat();
@@ -168,10 +165,8 @@ const Index = () => {
   };
 
   const handleEndVoiceCall = useCallback((voiceMessages: Message[]) => {
-    importVoiceSession(voiceMessages);
-    setShowVoiceMode(false);
     setMode("chat");
-  }, [importVoiceSession]);
+  }, []);
 
   if (mode === "ngobrol") {
     return (
@@ -235,17 +230,6 @@ const Index = () => {
           <BuddySpeechBubble messages={messages} buddyState={buddyState} />
         </div>
 
-        {/* Floating Phone button above control bar */}
-        <div className="flex justify-center pb-1">
-          <button
-            onClick={() => setShowVoiceMode(true)}
-            className="p-3 rounded-full bg-accent/20 border border-accent/40 text-accent hover:bg-accent/30 transition-colors shadow-lg"
-            title="Voice Call"
-          >
-            <Phone className="w-5 h-5" />
-          </button>
-        </div>
-
         <BuddyControlBar
           onSendMessage={handleSendMessage}
           buddyState={buddyState}
@@ -254,24 +238,6 @@ const Index = () => {
         />
         <BottomNav />
       </div>
-
-      {/* Voice Mode full-screen overlay */}
-      {showVoiceMode && (
-        <div className="fixed inset-0 z-50 bg-background">
-          <VoiceMode
-            onEndCall={(voiceMsgs) => {
-              importVoiceSession(voiceMsgs);
-              setShowVoiceMode(false);
-            }}
-            streamChat={streamChat}
-            playTTS={playTTS}
-            transcribeVoice={transcribeVoice}
-            buildTodoContext={buildTodoContext}
-            chatHistory={messages}
-            sessionLimit={(isMax || isTrial) ? 10 * 60 : isPro ? 5 * 60 : 1 * 60}
-          />
-        </div>
-      )}
     </div>
   );
 };
