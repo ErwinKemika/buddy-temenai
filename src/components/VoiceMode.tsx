@@ -12,12 +12,14 @@ interface Props {
     chatMessages: Array<{ role: string; content: any }>,
     upsertAssistant: (chunk: string) => void,
     todoContext?: string,
+    profileContext?: { nickname?: string; buddyRole?: string; userPlan?: string; llmBooster?: boolean },
   ) => Promise<void>;
   playTTS: (text: string) => Promise<void>;
   transcribeVoice: (blob: Blob) => Promise<string>;
   buildTodoContext: () => string;
   chatHistory?: Message[];
   sessionLimit?: number;
+  profileContext?: { nickname?: string; buddyRole?: string; userPlan?: string; llmBooster?: boolean };
 }
 
 function formatSeconds(s: number): string {
