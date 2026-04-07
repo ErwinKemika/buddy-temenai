@@ -179,7 +179,7 @@ const VoiceMode = ({ onEndCall, streamChat, playTTS, transcribeVoice, buildTodoC
     const chatMsgs = [...historyMsgs, ...voiceMsgs];
 
     try {
-      await streamChat(chatMsgs, upsert, todoContext);
+      await streamChat(chatMsgs, upsert, todoContext, profileContext);
     } catch {
       assistantText = "Maaf, aku sedang gangguan. Coba lagi ya! 😅";
     }

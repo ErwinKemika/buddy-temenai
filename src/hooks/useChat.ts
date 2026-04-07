@@ -619,5 +619,5 @@ export function useChat() {
     setMessages(prev => [...prev, separator, ...tagged]);
   }, []);
 
-  return { messages, buddyState, voiceEnabled, setVoiceEnabled, sendMessage, injectReminderMessage, clearMessages, importVoiceSession, todayMsgCount, msgLimit: isFree ? MSG_LIMIT_FREE : null };
+  return { messages, buddyState, voiceEnabled, setVoiceEnabled, sendMessage, injectReminderMessage, clearMessages, importVoiceSession, todayMsgCount, msgLimit: isFree ? MSG_LIMIT_FREE : null, profileContext };
 }
