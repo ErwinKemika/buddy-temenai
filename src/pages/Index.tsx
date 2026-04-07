@@ -235,6 +235,17 @@ const Index = () => {
           <BuddySpeechBubble messages={messages} buddyState={buddyState} />
         </div>
 
+        {/* Floating Phone button above control bar */}
+        <div className="flex justify-center pb-1">
+          <button
+            onClick={() => setShowVoiceMode(true)}
+            className="p-3 rounded-full bg-accent/20 border border-accent/40 text-accent hover:bg-accent/30 transition-colors shadow-lg"
+            title="Voice Call"
+          >
+            <Phone className="w-5 h-5" />
+          </button>
+        </div>
+
         <BuddyControlBar
           onSendMessage={handleSendMessage}
           buddyState={buddyState}
@@ -243,6 +254,24 @@ const Index = () => {
         />
         <BottomNav />
       </div>
+
+      {/* Voice Mode full-screen overlay */}
+      {showVoiceMode && (
+        <div className="fixed inset-0 z-50 bg-background">
+          <VoiceMode
+            onEndCall={(voiceMsgs) => {
+              importVoiceSession(voiceMsgs);
+              setShowVoiceMode(false);
+            }}
+            streamChat={streamChat}
+            playTTS={playTTS}
+            transcribeVoice={transcribeVoice}
+            buildTodoContext={buildTodoContext}
+            chatHistory={messages}
+            sessionLimit={(isMax || isTrial) ? 10 * 60 : isPro ? 5 * 60 : 1 * 60}
+          />
+        </div>
+      )}
     </div>
   );
 };
