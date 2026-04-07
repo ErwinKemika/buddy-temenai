@@ -196,7 +196,7 @@ const VoiceMode = ({ onEndCall, streamChat, playTTS, transcribeVoice, buildTodoC
     }
 
     setVoiceState("idle");
-  }, [voiceState, sessionMessages, streamChat, playTTS, transcribeVoice, buildTodoContext]);
+  }, [voiceState, sessionMessages, streamChat, playTTS, transcribeVoice, buildTodoContext, profileContext]);
 
   const handleMicTap = useCallback(() => {
     if (voiceState === "idle") {
