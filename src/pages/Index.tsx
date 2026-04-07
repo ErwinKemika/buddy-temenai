@@ -70,6 +70,7 @@ const Index = () => {
     clearMessages,
     todayMsgCount,
     msgLimit,
+    profileContext,
   } = useChat();
 
   const remindedRef = useRef(loadRemindedSet());
