@@ -1,4 +1,4 @@
-import { Moon, Sun, Volume2, VolumeX, Play, Pause, ArrowLeft, LogOut, Phone, Crown, Zap, Camera } from "lucide-react";
+import { Moon, Sun, Volume2, VolumeX, Play, Pause, ArrowLeft, LogOut, Phone, Crown, Zap, Camera, Brain } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
@@ -47,6 +47,8 @@ const SettingsPage = () => {
   const [nicknameInput, setNicknameInput] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [smartMode, setSmartMode] = useState(false);
+  const [showSmartModeDisclaimer, setShowSmartModeDisclaimer] = useState(false);
 
   useEffect(() => {
     localStorage.setItem("buddy-voice-enabled", JSON.stringify(voiceEnabled));
@@ -61,7 +63,7 @@ const SettingsPage = () => {
     if (!user) return;
     supabase
       .from("profiles")
-      .select("whatsapp_number, llm_booster, nickname, avatar_url")
+      .select("whatsapp_number, llm_booster, nickname, avatar_url, smart_mode")
       .eq("user_id", user.id)
       .single()
       .then(({ data }) => {
@@ -76,6 +78,9 @@ const SettingsPage = () => {
         }
         if ((data as any)?.avatar_url) {
           setAvatarUrl((data as any).avatar_url);
+        }
+        if ((data as any)?.smart_mode === true) {
+          setSmartMode(true);
         }
       });
   }, [user]);
