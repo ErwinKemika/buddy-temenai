@@ -1,0 +1,1 @@
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS smart_mode boolean NOT NULL DEFAULT false;

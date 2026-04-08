@@ -259,7 +259,7 @@ export async function streamChat(
   chatMessages: Array<{ role: string; content: any }>,
   upsertAssistant: (chunk: string) => void,
   todoContext?: string,
-  profileContext?: { nickname?: string; buddyRole?: string; userPlan?: string; llmBooster?: boolean },
+  profileContext?: { nickname?: string; buddyRole?: string; userPlan?: string; llmBooster?: boolean; smartMode?: boolean },
   source?: "text" | "voice",
 ) {
   // Use user's session token so edge function can identify the user
@@ -282,6 +282,7 @@ export async function streamChat(
         buddyRole: profileContext?.buddyRole,
         userPlan: profileContext?.userPlan,
         llmBooster: profileContext?.llmBooster,
+        smartMode: profileContext?.smartMode,
         source: source || "text",
       }),
     }
@@ -347,7 +348,7 @@ export function useChat() {
   const { isFree, plan, isTrial } = useSubscription();
   const { toast } = useToast();
   const [todayMsgCount, setTodayMsgCount] = useState(() => getTodayMsgCount());
-  const [profileContext, setProfileContext] = useState<{ nickname?: string; buddyRole?: string; userPlan?: string; llmBooster?: boolean }>({});
+  const [profileContext, setProfileContext] = useState<{ nickname?: string; buddyRole?: string; userPlan?: string; llmBooster?: boolean; smartMode?: boolean }>({});
 
   // Keep-alive: prevent edge function cold starts
   useEffect(() => {
@@ -407,7 +408,7 @@ export function useChat() {
     const loadProfile = async () => {
       const { data } = await supabase
         .from("profiles")
-        .select("nickname, buddy_role, plan, trial_expires_at, llm_booster")
+        .select("nickname, buddy_role, plan, trial_expires_at, llm_booster, smart_mode")
         .eq("user_id", currentUserId)
         .single();
       if (data) {
@@ -423,6 +424,7 @@ export function useChat() {
           buddyRole: p.buddy_role || "",
           userPlan: effectivePlan,
           llmBooster: p.llm_booster === true,
+          smartMode: p.smart_mode === true,
         });
       }
     };

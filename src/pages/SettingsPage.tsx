@@ -1,4 +1,4 @@
-import { Moon, Sun, Volume2, VolumeX, Play, Pause, ArrowLeft, LogOut, Phone, Crown, Zap, Camera } from "lucide-react";
+import { Moon, Sun, Volume2, VolumeX, Play, Pause, ArrowLeft, LogOut, Phone, Crown, Zap, Camera, Brain } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
@@ -47,6 +47,8 @@ const SettingsPage = () => {
   const [nicknameInput, setNicknameInput] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [smartMode, setSmartMode] = useState(false);
+  const [showSmartModeDisclaimer, setShowSmartModeDisclaimer] = useState(false);
 
   useEffect(() => {
     localStorage.setItem("buddy-voice-enabled", JSON.stringify(voiceEnabled));
@@ -61,7 +63,7 @@ const SettingsPage = () => {
     if (!user) return;
     supabase
       .from("profiles")
-      .select("whatsapp_number, llm_booster, nickname, avatar_url")
+      .select("whatsapp_number, llm_booster, nickname, avatar_url, smart_mode")
       .eq("user_id", user.id)
       .single()
       .then(({ data }) => {
@@ -76,6 +78,9 @@ const SettingsPage = () => {
         }
         if ((data as any)?.avatar_url) {
           setAvatarUrl((data as any).avatar_url);
+        }
+        if ((data as any)?.smart_mode === true) {
+          setSmartMode(true);
         }
       });
   }, [user]);
@@ -115,6 +120,39 @@ const SettingsPage = () => {
       } catch {
         toast.error("Gagal menyimpan pengaturan");
       }
+    }
+  };
+
+  const handleSmartModeToggle = async () => {
+    if (!user) return;
+    if (!smartMode) {
+      setShowSmartModeDisclaimer(true);
+    } else {
+      try {
+        await supabase
+          .from("profiles")
+          .update({ smart_mode: false, updated_at: new Date().toISOString() } as any)
+          .eq("user_id", user.id);
+        setSmartMode(false);
+        toast.success("Mode Cerdas dinonaktifkan");
+      } catch {
+        toast.error("Gagal menyimpan pengaturan");
+      }
+    }
+  };
+
+  const confirmSmartMode = async () => {
+    if (!user) return;
+    try {
+      await supabase
+        .from("profiles")
+        .update({ smart_mode: true, updated_at: new Date().toISOString() } as any)
+        .eq("user_id", user.id);
+      setSmartMode(true);
+      setShowSmartModeDisclaimer(false);
+      toast.success("Mode Cerdas aktif! 🧠");
+    } catch {
+      toast.error("Gagal menyimpan pengaturan");
     }
   };
 
@@ -312,6 +350,25 @@ const SettingsPage = () => {
           </button>
         )}
 
+        {/* Mode Cerdas — only for Trial, Pro, Max */}
+        {hasProAccess && (
+          <button
+            onClick={handleSmartModeToggle}
+            className="w-full flex items-center justify-between bg-card/60 backdrop-blur-sm border border-border/40 rounded-2xl p-4 active:bg-muted transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <Brain size={20} className="text-primary" />
+              <div className="text-left">
+                <span className="text-sm font-medium text-foreground block">Mode Cerdas</span>
+                <span className="text-[10px] text-muted-foreground">Jawaban lebih pintar, tapi lebih lambat (GPT-5 Mini)</span>
+              </div>
+            </div>
+            <span className={`text-xs font-semibold ${smartMode ? "text-accent" : "text-muted-foreground"}`}>
+              {smartMode ? "ON" : "OFF"}
+            </span>
+          </button>
+        )}
+
         {/* Theme */}
         <button
           onClick={toggleTheme}
@@ -399,7 +456,22 @@ const SettingsPage = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      <BottomNav />
+      {/* Smart Mode disclaimer dialog */}
+      <AlertDialog open={showSmartModeDisclaimer} onOpenChange={setShowSmartModeDisclaimer}>
+        <AlertDialogContent className="max-w-[90vw] rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Mode Cerdas</AlertDialogTitle>
+            <AlertDialogDescription>
+              Mode Cerdas aktif — Buddy akan menjawab lebih lambat tapi lebih pintar menggunakan GPT-5 Mini.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmSmartMode}>Aktifkan</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
     </div>
   );
 };
