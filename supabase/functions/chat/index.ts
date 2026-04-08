@@ -162,10 +162,8 @@ KEMAMPUAN JADWAL: Kamu punya akses ke to-do list user. Jika user bertanya soal j
       let model: string;
       if (hasImages) {
         model = "google/gemini-2.5-flash";
-      } else if (userPlan === "max") {
-        model = "openai/gpt-5-mini";
-      } else if (userPlan === "pro") {
-        model = "openai/gpt-5-mini";
+      } else if (userPlan === "max" || userPlan === "pro") {
+        model = "google/gemini-2.5-flash";
       } else {
         model = "google/gemini-3-flash-preview";
       }
