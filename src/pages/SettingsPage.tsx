@@ -350,6 +350,25 @@ const SettingsPage = () => {
           </button>
         )}
 
+        {/* Mode Cerdas — only for Trial, Pro, Max */}
+        {hasProAccess && (
+          <button
+            onClick={handleSmartModeToggle}
+            className="w-full flex items-center justify-between bg-card/60 backdrop-blur-sm border border-border/40 rounded-2xl p-4 active:bg-muted transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <Brain size={20} className="text-primary" />
+              <div className="text-left">
+                <span className="text-sm font-medium text-foreground block">Mode Cerdas</span>
+                <span className="text-[10px] text-muted-foreground">Jawaban lebih pintar, tapi lebih lambat (GPT-5 Mini)</span>
+              </div>
+            </div>
+            <span className={`text-xs font-semibold ${smartMode ? "text-accent" : "text-muted-foreground"}`}>
+              {smartMode ? "ON" : "OFF"}
+            </span>
+          </button>
+        )}
+
         {/* Theme */}
         <button
           onClick={toggleTheme}
