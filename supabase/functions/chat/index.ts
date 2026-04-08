@@ -17,6 +17,7 @@ serve(async (req) => {
     const buddyRole = body.buddyRole || "";
     const userPlan = body.userPlan || "free";
     const llmBooster = body.llmBooster === true;
+    const smartMode = body.smartMode === true;
     const source = body.source || "text";
 
     // Build personalization context
@@ -164,12 +165,13 @@ KEMAMPUAN JADWAL: Kamu punya akses ke to-do list user. Jika user bertanya soal j
       if (hasImages) {
         model = "google/gemini-2.5-flash";
       } else if (source === "voice") {
-        // Voice mode: use fastest model for low latency
         model = "google/gemini-2.5-flash-lite";
+      } else if (smartMode) {
+        model = "openai/gpt-5-mini";
       } else if (userPlan === "max" || userPlan === "pro") {
         model = "google/gemini-2.5-flash";
       } else {
-        model = "google/gemini-3-flash-preview";
+        model = "google/gemini-2.0-flash";
       }
 
       const lovableResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
