@@ -456,7 +456,22 @@ const SettingsPage = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      <BottomNav />
+      {/* Smart Mode disclaimer dialog */}
+      <AlertDialog open={showSmartModeDisclaimer} onOpenChange={setShowSmartModeDisclaimer}>
+        <AlertDialogContent className="max-w-[90vw] rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Mode Cerdas</AlertDialogTitle>
+            <AlertDialogDescription>
+              Mode Cerdas aktif — Buddy akan menjawab lebih lambat tapi lebih pintar menggunakan GPT-5 Mini.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmSmartMode}>Aktifkan</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
     </div>
   );
 };
