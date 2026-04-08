@@ -72,6 +72,7 @@ export type Database = {
           plan: string
           pro_expires_at: string | null
           pro_since: string | null
+          smart_mode: boolean
           streak: number
           total_tasks_completed: number
           trial_expires_at: string | null
@@ -96,6 +97,7 @@ export type Database = {
           plan?: string
           pro_expires_at?: string | null
           pro_since?: string | null
+          smart_mode?: boolean
           streak?: number
           total_tasks_completed?: number
           trial_expires_at?: string | null
@@ -120,6 +122,7 @@ export type Database = {
           plan?: string
           pro_expires_at?: string | null
           pro_since?: string | null
+          smart_mode?: boolean
           streak?: number
           total_tasks_completed?: number
           trial_expires_at?: string | null
