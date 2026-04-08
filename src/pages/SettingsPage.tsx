@@ -123,6 +123,39 @@ const SettingsPage = () => {
     }
   };
 
+  const handleSmartModeToggle = async () => {
+    if (!user) return;
+    if (!smartMode) {
+      setShowSmartModeDisclaimer(true);
+    } else {
+      try {
+        await supabase
+          .from("profiles")
+          .update({ smart_mode: false, updated_at: new Date().toISOString() } as any)
+          .eq("user_id", user.id);
+        setSmartMode(false);
+        toast.success("Mode Cerdas dinonaktifkan");
+      } catch {
+        toast.error("Gagal menyimpan pengaturan");
+      }
+    }
+  };
+
+  const confirmSmartMode = async () => {
+    if (!user) return;
+    try {
+      await supabase
+        .from("profiles")
+        .update({ smart_mode: true, updated_at: new Date().toISOString() } as any)
+        .eq("user_id", user.id);
+      setSmartMode(true);
+      setShowSmartModeDisclaimer(false);
+      toast.success("Mode Cerdas aktif! 🧠");
+    } catch {
+      toast.error("Gagal menyimpan pengaturan");
+    }
+  };
+
   const handleNicknameSave = async () => {
     if (!user) return;
     const trimmed = nicknameInput.trim();
