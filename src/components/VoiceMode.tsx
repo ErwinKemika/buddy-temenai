@@ -13,6 +13,7 @@ interface Props {
     upsertAssistant: (chunk: string) => void,
     todoContext?: string,
     profileContext?: { nickname?: string; buddyRole?: string; userPlan?: string; llmBooster?: boolean },
+    source?: "text" | "voice",
   ) => Promise<void>;
   playTTS: (text: string) => Promise<void>;
   transcribeVoice: (blob: Blob) => Promise<string>;
@@ -179,7 +180,7 @@ const VoiceMode = ({ onEndCall, streamChat, playTTS, transcribeVoice, buildTodoC
     const chatMsgs = [...historyMsgs, ...voiceMsgs];
 
     try {
-      await streamChat(chatMsgs, upsert, todoContext, profileContext);
+      await streamChat(chatMsgs, upsert, todoContext, profileContext, "voice");
     } catch {
       assistantText = "Maaf, aku sedang gangguan. Coba lagi ya! 😅";
     }

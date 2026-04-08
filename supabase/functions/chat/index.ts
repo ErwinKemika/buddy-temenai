@@ -17,6 +17,7 @@ serve(async (req) => {
     const buddyRole = body.buddyRole || "";
     const userPlan = body.userPlan || "free";
     const llmBooster = body.llmBooster === true;
+    const source = body.source || "text";
 
     // Build personalization context
     let personalization = "";
@@ -162,6 +163,9 @@ KEMAMPUAN JADWAL: Kamu punya akses ke to-do list user. Jika user bertanya soal j
       let model: string;
       if (hasImages) {
         model = "google/gemini-2.5-flash";
+      } else if (source === "voice") {
+        // Voice mode: use fastest model for low latency
+        model = "google/gemini-2.5-flash-lite";
       } else if (userPlan === "max" || userPlan === "pro") {
         model = "google/gemini-2.5-flash";
       } else {
