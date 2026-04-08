@@ -68,7 +68,6 @@ const Index = () => {
     sendMessage,
     injectReminderMessage,
     clearMessages,
-    importVoiceSession,
     todayMsgCount,
     msgLimit,
     profileContext,
@@ -167,9 +166,8 @@ const Index = () => {
   };
 
   const handleEndVoiceCall = useCallback((voiceMessages: Message[]) => {
-    importVoiceSession(voiceMessages);
     setMode("chat");
-  }, [importVoiceSession]);
+  }, []);
 
   if (mode === "ngobrol") {
     return (
