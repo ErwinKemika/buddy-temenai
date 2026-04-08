@@ -193,7 +193,7 @@ export function useTodos() {
       dbUpdates.updated_at = new Date().toISOString();
 
       if (Object.keys(dbUpdates).length > 0) {
-        const { error } = await supabase.from("todos").update(dbUpdates).eq("id", id);
+        const { error } = await supabase.from("todos").update(dbUpdates as any).eq("id", id);
         if (error) console.error("[useTodos] update error:", error);
       }
 
