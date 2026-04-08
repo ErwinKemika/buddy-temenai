@@ -13,6 +13,7 @@ interface Props {
     upsertAssistant: (chunk: string) => void,
     todoContext?: string,
     profileContext?: { nickname?: string; buddyRole?: string; userPlan?: string; llmBooster?: boolean },
+    source?: "text" | "voice",
   ) => Promise<void>;
   playTTS: (text: string) => Promise<void>;
   transcribeVoice: (blob: Blob) => Promise<string>;
