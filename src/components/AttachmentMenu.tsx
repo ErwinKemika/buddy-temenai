@@ -1,5 +1,6 @@
 import { ImagePlus, FileText, Camera } from "lucide-react";
 import { useRef } from "react";
+import { useI18n } from "@/hooks/useI18n";
 
 interface Props {
   open: boolean;
@@ -13,6 +14,7 @@ const AttachmentMenu = ({
   open, onClose,
   onImageSelect, onDocumentSelect, onCameraCapture,
 }: Props) => {
+  const { t } = useI18n();
   const imageRef = useRef<HTMLInputElement>(null);
   const docRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
@@ -20,9 +22,9 @@ const AttachmentMenu = ({
   if (!open) return null;
 
   const items = [
-    { icon: <ImagePlus size={20} />, label: "Galeri", color: "text-purple-400", bg: "bg-purple-500/20", action: () => imageRef.current?.click() },
-    { icon: <Camera size={20} />, label: "Kamera", color: "text-blue-400", bg: "bg-blue-500/20", action: () => cameraRef.current?.click() },
-    { icon: <FileText size={20} />, label: "Dokumen", color: "text-green-400", bg: "bg-green-500/20", action: () => docRef.current?.click() },
+    { icon: <ImagePlus size={20} />, label: t("attach.gallery"), color: "text-purple-400", bg: "bg-purple-500/20", action: () => imageRef.current?.click() },
+    { icon: <Camera size={20} />, label: t("attach.camera"), color: "text-blue-400", bg: "bg-blue-500/20", action: () => cameraRef.current?.click() },
+    { icon: <FileText size={20} />, label: t("attach.document"), color: "text-green-400", bg: "bg-green-500/20", action: () => docRef.current?.click() },
   ];
 
   return (

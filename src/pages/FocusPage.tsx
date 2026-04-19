@@ -3,61 +3,61 @@ import { Pause, Play, Square, RotateCcw, CheckCircle2 } from "lucide-react";
 import { startOfDay, isBefore } from "date-fns";
 import { useSearchParams } from "react-router-dom";
 import BottomNav from "@/components/BottomNav";
-import LockedFeature from "@/components/LockedFeature";
-import AmbientPlayer from "@/components/AmbientPlayer";
 import { BuddyState } from "@/hooks/useChat";
-import { useSubscription } from "@/hooks/useSubscription";
-import { useTodos, type Task } from "@/hooks/useTodos";
+import { useI18n } from "@/hooks/useI18n";
 
-// Task type imported from useTodos
+const TODO_STORAGE_KEY = "buddy-todos";
+
+interface Task {
+  id: string;
+  title: string;
+  done: boolean;
+  date: string;
+  startTime?: string;
+  endTime?: string;
+  startedAt?: string;
+  completedAt?: string;
+  isRunning?: boolean;
+  priority: "high" | "medium" | "low";
+  status: "todo" | "in_progress" | "done";
+  category?: "work" | "personal" | "health" | "learning";
+  recurrence: "once" | "daily" | "weekly";
+  effort?: "quick" | "medium" | "deep";
+}
 
 const PRIORITY_WEIGHT = { high: 3, medium: 2, low: 1 };
 
-const PHRASES = {
-  idle: [
-    "Siap fokus? Pilih tugas dulu ya 🎯",
-    "Mau ngerjain apa hari ini?",
-    "Pilih tugas dari to-do list ya 💪",
-  ],
-  started: [
-    "Oke, kita fokus bareng ya 🔥",
-    "Fokus dulu, kamu pasti bisa!",
-    "Let's go! Aku temenin 🚀",
-  ],
-  running: [
-    "Bagus, terus lanjut 💫",
-    "Kamu lagi on fire 🔥",
-    "Fokus… fokus… 🧘",
-  ],
-  nearEnd: [
-    "Sedikit lagi selesai! 🏁",
-    "Tinggal bentar lagi, semangat!",
-    "Hampir beres, tahan ya! 💪",
-  ],
-  finished: [
-    "Kerja bagus! Kamu keren! 🌟",
-    "Satu sesi beres! Istirahat dulu? ☕",
-    "Mantap! Mau lanjut lagi? 🎉",
-  ],
-  paused: [
-    "Istirahat sebentar ya 😊",
-    "Aku tunggu di sini aja",
-    "Santai dulu, nanti lanjut lagi",
-  ],
-  taskDone: [
-    "Sip, tugas beres! 🎉",
-    "Mantap, satu lagi kelar! ✅",
-    "Keren, lanjut yang berikutnya? 💪",
-  ],
+const PHRASE_KEYS = {
+  idle: ["focus.p.idle1", "focus.p.idle2", "focus.p.idle3"],
+  started: ["focus.p.started1", "focus.p.started2", "focus.p.started3"],
+  running: ["focus.p.running1", "focus.p.running2", "focus.p.running3"],
+  nearEnd: ["focus.p.nearEnd1", "focus.p.nearEnd2", "focus.p.nearEnd3"],
+  finished: ["focus.p.finished1", "focus.p.finished2", "focus.p.finished3"],
+  paused: ["focus.p.paused1", "focus.p.paused2", "focus.p.paused3"],
+  taskDone: ["focus.p.taskDone1", "focus.p.taskDone2", "focus.p.taskDone3"],
 };
 
-function pickRandom(arr: string[]) {
-  return arr[Math.floor(Math.random() * arr.length)];
+function pickRandom(keys: string[]) {
+  return keys[Math.floor(Math.random() * keys.length)];
 }
 
 type TimerState = "idle" | "running" | "paused" | "finished";
 
-// loadTasks/saveTasks removed — handled by useTodos hook
+function loadTasks(): Task[] {
+  try {
+    const raw = JSON.parse(localStorage.getItem(TODO_STORAGE_KEY) || "[]");
+    return raw.map((t: any) => ({
+      ...t,
+      priority: t.priority || "medium",
+      status: t.status || (t.done ? "done" : "todo"),
+      recurrence: t.recurrence || "once",
+    }));
+  } catch { return []; }
+}
+
+function saveTasks(tasks: Task[]) {
+  localStorage.setItem(TODO_STORAGE_KEY, JSON.stringify(tasks));
+}
 
 /** Calculate duration in seconds from task startTime/endTime, fallback to 25min */
 function getTaskDuration(task: Task | null): number {
@@ -101,16 +101,14 @@ const PRIORITY_DOT: Record<string, string> = {
 };
 
 const FocusPage = () => {
+  const { t } = useI18n();
   const [searchParams] = useSearchParams();
-  const { isPro, isMax, isTrial } = useSubscription();
-  const hasProAccess = isPro || isMax || isTrial;
-  const hasMaxAccess = isMax || isTrial;
   const taskIdFromUrl = searchParams.get("taskId");
-  const { tasks: allTasks, setTasks: setAllTasks, updateTask: updateTaskInDb } = useTodos();
 
   const [timerState, setTimerState] = useState<TimerState>("idle");
-  const [buddyMsg, setBuddyMsg] = useState(() => pickRandom(PHRASES.idle));
+  const [buddyMsg, setBuddyMsg] = useState(() => pickRandom(PHRASE_KEYS.idle));
   const [buddyState, setBuddyState] = useState<BuddyState>("idle");
+  const [allTasks, setAllTasks] = useState<Task[]>(() => loadTasks());
   const [activeIdx, setActiveIdx] = useState(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const nearEndFired = useRef(false);
@@ -137,12 +135,20 @@ const FocusPage = () => {
       if (idx >= 0) {
         setActiveIdx(idx);
         autoStarted.current = true;
+        // Auto-start after a brief delay
         setTimeout(() => {
           startTimerForTask(idx);
         }, 500);
       }
     }
   }, [taskIdFromUrl, focusTasks]);
+
+  // Reload tasks from storage on mount and when window refocuses
+  useEffect(() => {
+    const reload = () => setAllTasks(loadTasks());
+    window.addEventListener("focus", reload);
+    return () => window.removeEventListener("focus", reload);
+  }, []);
 
   const clearTimer = useCallback(() => {
     if (intervalRef.current) clearInterval(intervalRef.current);
@@ -151,18 +157,19 @@ const FocusPage = () => {
 
   const markTaskDone = useCallback(() => {
     if (!activeTask) return;
-    updateTaskInDb(activeTask.id, { done: true, status: "done" as any, completedAt: new Date().toISOString() });
-    setBuddyMsg(pickRandom(PHRASES.taskDone));
+    const updated = allTasks.map(t =>
+      t.id === activeTask.id ? { ...t, status: "done" as const, done: true, completedAt: new Date().toISOString() } : t
+    );
+    setAllTasks(updated);
+    saveTasks(updated);
+    setBuddyMsg(pickRandom(PHRASE_KEYS.taskDone));
     setBuddyState("speaking");
     setTimeout(() => setBuddyState("idle"), 2000);
-    const updated = allTasks.map(t =>
-      t.id === activeTask.id ? { ...t, status: "done" as const, done: true } : t
-    );
     const newFocus = getFocusTasks(updated);
     setActiveIdx(prev => Math.min(prev, Math.max(0, newFocus.length - 1)));
     setTimerState("idle");
     clearTimer();
-  }, [activeTask, allTasks, clearTimer, updateTaskInDb]);
+  }, [activeTask, allTasks, clearTimer]);
 
   const startTimerForTask = (idx?: number) => {
     const taskIdx = idx ?? activeIdx;
@@ -175,17 +182,22 @@ const FocusPage = () => {
     setSecondsLeft(startFrom);
     setTimerState("running");
 
+    // Capture the actual task ID for the timer closure
     const runningTaskId = task?.id || null;
     activeTaskIdRef.current = runningTaskId;
 
     // Set active task to in_progress
     if (task && task.status !== "in_progress") {
-      updateTaskInDb(task.id, { status: "in_progress" as any, isRunning: true, startedAt: task.startedAt || new Date().toISOString() });
+      const updated = allTasks.map(t =>
+        t.id === task.id ? { ...t, status: "in_progress" as const, isRunning: true, startedAt: t.startedAt || new Date().toISOString() } : t
+      );
+      setAllTasks(updated);
+      saveTasks(updated);
     }
 
     setBuddyMsg(task
-      ? `Oke, kita fokus ke "${task.title}" ya 🔥`
-      : pickRandom(PHRASES.started)
+      ? `focus.p.taskFocus:${task.title}`
+      : pickRandom(PHRASE_KEYS.started)
     );
     setBuddyState("speaking");
     setTimeout(() => setBuddyState("idle"), 2000);
@@ -195,22 +207,40 @@ const FocusPage = () => {
         if (prev <= 1) {
           clearTimer();
           setTimerState("finished");
-          // Auto-complete using the captured task ID
-          if (runningTaskId) {
-            updateTaskInDb(runningTaskId, { done: true, status: "done" as any, completedAt: new Date().toISOString() });
-          }
-          setBuddyMsg(pickRandom(PHRASES.taskDone));
-          setBuddyState("speaking");
-          setTimeout(() => {
-            setBuddyState("idle");
-            setBuddyMsg(pickRandom(PHRASES.idle));
-            setTimerState("idle");
-          }, 3000);
+          // Auto-complete using the captured task ID, not activeIdx
+          setAllTasks(current => {
+            const taskToComplete = current.find(t => t.id === runningTaskId);
+            if (taskToComplete) {
+              const updated = current.map(t =>
+                t.id === runningTaskId ? { ...t, status: "done" as const, done: true, completedAt: new Date().toISOString() } : t
+              );
+              saveTasks(updated);
+              setBuddyMsg(pickRandom(PHRASE_KEYS.taskDone));
+              setBuddyState("speaking");
+              // After a delay, reset to idle and move to next task
+              setTimeout(() => {
+                setBuddyState("idle");
+                const newFocus = getFocusTasks(updated);
+                if (newFocus.length > 0) {
+                  setActiveIdx(prev => Math.min(prev, newFocus.length - 1));
+                  setBuddyMsg(pickRandom(PHRASE_KEYS.idle));
+                } else {
+                  setBuddyMsg("focus.p.allDone");
+                }
+                setTimerState("idle");
+              }, 3000);
+              return updated;
+            }
+            setBuddyMsg(pickRandom(PHRASE_KEYS.finished));
+            setBuddyState("speaking");
+            setTimeout(() => { setBuddyState("idle"); setTimerState("idle"); }, 3000);
+            return current;
+          });
           return 0;
         }
         if (prev === 121 && !nearEndFired.current) {
           nearEndFired.current = true;
-          setBuddyMsg(pickRandom(PHRASES.nearEnd));
+          setBuddyMsg(pickRandom(PHRASE_KEYS.nearEnd));
           setBuddyState("speaking");
           setTimeout(() => setBuddyState("idle"), 2000);
         }
@@ -222,14 +252,14 @@ const FocusPage = () => {
   const pauseTimer = () => {
     clearTimer();
     setTimerState("paused");
-    setBuddyMsg(pickRandom(PHRASES.paused));
+    setBuddyMsg(pickRandom(PHRASE_KEYS.paused));
   };
 
   const resetTimer = () => {
     clearTimer();
     setTimerState("idle");
     setSecondsLeft(duration);
-    setBuddyMsg(pickRandom(PHRASES.idle));
+    setBuddyMsg(pickRandom(PHRASE_KEYS.idle));
     setBuddyState("idle");
     nearEndFired.current = false;
   };
@@ -238,9 +268,16 @@ const FocusPage = () => {
 
   useEffect(() => {
     if (timerState !== "running") return;
-    const id = setInterval(() => setBuddyMsg(pickRandom(PHRASES.running)), 60000);
+    const id = setInterval(() => setBuddyMsg(pickRandom(PHRASE_KEYS.running)), 60000);
     return () => clearInterval(id);
   }, [timerState]);
+
+  const renderBuddyMsg = (msg: string) => {
+    if (msg.startsWith("focus.p.taskFocus:")) {
+      return t("focus.p.taskFocus", { title: msg.slice("focus.p.taskFocus:".length) });
+    }
+    return t(msg);
+  };
 
   const mins = Math.floor(secondsLeft / 60);
   const secs = secondsLeft % 60;
@@ -258,8 +295,6 @@ const FocusPage = () => {
     }
     return `${m}m`;
   };
-
-  if (!hasProAccess) return <LockedFeature featureName="Focus Timer" requiredPlan="pro" />;
 
   return (
     <div className="h-[100dvh] w-full flex flex-col bg-background overflow-hidden relative">
@@ -369,14 +404,9 @@ const FocusPage = () => {
           <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 rotate-45 bg-card/70 border-l border-t border-primary/25 backdrop-blur-sm" />
           <div className="relative bg-card/70 backdrop-blur-sm border border-primary/25 rounded-2xl px-4 sm:px-5 py-2.5 sm:py-3 text-center shadow-[0_0_20px_rgba(139,92,246,0.15),0_0_40px_rgba(139,92,246,0.08)]">
             <p className="text-xs sm:text-sm text-foreground/80 font-medium transition-all duration-500 animate-fade-in" key={buddyMsg}>
-              {buddyMsg}
+              {renderBuddyMsg(buddyMsg)}
             </p>
           </div>
-        </div>
-
-        {/* Ambience Sound */}
-        <div className="w-full max-w-[320px] mb-2">
-          {hasMaxAccess ? <AmbientPlayer /> : <LockedFeature featureName="Ambience Sound" requiredPlan="max" variant="inline" />}
         </div>
 
         {/* Timer - responsive size */}
@@ -408,7 +438,7 @@ const FocusPage = () => {
               <button onClick={resetTimer}
                 className="flex items-center gap-2 bg-destructive text-destructive-foreground px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-[10px] sm:text-xs font-semibold active:scale-95 transition-all">
                 <Square size={14} />
-                Berhenti
+                {t("focus.stop")}
               </button>
             </>
           )}
@@ -416,7 +446,7 @@ const FocusPage = () => {
             <>
               <button onClick={() => startTimerForTask()}
                 className="flex items-center gap-2 bg-primary text-primary-foreground px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-[10px] sm:text-xs font-semibold active:scale-95 transition-all shadow-lg shadow-primary/25">
-                Lanjut
+                {t("focus.resume")}
               </button>
               <button onClick={resetTimer}
                 className="flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-secondary text-secondary-foreground active:scale-95 transition-all">
@@ -430,7 +460,7 @@ const FocusPage = () => {
         {focusTasks.length > 0 && (
           <div className="w-full max-w-[280px] sm:max-w-xs md:max-w-sm">
             <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1.5 sm:mb-2 text-center">
-              {focusTasks.length} tugas fokus
+              {t("focus.taskCount", { n: focusTasks.length })}
             </p>
             <div className="bg-card/60 backdrop-blur-sm border border-border/40 rounded-xl sm:rounded-2xl overflow-hidden max-h-[140px] sm:max-h-[180px] md:max-h-[220px] overflow-y-auto">
               {focusTasks.map((task, idx) => (
@@ -457,7 +487,7 @@ const FocusPage = () => {
                       }}
                       className="flex items-center gap-1 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-full bg-primary/20 text-primary text-[9px] sm:text-[10px] font-semibold active:scale-95 transition-all border border-primary/30 whitespace-nowrap flex-shrink-0"
                     >
-                      💻 Kerjakan
+                      💻 {t("focus.work")}
                     </button>
                   )}
                   {timerState === "running" && idx === activeIdx && (
@@ -466,7 +496,7 @@ const FocusPage = () => {
                       className="flex items-center gap-1 px-2 py-1 sm:py-1.5 rounded-full bg-yellow-500/20 text-yellow-400 text-[9px] sm:text-[10px] font-semibold active:scale-95 transition-all border border-yellow-500/30 flex-shrink-0"
                     >
                       <Pause size={10} />
-                      Pause
+                      {t("focus.pause")}
                     </button>
                   )}
                   {timerState === "paused" && idx === activeIdx && (
@@ -475,7 +505,7 @@ const FocusPage = () => {
                       className="flex items-center gap-1 px-2 py-1 sm:py-1.5 rounded-full bg-primary/20 text-primary text-[9px] sm:text-[10px] font-semibold active:scale-95 transition-all border border-primary/30 flex-shrink-0"
                     >
                       <Play size={10} />
-                      Lanjut
+                      {t("focus.resume")}
                     </button>
                   )}
                 </div>
@@ -486,8 +516,8 @@ const FocusPage = () => {
 
         {focusTasks.length === 0 && (
           <div className="text-center mt-3 sm:mt-4">
-            <p className="text-xs sm:text-sm text-muted-foreground">Belum ada tugas fokus.</p>
-            <p className="text-[10px] sm:text-xs text-muted-foreground/60 mt-1">Tambahkan tugas dengan prioritas tinggi di To-Do list</p>
+            <p className="text-xs sm:text-sm text-muted-foreground">{t("focus.noTasks")}</p>
+            <p className="text-[10px] sm:text-xs text-muted-foreground/60 mt-1">{t("focus.noTasksHint")}</p>
           </div>
         )}
       </div>

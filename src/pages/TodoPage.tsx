@@ -1,15 +1,45 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import { Plus, Trash2, Calendar as CalendarIcon, Clock, ChevronLeft, ChevronRight, CheckCircle2, Filter, X, Pencil, Volume2, VolumeX, Target } from "lucide-react";
+import { Plus, Trash2, Calendar as CalendarIcon, Clock, ChevronLeft, ChevronRight, CheckCircle2, Filter, X, Pencil, Volume2, VolumeX, Target, Check, MapPin, Bell } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, isToday, addMonths, subMonths, isBefore, startOfDay } from "date-fns";
-import { id as localeId } from "date-fns/locale";
+import { id as localeId, enUS } from "date-fns/locale";
 import BottomNav from "@/components/BottomNav";
-import LockedFeature from "@/components/LockedFeature";
 import { useBuddyVoice } from "@/hooks/useBuddyVoice";
-import { useSubscription } from "@/hooks/useSubscription";
-import { useTodos, type Task, type Priority, type Status, type Category, type Recurrence, type Effort } from "@/hooks/useTodos";
+import { useI18n } from "@/hooks/useI18n";
+
+type Priority = "high" | "medium" | "low";
+type Status = "todo" | "in_progress" | "done";
+type Category = "work" | "personal" | "health" | "learning";
+type Recurrence = "once" | "daily" | "weekly";
+type Effort = "quick" | "medium" | "deep";
+
+type TaskType = "event" | "reminder";
+
+interface Task {
+  id: string;
+  title: string;
+  notes?: string;
+  done: boolean;
+  date: string;
+  endDate?: string;
+  startTime?: string;
+  endTime?: string;
+  allDay?: boolean;
+  location?: string;
+  taskType?: TaskType;
+  startedAt?: string;
+  completedAt?: string;
+  isRunning?: boolean;
+  priority: Priority;
+  status: Status;
+  category?: Category;
+  recurrence: Recurrence;
+  effort?: Effort;
+}
 
 type ViewMode = "month" | "today";
+
+const STORAGE_KEY = "buddy-todos";
 
 const PRIORITY_COLORS: Record<Priority, string> = {
   high: "bg-red-500",
@@ -17,10 +47,10 @@ const PRIORITY_COLORS: Record<Priority, string> = {
   low: "bg-blue-400",
 };
 
-const PRIORITY_LABELS: Record<Priority, string> = {
-  high: "Tinggi",
-  medium: "Sedang",
-  low: "Rendah",
+const PRIORITY_LABEL_KEYS: Record<Priority, string> = {
+  high: "todo.priorityHigh",
+  medium: "todo.priorityMedium",
+  low: "todo.priorityLow",
 };
 
 const CATEGORY_COLORS: Record<Category, string> = {
@@ -30,41 +60,52 @@ const CATEGORY_COLORS: Record<Category, string> = {
   learning: "bg-amber-500/20 text-amber-300 border-amber-500/30",
 };
 
-const CATEGORY_LABELS: Record<Category, string> = {
-  work: "Kerja",
-  personal: "Pribadi",
-  health: "Kesehatan",
-  learning: "Belajar",
+const CATEGORY_LABEL_KEYS: Record<Category, string> = {
+  work: "todo.catWork",
+  personal: "todo.catPersonal",
+  health: "todo.catHealth",
+  learning: "todo.catLearning",
 };
 
-const RECURRENCE_LABELS: Record<Recurrence, string> = {
-  once: "Sekali",
-  daily: "Harian",
-  weekly: "Mingguan",
+const RECURRENCE_LABEL_KEYS: Record<Recurrence, string> = {
+  once: "todo.recOnce",
+  daily: "todo.recDaily",
+  weekly: "todo.recWeekly",
 };
 
-const EFFORT_LABELS: Record<Effort, string> = {
-  quick: "Cepat",
-  medium: "Sedang",
-  deep: "Deep Work",
+const EFFORT_LABEL_KEYS: Record<Effort, string> = {
+  quick: "todo.effortQuick",
+  medium: "todo.effortMedium",
+  deep: "todo.effortDeep",
 };
 
-// Tasks loaded from useTodos hook (Supabase + localStorage)
+const loadTasks = (): Task[] => {
+  try {
+    const raw = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+    return raw.map((t: any) => ({
+      ...t,
+      priority: t.priority || "medium",
+      status: t.status || (t.done ? "done" : "todo"),
+      recurrence: t.recurrence || "once",
+    }));
+  } catch {
+    return [];
+  }
+};
 
-const getDeadlineState = (dateStr: string): { label: string; className: string } | null => {
+const getDeadlineState = (dateStr: string): { labelKey: string; className: string } | null => {
   const today = startOfDay(new Date());
   const taskDate = startOfDay(new Date(dateStr));
-  if (isSameDay(today, taskDate)) return { label: "Hari Ini", className: "text-accent" };
-  if (isBefore(taskDate, today)) return { label: "Terlambat", className: "text-red-400" };
-  return { label: "Mendatang", className: "text-muted-foreground" };
+  if (isSameDay(today, taskDate)) return { labelKey: "todo.deadlineToday", className: "text-accent" };
+  if (isBefore(taskDate, today)) return { labelKey: "todo.deadlineOverdue", className: "text-red-400" };
+  return { labelKey: "todo.deadlineUpcoming", className: "text-muted-foreground" };
 };
 
 const TodoPage = () => {
+  const { t, lang } = useI18n();
+  const dateLocale = lang === "en" ? enUS : localeId;
   const navigate = useNavigate();
-  const { isPro, isMax, isTrial } = useSubscription();
-  const hasProAccess = isPro || isMax || isTrial;
-  const { tasks, setTasks: bulkSetTasks, addTask: addTaskToDb, updateTask, deleteTask: deleteTaskFromDb, toggleTask: toggleTaskInDb } = useTodos();
-  const setTasks = bulkSetTasks;
+  const [tasks, setTasks] = useState<Task[]>(loadTasks);
   const { voiceEnabled, toggleVoice, speak } = useBuddyVoice();
   const hasSpokenInitial = useRef(false);
   const [newTask, setNewTask] = useState("");
@@ -73,8 +114,13 @@ const TodoPage = () => {
   const [calMonth, setCalMonth] = useState(new Date());
   const [showAddForm, setShowAddForm] = useState(false);
   const [addDate, setAddDate] = useState(format(new Date(), "yyyy-MM-dd"));
+  const [addEndDate, setAddEndDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const [addStartTime, setAddStartTime] = useState("");
   const [addEndTime, setAddEndTime] = useState("");
+  const [addAllDay, setAddAllDay] = useState(false);
+  const [addLocation, setAddLocation] = useState("");
+  const [addTaskType, setAddTaskType] = useState<TaskType>("event");
+  const [addNotes, setAddNotes] = useState("");
   const [addPriority, setAddPriority] = useState<Priority>("medium");
   const [addCategory, setAddCategory] = useState<Category | "">("");
   const [addRecurrence, setAddRecurrence] = useState<Recurrence>("once");
@@ -86,34 +132,30 @@ const TodoPage = () => {
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
 
   const getBuddyLine = (taskList: Task[]) => {
-    const todayTasks = taskList.filter(t => isTaskOnDate(t, format(new Date(), "yyyy-MM-dd")));
-    const pending = todayTasks.filter(t => !t.done);
-    const done = todayTasks.filter(t => t.done);
-    const overdue = taskList.filter(t => {
-      const ds = getDeadlineState(t.date);
-      return ds?.label === "Terlambat" && !t.done;
+    const todayStr = format(new Date(), "yyyy-MM-dd");
+    const todayTasks = taskList.filter(task => isTaskOnDate(task, todayStr));
+    const pending = todayTasks.filter(task => !task.done);
+    const done = todayTasks.filter(task => task.done);
+    const overdue = taskList.filter(task => {
+      const ds = getDeadlineState(task.date);
+      return ds?.labelKey === "todo.deadlineOverdue" && !task.done;
     });
 
     if (todayTasks.length === 0) {
-      const lines = ["Mau ngapain hari ini?", "Ada rencana apa hari ini?", "Yuk isi jadwal hari ini!", "Belum ada kegiatan nih, mau tambahin?"];
-      return lines[Math.floor(Math.random() * lines.length)];
+      const keys = ["todo.b.empty1", "todo.b.empty2", "todo.b.empty3", "todo.b.empty4"];
+      return t(keys[Math.floor(Math.random() * keys.length)]);
     }
     if (overdue.length > 0) {
-      return `Ada ${overdue.length} tugas yang terlambat nih, yuk dikerjain`;
+      return t("todo.b.overdue", { n: overdue.length });
     }
     if (done.length > 0 && pending.length === 0) {
-      const lines = ["Semua beres! Kamu keren banget hari ini ✨", "Mantap, semua tugas selesai! 🎉"];
-      return lines[Math.floor(Math.random() * lines.length)];
+      return t(Math.random() < 0.5 ? "todo.b.allDone1" : "todo.b.allDone2");
     }
     if (pending.length > 0) {
-      const lines = [
-        `Masih ada ${pending.length} tugas nih, semangat ya!`,
-        `${pending.length} tugas lagi, pasti bisa! 💪`,
-        "Yuk lanjut pelan-pelan, aku temenin",
-      ];
-      return lines[Math.floor(Math.random() * lines.length)];
+      const keys = ["todo.b.pending1", "todo.b.pending2", "todo.b.pending3"];
+      return t(keys[Math.floor(Math.random() * keys.length)], { n: pending.length });
     }
-    return "Aku siap bantu kamu hari ini!";
+    return t("todo.b.ready");
   };
 
   const [buddyMsg, setBuddyMsg] = useState(() => "");
@@ -156,12 +198,14 @@ const TodoPage = () => {
     }
   };
 
-  // localStorage sync is handled by useTodos hook
-
-  // Force re-render for running timers
-  const [, forceRender] = useState(0);
   useEffect(() => {
-    const interval = setInterval(() => forceRender(n => n + 1), 1000);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+  }, [tasks]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTasks(prev => [...prev]);
+    }, 1000);
     return () => clearInterval(interval);
   }, []);
 
@@ -201,8 +245,14 @@ const TodoPage = () => {
 
   const resetForm = () => {
     setNewTask("");
+    setAddDate(format(new Date(), "yyyy-MM-dd"));
+    setAddEndDate(format(new Date(), "yyyy-MM-dd"));
     setAddStartTime("");
     setAddEndTime("");
+    setAddAllDay(false);
+    setAddLocation("");
+    setAddTaskType("event");
+    setAddNotes("");
     setAddPriority("medium");
     setAddCategory("");
     setAddRecurrence("once");
@@ -215,8 +265,13 @@ const TodoPage = () => {
     setEditingTaskId(task.id);
     setNewTask(task.title);
     setAddDate(task.date);
+    setAddEndDate(task.endDate || task.date);
     setAddStartTime(task.startTime || "");
     setAddEndTime(task.endTime || "");
+    setAddAllDay(task.allDay || false);
+    setAddLocation(task.location || "");
+    setAddTaskType(task.taskType || "event");
+    setAddNotes(task.notes || "");
     setAddPriority(task.priority);
     setAddCategory(task.category || "");
     setAddRecurrence(task.recurrence);
@@ -224,63 +279,98 @@ const TodoPage = () => {
     setShowAddForm(true);
   };
 
-  const handleAddTask = () => {
+  const addTask = () => {
     const title = newTask.trim();
     if (!title) return;
 
     if (editingTaskId) {
-      updateTask(editingTaskId, {
-        title,
-        date: addDate,
-        startTime: addStartTime || undefined,
-        endTime: addEndTime || undefined,
-        priority: addPriority,
-        category: addCategory || undefined,
-        recurrence: addRecurrence,
-        effort: addEffort || undefined,
-      });
+      setTasks(prev =>
+        prev.map(t =>
+          t.id === editingTaskId
+            ? {
+                ...t,
+                title,
+                date: addDate,
+                endDate: addTaskType === "event" ? addEndDate || undefined : undefined,
+                startTime: addAllDay ? undefined : (addStartTime || undefined),
+                endTime: addAllDay ? undefined : (addEndTime || undefined),
+                allDay: addAllDay || undefined,
+                location: addLocation || undefined,
+                taskType: addTaskType,
+                notes: addNotes || undefined,
+                priority: addPriority,
+                category: addCategory || undefined,
+                recurrence: addRecurrence,
+                effort: addEffort || undefined,
+              }
+            : t
+        )
+      );
       resetForm();
-      updateBuddyMsg("Udah aku update ya! ✏️", getBuddyLine(tasks));
+      updateBuddyMsg(t("todo.b.updated"), getBuddyLine(tasks));
       return;
     }
 
     const task: Task = {
-      id: crypto.randomUUID(),
+      id: Date.now().toString(),
       title,
       done: false,
       date: addDate,
-      startTime: addStartTime || undefined,
-      endTime: addEndTime || undefined,
+      endDate: addTaskType === "event" ? addEndDate || undefined : undefined,
+      startTime: addAllDay ? undefined : (addStartTime || undefined),
+      endTime: addAllDay ? undefined : (addEndTime || undefined),
+      allDay: addAllDay || undefined,
+      location: addLocation || undefined,
+      taskType: addTaskType,
+      notes: addNotes || undefined,
       priority: addPriority,
       status: "todo",
       category: addCategory || undefined,
       recurrence: addRecurrence,
       effort: addEffort || undefined,
     };
-    addTaskToDb(task);
+    setTasks(prev => [...prev, task]);
     resetForm();
-    updateBuddyMsg("Sip, udah aku catat! 📝", getBuddyLine([...tasks, task]));
+    updateBuddyMsg(t("todo.b.added"), getBuddyLine([...tasks, task]));
   };
 
-  const handleToggleTask = (id: string) => {
-    toggleTaskInDb(id);
+  const toggleTask = (id: string) => {
+    setTasks(prev =>
+      prev.map(t => {
+        if (t.id !== id) return t;
+        const nowDone = !t.done;
+        return {
+          ...t,
+          done: nowDone,
+          status: nowDone ? "done" as Status : "todo" as Status,
+          completedAt: nowDone ? new Date().toISOString() : undefined,
+          isRunning: nowDone ? false : t.isRunning,
+        };
+      })
+    );
     const task = tasks.find(t => t.id === id);
     if (task && !task.done) {
-      updateBuddyMsg("Nice, satu beres! 🎉", "Mau lanjut yang lain?");
+      updateBuddyMsg(t("todo.b.done"), t("todo.b.continue"));
     }
   };
 
   const startTask = (_id: string) => {
-    updateBuddyMsg("Gas! Semangat kerjain! 🔥");
+    // Task execution moved to Focus page
+  
+    updateBuddyMsg(t("todo.b.go"));
   };
 
   const stopTask = (id: string) => {
-    updateTask(id, { isRunning: false });
+    setTasks(prev =>
+      prev.map(t =>
+        t.id === id ? { ...t, isRunning: false } : t
+      )
+    );
   };
 
-  const handleDeleteTask = (id: string) => {
-    deleteTaskFromDb(id);
-    updateBuddyMsg("Udah aku hapus ya", getBuddyLine(tasks.filter(t => t.id !== id)));
+  const deleteTask = (id: string) => {
+    setTasks(prev => prev.filter(t => t.id !== id));
+    updateBuddyMsg(t("todo.b.deleted"), getBuddyLine(tasks.filter(task => task.id !== id)));
   };
 
   const getElapsed = (task: Task) => {
@@ -297,8 +387,6 @@ const TodoPage = () => {
   };
 
   const startDayOfWeek = startOfMonth(calMonth).getDay();
-
-  if (!hasProAccess) return <LockedFeature featureName="To-Do List & Reminder" requiredPlan="pro" />;
 
   return (
     <div className="h-[100dvh] w-full flex flex-col buddy-gradient-bg space-stars overflow-hidden safe-area-inset">
@@ -366,7 +454,7 @@ const TodoPage = () => {
             viewMode === "today" ? "bg-primary text-primary-foreground" : "bg-card/50 text-muted-foreground"
           }`}
         >
-          Hari Ini
+          {t("todo.today")}
         </button>
         <button
           onClick={() => setViewMode("month")}
@@ -374,7 +462,7 @@ const TodoPage = () => {
             viewMode === "month" ? "bg-primary text-primary-foreground" : "bg-card/50 text-muted-foreground"
           }`}
         >
-          Kalender
+          {t("todo.calendar")}
         </button>
         <button
           onClick={() => setShowFilters(!showFilters)}
@@ -388,7 +476,7 @@ const TodoPage = () => {
       {showFilters && (
         <div className="px-4 py-2 space-y-1.5">
           <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
-            <span className="text-[10px] text-muted-foreground shrink-0">Prioritas:</span>
+            <span className="text-[10px] text-muted-foreground shrink-0">{t("todo.filterPriority")}</span>
             {(["all", "high", "medium", "low"] as const).map(p => (
               <button
                 key={p}
@@ -397,12 +485,12 @@ const TodoPage = () => {
                   filterPriority === p ? "bg-primary text-primary-foreground" : "bg-card/50 text-muted-foreground"
                 }`}
               >
-                {p === "all" ? "Semua" : PRIORITY_LABELS[p]}
+                {p === "all" ? t("common.all") : t(PRIORITY_LABEL_KEYS[p])}
               </button>
             ))}
           </div>
           <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
-            <span className="text-[10px] text-muted-foreground shrink-0">Status:</span>
+            <span className="text-[10px] text-muted-foreground shrink-0">{t("todo.filterStatus")}</span>
             {(["all", "todo", "in_progress", "done"] as const).map(s => (
               <button
                 key={s}
@@ -411,12 +499,12 @@ const TodoPage = () => {
                   filterStatus === s ? "bg-primary text-primary-foreground" : "bg-card/50 text-muted-foreground"
                 }`}
               >
-                {s === "all" ? "Semua" : s === "todo" ? "To Do" : s === "in_progress" ? "Proses" : "Selesai"}
+                {s === "all" ? t("common.all") : s === "todo" ? t("todo.statusTodo") : s === "in_progress" ? t("todo.statusInProgress") : t("todo.statusDone")}
               </button>
             ))}
           </div>
           <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
-            <span className="text-[10px] text-muted-foreground shrink-0">Kategori:</span>
+            <span className="text-[10px] text-muted-foreground shrink-0">{t("todo.filterCategory")}</span>
             {(["all", "work", "personal", "health", "learning"] as const).map(c => (
               <button
                 key={c}
@@ -425,7 +513,7 @@ const TodoPage = () => {
                   filterCategory === c ? "bg-primary text-primary-foreground" : "bg-card/50 text-muted-foreground"
                 }`}
               >
-                {c === "all" ? "Semua" : CATEGORY_LABELS[c]}
+                {c === "all" ? t("common.all") : t(CATEGORY_LABEL_KEYS[c])}
               </button>
             ))}
           </div>
@@ -434,7 +522,7 @@ const TodoPage = () => {
               onClick={() => { setFilterPriority("all"); setFilterStatus("all"); setFilterCategory("all"); }}
               className="flex items-center gap-1 text-[10px] text-accent"
             >
-              <X size={10} /> Reset filter
+              <X size={10} /> {t("todo.resetFilter")}
             </button>
           )}
         </div>
@@ -449,14 +537,14 @@ const TodoPage = () => {
                 <ChevronLeft size={18} />
               </button>
               <span className="text-sm font-semibold text-foreground">
-                {format(calMonth, "MMMM yyyy", { locale: localeId })}
+                {format(calMonth, "MMMM yyyy", { locale: dateLocale })}
               </span>
               <button onClick={() => setCalMonth(addMonths(calMonth, 1))} className="p-1 text-muted-foreground active:text-foreground">
                 <ChevronRight size={18} />
               </button>
             </div>
             <div className="grid grid-cols-7 gap-0.5 mb-1">
-              {["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"].map(d => (
+              {t("todo.calDays").split(",").map(d => (
                 <div key={d} className="text-center text-[10px] text-muted-foreground font-medium py-1">{d}</div>
               ))}
             </div>
@@ -498,16 +586,16 @@ const TodoPage = () => {
             </div>
           </div>
           <p className="text-xs text-muted-foreground mt-2 px-1">
-            {format(selectedDate, "EEEE, d MMMM yyyy", { locale: localeId })}
+            {format(selectedDate, "EEEE, d MMMM yyyy", { locale: dateLocale })}
           </p>
         </div>
       )}
 
       {/* Task list */}
-      <div className="flex-1 overflow-y-auto px-4 py-2 space-y-2">
+      <div className="flex-1 min-h-0 overflow-y-auto px-4 py-2 space-y-2">
         {filteredTasks.length === 0 && (
           <p className="text-center text-muted-foreground text-sm mt-6">
-            {viewMode === "today" ? "Tidak ada tugas hari ini." : "Tidak ada tugas di tanggal ini."}
+            {viewMode === "today" ? t("todo.noTasksToday") : t("todo.noTasksDate")}
           </p>
         )}
         {filteredTasks.map(task => {
@@ -525,7 +613,7 @@ const TodoPage = () => {
                 <div className="flex flex-col items-center gap-1 shrink-0">
                   <div className={`w-2 h-2 rounded-full ${PRIORITY_COLORS[task.priority]}`} />
                   <button
-                    onClick={() => handleToggleTask(task.id)}
+                    onClick={() => toggleTask(task.id)}
                     className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-colors ${
                       task.done ? "bg-green-500 border-green-500 text-primary-foreground" : "border-muted-foreground"
                     }`}
@@ -539,22 +627,39 @@ const TodoPage = () => {
                   </span>
                   {/* Meta row: time, category tag, deadline */}
                   <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                    {task.startTime && (
+                    {task.taskType === "reminder" && (
+                      <span className="text-[9px] text-accent/70 flex items-center gap-0.5">
+                        <Bell size={9} />
+                        Reminder
+                      </span>
+                    )}
+                    {task.allDay ? (
+                      <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                        <CalendarIcon size={10} />
+                        {t("todo.allDayLabel")}
+                      </span>
+                    ) : task.startTime && (
                       <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
                         <Clock size={10} />
                         {task.startTime}{task.endTime ? ` - ${task.endTime}` : ""}
                       </span>
                     )}
+                    {task.location && (
+                      <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                        <MapPin size={9} />
+                        {task.location}
+                      </span>
+                    )}
                     {task.category && (
                       <span className={`text-[9px] px-1.5 py-0.5 rounded-full border ${CATEGORY_COLORS[task.category]}`}>
-                        {CATEGORY_LABELS[task.category]}
+                        {t(CATEGORY_LABEL_KEYS[task.category])}
                       </span>
                     )}
                     {deadline && !task.done && (
-                      <span className={`text-[10px] ${deadline.className}`}>{deadline.label}</span>
+                      <span className={`text-[10px] ${deadline.className}`}>{t(deadline.labelKey)}</span>
                     )}
                     {task.recurrence !== "once" && (
-                      <span className="text-[10px] text-muted-foreground">🔁 {RECURRENCE_LABELS[task.recurrence]}</span>
+                      <span className="text-[10px] text-muted-foreground">🔁 {t(RECURRENCE_LABEL_KEYS[task.recurrence])}</span>
                     )}
                     {elapsed && (
                       <span className={`text-[10px] font-mono ${task.isRunning ? "text-accent" : "text-muted-foreground"}`}>
@@ -577,7 +682,7 @@ const TodoPage = () => {
                       <Pencil size={14} />
                     </button>
                   )}
-                  <button onClick={() => handleDeleteTask(task.id)} className="p-1.5 text-muted-foreground active:text-destructive transition-colors">
+                  <button onClick={() => deleteTask(task.id)} className="p-1.5 text-muted-foreground active:text-destructive transition-colors">
                     <Trash2 size={14} />
                   </button>
                 </div>
@@ -587,12 +692,12 @@ const TodoPage = () => {
                 <div className="mt-1.5 pt-1.5 border-t border-border/20 flex flex-wrap gap-x-3 gap-y-0.5">
                   {task.startedAt && (
                     <span className="text-[10px] text-muted-foreground">
-                      Mulai: {format(new Date(task.startedAt), "dd/MM HH:mm")}
+                      {t("todo.started")} {format(new Date(task.startedAt), "dd/MM HH:mm")}
                     </span>
                   )}
                   {task.completedAt && (
                     <span className="text-[10px] text-green-400">
-                      Selesai: {format(new Date(task.completedAt), "dd/MM HH:mm")}
+                      {t("todo.completed")} {format(new Date(task.completedAt), "dd/MM HH:mm")}
                     </span>
                   )}
                 </div>
@@ -602,119 +707,239 @@ const TodoPage = () => {
         })}
       </div>
 
-      {/* Add task area */}
+      {/* Add button (always visible at bottom) */}
       <div className="px-3 pt-2 pb-2 bg-card/40 backdrop-blur-md border-t border-border/30">
-        {showAddForm ? (
-          <div className="space-y-2">
-            <input
-              type="text"
-              value={newTask}
-              onChange={e => setNewTask(e.target.value)}
-              placeholder="Judul tugas..."
-              className="w-full bg-muted/50 border border-border/30 rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none"
-              autoFocus
-            />
-            {/* Date & Time row */}
-            <div className="flex gap-2">
-              <div className="flex-1">
-                <label className="text-[10px] text-muted-foreground mb-0.5 block">Tanggal</label>
-                <input type="date" value={addDate} onChange={e => setAddDate(e.target.value)}
-                  className="w-full bg-muted/50 border border-border/30 rounded-lg px-2 py-1.5 text-xs text-foreground outline-none" />
-              </div>
-              <div className="flex-1">
-                <label className="text-[10px] text-muted-foreground mb-0.5 block">Mulai</label>
-                <input type="time" value={addStartTime} onChange={e => setAddStartTime(e.target.value)}
-                  className="w-full bg-muted/50 border border-border/30 rounded-lg px-2 py-1.5 text-xs text-foreground outline-none" />
-              </div>
-              <div className="flex-1">
-                <label className="text-[10px] text-muted-foreground mb-0.5 block">Selesai</label>
-                <input type="time" value={addEndTime} onChange={e => setAddEndTime(e.target.value)}
-                  className="w-full bg-muted/50 border border-border/30 rounded-lg px-2 py-1.5 text-xs text-foreground outline-none" />
-              </div>
+        <button
+          onClick={() => {
+            setAddDate(viewMode === "today" ? todayStr : format(selectedDate, "yyyy-MM-dd"));
+            setAddEndDate(viewMode === "today" ? todayStr : format(selectedDate, "yyyy-MM-dd"));
+            setShowAddForm(true);
+          }}
+          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-full bg-primary text-primary-foreground active:bg-primary/80 transition-colors"
+        >
+          <Plus size={18} />
+          <span className="text-sm font-medium">{t("todo.addActivity")}</span>
+        </button>
+      </div>
+
+      {/* iOS-style full-screen add/edit form */}
+      {showAddForm && (
+        <div className="fixed inset-0 z-50 flex flex-col bg-background safe-area-inset animate-in slide-in-from-bottom duration-300">
+          {/* Header */}
+          <div className="flex items-center justify-between px-4 py-3 border-b border-border/30 bg-card/60 backdrop-blur-md">
+            <button
+              onClick={resetForm}
+              className="w-9 h-9 flex items-center justify-center rounded-full bg-muted/50 text-muted-foreground active:bg-muted transition-colors"
+            >
+              <X size={18} />
+            </button>
+            <h2 className="text-base font-semibold text-foreground font-orbitron tracking-wide">
+              {editingTaskId ? t("todo.edit") : t("todo.new")}
+            </h2>
+            <button
+              onClick={addTask}
+              disabled={!newTask.trim()}
+              className="w-9 h-9 flex items-center justify-center rounded-full bg-primary/20 text-primary active:bg-primary/30 disabled:opacity-30 disabled:pointer-events-none transition-colors"
+            >
+              <Check size={18} />
+            </button>
+          </div>
+
+          {/* Event / Reminder segmented control */}
+          <div className="px-4 pt-3 pb-2 bg-card/30">
+            <div className="flex bg-muted/60 rounded-xl p-1 gap-1">
+              <button
+                onClick={() => setAddTaskType("event")}
+                className={`flex-1 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                  addTaskType === "event"
+                    ? "bg-card shadow text-foreground"
+                    : "text-muted-foreground"
+                }`}
+              >
+                Event
+              </button>
+              <button
+                onClick={() => setAddTaskType("reminder")}
+                className={`flex-1 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                  addTaskType === "reminder"
+                    ? "bg-card shadow text-foreground"
+                    : "text-muted-foreground"
+                }`}
+              >
+                Reminder
+              </button>
             </div>
-            {/* Priority & Category row */}
-            <div className="flex gap-2">
-              <div className="flex-1">
-                <label className="text-[10px] text-muted-foreground mb-0.5 block">Prioritas</label>
-                <div className="flex gap-1">
+          </div>
+
+          {/* Scrollable form body */}
+          <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
+            {/* Title + Location */}
+            <div className="bg-card/60 backdrop-blur-sm rounded-2xl overflow-hidden border border-border/20">
+              <input
+                type="text"
+                value={newTask}
+                onChange={e => setNewTask(e.target.value)}
+                placeholder={t("todo.titleField")}
+                className="w-full bg-transparent px-4 py-3.5 text-base text-foreground placeholder:text-muted-foreground/50 outline-none border-b border-border/20"
+                autoFocus
+              />
+              <div className="flex items-center px-4 py-3 border-b border-border/20">
+                <MapPin size={15} className="text-muted-foreground/50 mr-3 shrink-0" />
+                <input
+                  type="text"
+                  value={addLocation}
+                  onChange={e => setAddLocation(e.target.value)}
+                  placeholder={t("todo.location")}
+                  className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground/40 outline-none"
+                />
+              </div>
+              <textarea
+                value={addNotes}
+                onChange={e => setAddNotes(e.target.value)}
+                placeholder={t("todo.notes")}
+                rows={3}
+                className="w-full bg-transparent px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/40 outline-none resize-none"
+              />
+            </div>
+
+            {/* Date / Time section */}
+            <div className="bg-card/60 backdrop-blur-sm rounded-2xl overflow-hidden border border-border/20">
+              {/* All-day toggle */}
+              <div className="flex items-center justify-between px-4 py-3.5 border-b border-border/15">
+                <span className="text-sm text-foreground">{t("todo.allDay")}</span>
+                <button
+                  onClick={() => setAddAllDay(!addAllDay)}
+                  className={`w-12 h-6 rounded-full transition-colors relative shrink-0 ${addAllDay ? "bg-primary" : "bg-muted"}`}
+                >
+                  <div className={`w-5 h-5 bg-white rounded-full shadow-sm absolute top-0.5 transition-all duration-200 ${addAllDay ? "left-[26px]" : "left-0.5"}`} />
+                </button>
+              </div>
+
+              {/* Starts */}
+              <div className={`flex items-center px-4 py-3.5 ${addTaskType === "event" ? "border-b border-border/15" : ""}`}>
+                <span className="text-sm text-foreground flex-1">{t("todo.starts")}</span>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="date"
+                    value={addDate}
+                    onChange={e => setAddDate(e.target.value)}
+                    className="bg-primary/15 text-primary text-xs px-2.5 py-1.5 rounded-xl border border-primary/20 outline-none"
+                  />
+                  {!addAllDay && (
+                    <input
+                      type="time"
+                      value={addStartTime}
+                      onChange={e => setAddStartTime(e.target.value)}
+                      className="bg-primary/15 text-primary text-xs px-2.5 py-1.5 rounded-xl border border-primary/20 outline-none"
+                    />
+                  )}
+                </div>
+              </div>
+
+              {/* Ends — Event only */}
+              {addTaskType === "event" && (
+                <div className="flex items-center px-4 py-3.5">
+                  <span className="text-sm text-foreground flex-1">{t("todo.ends")}</span>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="date"
+                      value={addEndDate}
+                      onChange={e => setAddEndDate(e.target.value)}
+                      className="bg-muted/60 text-muted-foreground text-xs px-2.5 py-1.5 rounded-xl border border-border/20 outline-none"
+                    />
+                    {!addAllDay && (
+                      <input
+                        type="time"
+                        value={addEndTime}
+                        onChange={e => setAddEndTime(e.target.value)}
+                        className="bg-muted/60 text-muted-foreground text-xs px-2.5 py-1.5 rounded-xl border border-border/20 outline-none"
+                      />
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Priority + Category + Recurrence */}
+            <div className="bg-card/60 backdrop-blur-sm rounded-2xl overflow-hidden border border-border/20">
+              {/* Priority */}
+              <div className="px-4 py-3 border-b border-border/15">
+                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("todo.priority")}</span>
+                <div className="flex gap-1.5 mt-2">
                   {(["high", "medium", "low"] as const).map(p => (
-                    <button key={p} onClick={() => setAddPriority(p)}
-                      className={`flex-1 py-1 rounded-lg text-[10px] transition-colors ${
-                        addPriority === p ? "bg-primary text-primary-foreground" : "bg-muted/50 text-muted-foreground"
-                      }`}>
-                      {PRIORITY_LABELS[p]}
+                    <button
+                      key={p}
+                      onClick={() => setAddPriority(p)}
+                      className={`flex-1 py-2 rounded-xl text-xs font-medium transition-colors ${
+                        addPriority === p ? "bg-primary text-primary-foreground" : "bg-muted/50 text-muted-foreground active:bg-muted"
+                      }`}
+                    >
+                      {t(PRIORITY_LABEL_KEYS[p])}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Category */}
+              <div className="px-4 py-3 border-b border-border/15">
+                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("todo.category")}</span>
+                <div className="flex gap-1.5 mt-2 flex-wrap">
+                  {(["work", "personal", "health", "learning"] as const).map(c => (
+                    <button
+                      key={c}
+                      onClick={() => setAddCategory(addCategory === c ? "" : c)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-colors ${
+                        addCategory === c ? "bg-primary text-primary-foreground" : "bg-muted/50 text-muted-foreground active:bg-muted"
+                      }`}
+                    >
+                      {t(CATEGORY_LABEL_KEYS[c])}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Recurrence */}
+              <div className="px-4 py-3">
+                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("todo.recurrence")}</span>
+                <div className="flex gap-1.5 mt-2">
+                  {(["once", "daily", "weekly"] as const).map(r => (
+                    <button
+                      key={r}
+                      onClick={() => setAddRecurrence(r)}
+                      className={`flex-1 py-2 rounded-xl text-xs font-medium transition-colors ${
+                        addRecurrence === r ? "bg-primary text-primary-foreground" : "bg-muted/50 text-muted-foreground active:bg-muted"
+                      }`}
+                    >
+                      {t(RECURRENCE_LABEL_KEYS[r])}
                     </button>
                   ))}
                 </div>
               </div>
             </div>
-            {/* Category */}
-            <div>
-              <label className="text-[10px] text-muted-foreground mb-0.5 block">Kategori</label>
-              <div className="flex gap-1">
-                {(["work", "personal", "health", "learning"] as const).map(c => (
-                  <button key={c} onClick={() => setAddCategory(addCategory === c ? "" : c)}
-                    className={`flex-1 py-1 rounded-lg text-[10px] transition-colors ${
-                      addCategory === c ? "bg-primary text-primary-foreground" : "bg-muted/50 text-muted-foreground"
-                    }`}>
-                    {CATEGORY_LABELS[c]}
-                  </button>
-                ))}
-              </div>
-            </div>
-            {/* Recurrence */}
-            <div>
-              <label className="text-[10px] text-muted-foreground mb-0.5 block">Pengulangan</label>
-              <div className="flex gap-1">
-                {(["once", "daily", "weekly"] as const).map(r => (
-                  <button key={r} onClick={() => setAddRecurrence(r)}
-                    className={`flex-1 py-1 rounded-lg text-[10px] transition-colors ${
-                      addRecurrence === r ? "bg-primary text-primary-foreground" : "bg-muted/50 text-muted-foreground"
-                    }`}>
-                    {RECURRENCE_LABELS[r]}
-                  </button>
-                ))}
-              </div>
-            </div>
-            {/* Effort (optional, collapsible-like) */}
-            <div>
-              <label className="text-[10px] text-muted-foreground mb-0.5 block">Effort (opsional)</label>
-              <div className="flex gap-1">
+
+            {/* Effort */}
+            <div className="bg-card/60 backdrop-blur-sm rounded-2xl overflow-hidden border border-border/20 px-4 py-3">
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t("todo.effort")}</span>
+              <div className="flex gap-1.5 mt-2">
                 {(["quick", "medium", "deep"] as const).map(e => (
-                  <button key={e} onClick={() => setAddEffort(addEffort === e ? "" : e)}
-                    className={`flex-1 py-1 rounded-lg text-[10px] transition-colors ${
-                      addEffort === e ? "bg-primary text-primary-foreground" : "bg-muted/50 text-muted-foreground"
-                    }`}>
-                    {EFFORT_LABELS[e]}
+                  <button
+                    key={e}
+                    onClick={() => setAddEffort(addEffort === e ? "" : e)}
+                    className={`flex-1 py-2 rounded-xl text-xs font-medium transition-colors ${
+                      addEffort === e ? "bg-primary text-primary-foreground" : "bg-muted/50 text-muted-foreground active:bg-muted"
+                    }`}
+                  >
+                    {t(EFFORT_LABEL_KEYS[e])}
                   </button>
                 ))}
               </div>
             </div>
-            {/* Actions */}
-            <div className="flex gap-2">
-              <button onClick={resetForm}
-                className="flex-1 py-2 rounded-lg text-xs text-muted-foreground bg-muted/30 active:bg-muted/50">
-                Batal
-              </button>
-              <button onClick={handleAddTask} disabled={!newTask.trim()}
-                className="flex-1 py-2 rounded-lg text-xs bg-primary text-primary-foreground active:bg-primary/80 disabled:opacity-30">
-                {editingTaskId ? "Update" : "Simpan"}
-              </button>
-            </div>
+
+            {/* Safe area spacer */}
+            <div className="h-4" />
           </div>
-        ) : (
-          <button
-            onClick={() => {
-              setAddDate(viewMode === "today" ? todayStr : format(selectedDate, "yyyy-MM-dd"));
-              setShowAddForm(true);
-            }}
-            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-full bg-primary text-primary-foreground active:bg-primary/80 transition-colors"
-          >
-            <Plus size={18} />
-            <span className="text-sm font-medium">Tambah Tugas</span>
-          </button>
-        )}
-      </div>
+        </div>
+      )}
 
       <BottomNav />
     </div>

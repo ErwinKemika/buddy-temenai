@@ -1,5 +1,6 @@
 import buddyAvatar from "@/assets/buddy-avatar.png";
 import { Trash2 } from "lucide-react";
+import { useI18n } from "@/hooks/useI18n";
 
 interface Props {
   onClearChat?: () => void;
@@ -7,6 +8,7 @@ interface Props {
 }
 
 const BuddyHeader = ({ onClearChat, hasMessages }: Props) => {
+  const { t } = useI18n();
   return (
     <header className="flex items-center justify-between px-3 pt-2 pb-1.5 bg-card/40 backdrop-blur-md border-b border-border/30">
       <div className="flex items-center gap-2">
@@ -17,21 +19,19 @@ const BuddyHeader = ({ onClearChat, hasMessages }: Props) => {
           <h1 className="text-sm font-bold text-foreground leading-tight font-orbitron tracking-wide">Buddy</h1>
           <span className="text-[9px] text-accent leading-none flex items-center gap-1">
             <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
-            Online • Siap ngobrol
+            {t("header.status")}
           </span>
         </div>
       </div>
-      <div className="flex items-center gap-1">
-        {hasMessages && onClearChat && (
-          <button
-            onClick={onClearChat}
-            className="p-2 rounded-full hover:bg-destructive/20 text-muted-foreground hover:text-destructive transition-colors"
-            title="Hapus histori chat"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
-        )}
-      </div>
+      {hasMessages && onClearChat && (
+        <button
+          onClick={onClearChat}
+          className="p-2 rounded-full hover:bg-destructive/20 text-muted-foreground hover:text-destructive transition-colors"
+          title={t("header.clearChat")}
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
+      )}
     </header>
   );
 };
